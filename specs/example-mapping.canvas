@@ -1,0 +1,30 @@
+{
+	"nodes":[
+		{"id":"a1f3c7e90b2d4856","type":"group","x":-60,"y":-140,"width":1720,"height":420,"label":"1  Story — worum geht es?","color":"3"},
+		{"id":"b2e4d8fa1c3e5967","type":"text","x":0,"y":-60,"width":400,"height":220,"color":"3","text":"**Story**\n\nAls ich\nmöchte ich Ausgaben und Einnahmen mit Datum, Betrag und Kategorie erfassen und eine Monatsübersicht je Kategorie sehen\ndamit ich mein Budget im Blick habe — später per FinTS-Import vom eigenen Konto (Commerzbank), gemeinsam mit meiner Freundin"},
+		{"id":"c3f5e90b2d4e6a78","type":"text","x":440,"y":-60,"width":400,"height":220,"text":"So füllst du das Board:\n\n1. Story (gelb) in einem Satz\n2. Regeln (cyan) — was immer gilt\n3. Beispiele (grün) unter jede Regel, mit **echten Werten**\n4. Offene Fragen (rot) — nichts erfinden\n\nFertig, wenn jede Regel mindestens ein Beispiel hat."},
+		{"id":"d4a6fa1c3e5f7b89","type":"group","x":-60,"y":340,"width":560,"height":900,"label":"2  Regeln","color":"5"},
+		{"id":"e5b70b2d4e6a8c9a","type":"text","x":0,"y":420,"width":440,"height":140,"color":"5","text":"**R1**\n\nJeder Eintrag hat Datum, Betrag und Kategorie."},
+		{"id":"f6c81c3e5f7b9dab","type":"text","x":0,"y":600,"width":440,"height":140,"color":"5","text":"**R2**\n\nNegative Beträge sind Ausgaben, positive Einnahmen. Währung: immer Euro."},
+		{"id":"8252f30d286ce703","type":"text","x":0,"y":780,"width":440,"height":140,"color":"5","text":"**R3**\n\nDie Monatsübersicht zeigt Ausgaben und Einnahmen je Kategorie als Summe und listet jeden Eintrag einzeln (Datum, Betrag)."},
+		{"id":"18ea3e5f7b9dbfcd","type":"group","x":560,"y":340,"width":1100,"height":900,"label":"3  Beispiele — konkrete Werte, keine Prosa","color":"4"},
+		{"id":"29fb4e6a8cafd0de","type":"text","x":620,"y":420,"width":480,"height":140,"color":"4","text":"**R1 — Beispiel**\n\nGegeben: noch kein Eintrag erfasst\nWenn: ein Eintrag mit Datum 15.11.2026, Betrag -12,50 €, Kategorie „Essen“ erfasst wird\nDann: existiert genau dieser eine Eintrag"},
+		{"id":"3a0c5f7b9db0e1ef","type":"text","x":1140,"y":420,"width":480,"height":140,"color":"4","text":"**R1 — Gegenbeispiel**\n\nGegeben: noch kein Eintrag erfasst\nWenn: ein Eintrag ohne Kategorie erfasst werden soll\nDann: wird er nicht übernommen"},
+		{"id":"c1730cdaaf7bd853","type":"text","x":620,"y":600,"width":480,"height":140,"color":"4","text":"**R2 — Beispiel**\n\nGegeben: ein Eintrag -12,50 € („Essen“, 15.11.2026)\nWenn: die Monatsübersicht November 2026 aufgerufen wird\nDann: steht bei „Essen“: 12,50 € Ausgaben"},
+		{"id":"5c2e7b9dbfd20311","type":"text","x":1140,"y":600,"width":480,"height":140,"color":"4","text":"**R2 — Grenzfall**\n\nGegeben: ein Eintrag +2.000,00 € („Gehalt“, 30.11.2026)\nWenn: die Monatsübersicht November 2026 aufgerufen wird\nDann: zählt er zu den Einnahmen, nicht zu den Ausgaben"},
+		{"id":"0334183b207ad9e5","type":"text","x":620,"y":780,"width":480,"height":140,"color":"4","text":"**R3 — Beispiel**\n\nGegeben: Essen -12,50 € (15.11.), Miete -950,00 € (01.11.), Gehalt +2.000,00 € (30.11.)\nWenn: die Monatsübersicht November 2026 aufgerufen wird\nDann: Ausgaben je Kategorie (Essen 12,50 €, Miete 950,00 €), Einnahmen (Gehalt 2.000,00 €), alle drei Einträge gelistet"},
+		{"id":"7e409dbfd1f42533","type":"group","x":-60,"y":1300,"width":1720,"height":340,"label":"4  Offene Fragen — bleiben Fragen","color":"1"},
+		{"id":"8f51aec0e2053644","type":"text","x":0,"y":1380,"width":500,"height":180,"color":"1","text":"**F1**\n\nWie werden gemeinsame Ausgaben markiert und geteilt (50/50, Einzahler, Anteile)?"},
+		{"id":"9062bfd1f3164755","type":"text","x":560,"y":1380,"width":500,"height":180,"color":"1","text":"**F2**\n\nBudget-Limits je Kategorie — und was passiert bei Überschreitung?"},
+		{"id":"a173c0e204275866","type":"text","x":1120,"y":1380,"width":500,"height":180,"text":"Eine offene Frage ist ein gutes Ergebnis.\n\nWas hier steht, wird **kein** Szenario — bis du es entschieden hast."},
+		{"id":"b284d1f315386977","type":"text","x":1720,"y":340,"width":520,"height":420,"color":"6","text":"**Danach**\n\nJedes grüne Beispiel wird ein Szenario in `features/<thema>/<name>.feature`.\n\nJede Regel wird ein `Rule:`-Block.\n\nJedes Szenario bekommt den Tag der Regel, z. B. `@R1`.\n\nEin `When` pro Szenario. Das `Then` muss von außen beobachtbar sein."},
+		{"id":"4e1792f7f1c83a63","type":"file","file":"specs/_vorlage.md","x":1720,"y":820,"width":520,"height":420,"color":"6"},
+		{"id":"5b69fea513d58e79","type":"file","file":"Start hier.md","x":1720,"y":-60,"width":520,"height":340}
+	],
+	"edges":[
+		{"id":"c395e204264a7a88","fromNode":"e5b70b2d4e6a8c9a","fromSide":"right","toNode":"29fb4e6a8cafd0de","toSide":"left","toEnd":"arrow"},
+		{"id":"d4a6f315375b8b99","fromNode":"f6c81c3e5f7b9dab","fromSide":"right","toNode":"c1730cdaaf7bd853","toSide":"left","toEnd":"arrow"},
+		{"id":"721fa75539b03082","fromNode":"8252f30d286ce703","fromSide":"right","toNode":"0334183b207ad9e5","toSide":"left","toEnd":"arrow"},
+		{"id":"448be70972c0ab4d","fromNode":"b284d1f315386977","fromSide":"bottom","toNode":"4e1792f7f1c83a63","toSide":"top","toEnd":"arrow","label":"übertragen nach"}
+	]
+}
