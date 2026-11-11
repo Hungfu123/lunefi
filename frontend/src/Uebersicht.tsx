@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Sparkle, Wallet } from '@phosphor-icons/react'
-import { lese, type Ausgleich, type Coaching, type Konto, type Monatsuebersicht, type VerlaufMonat } from './types'
+import { lese, type Ausgleich, type Coaching, type Eintrag, type Konto, type Monatsuebersicht, type VerlaufMonat } from './types'
 import {
   datumKurz,
   betragKompakt,
@@ -114,7 +114,11 @@ function TrendBalken({ eintrag, skala }: { eintrag: VerlaufMonat; skala: number 
   )
 }
 
-export function Uebersicht() {
+export function Uebersicht({
+  onEintragBearbeiten,
+}: {
+  onEintragBearbeiten: (eintrag: Eintrag) => void
+}) {
   const { aktivePerson } = useApp()
   const reduziert = useReducedMotion()
   const [monat, setMonat] = useState(() => monatAlsString(new Date()))
@@ -506,8 +510,8 @@ export function Uebersicht() {
                   >
                     <button
                       type="button"
-                      onClick={() => setKategorieDetail(eintrag.kategorie)}
-                      aria-label={`${eintrag.kategorie} anzeigen`}
+                      onClick={() => onEintragBearbeiten(eintrag)}
+                      aria-label={`${eintrag.kategorie} bearbeiten`}
                       className="flex w-full items-center justify-between gap-3 py-1.5 text-left"
                     >
                     <div className="flex min-w-0 items-center gap-3">

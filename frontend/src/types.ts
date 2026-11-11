@@ -151,7 +151,7 @@ export const lese = <T>(pfad: string) => api<T>(pfad)
 export const schreibe = <T>(pfad: string, body: unknown, methode: 'POST' | 'PUT' = 'POST') =>
   api<T>(pfad, { method: methode, body: JSON.stringify(body) })
 
-export const sende = async (pfad: string, methode: 'POST' | 'PUT' = 'POST'): Promise<void> => {
+export const sende = async (pfad: string, methode: 'POST' | 'PUT' | 'DELETE' = 'POST'): Promise<void> => {
   let antwort: Response
   try {
     antwort = await fetch(pfad, {
@@ -165,3 +165,5 @@ export const sende = async (pfad: string, methode: 'POST' | 'PUT' = 'POST'): Pro
     throw new ApiFehler(antwort.status)
   }
 }
+
+export const loesche = (pfad: string) => sende(pfad, 'DELETE')

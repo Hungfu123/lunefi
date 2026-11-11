@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { AppProvider, useApp } from './AppKontext'
+import type { Eintrag } from './types'
 import { Layout } from './Layout'
 import { Onboarding } from './Onboarding'
 import { Uebersicht } from './Uebersicht'
@@ -22,6 +23,7 @@ function Inhalt() {
   const { personen, personenLaden } = useApp()
   const [sheetOffen, setSheetOffen] = useState(false)
   const [neuGeladen, setNeuGeladen] = useState(0)
+  const [bearbeitet, setBearbeitet] = useState<Eintrag | null>(null)
 
   if (personenLaden) {
     return (
@@ -39,7 +41,7 @@ function Inhalt() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout onEintragNeu={() => setSheetOffen(true)} />}>
-          <Route index element={<Uebersicht key={neuGeladen} />} />
+          <Route index element={<Uebersicht key={neuGeladen} onEintragBearbeiten={setBearbeitet} />} />
           <Route path="/ausgleich" element={<AusgleichSeite key={neuGeladen} />} />
           <Route path="/sparziele" element={<SparzieleSeite />} />
           <Route path="/einstellungen" element={<EinstellungenSeite />} />
@@ -50,6 +52,15 @@ function Inhalt() {
         zu={() => setSheetOffen(false)}
         onErfasst={() => {
           setSheetOffen(false)
+          setNeuGeladen((n) => n + 1)
+        }}
+      />
+      <EintragSheet
+        eintrag={bearbeitet ?? undefined}
+        offen={bearbeitet !== null}
+        zu={() => setBearbeitet(null)}
+        onErfasst={() => {
+          setBearbeitet(null)
           setNeuGeladen((n) => n + 1)
         }}
       />

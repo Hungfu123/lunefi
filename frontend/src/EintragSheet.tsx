@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ApiFehler, lese, schreibe, type Eintrag, type EintragNeu, type KategorieInfo, type Konto } from './types'
+import { ApiFehler, lese, loesche, schreibe, type Eintrag, type EintragNeu, type KategorieInfo, type Konto } from './types'
 import { betragAusEingabe, euro, heuteIso } from './format'
 import {
   KategorieIconTile,
@@ -16,10 +16,12 @@ export function EintragSheet({
   offen,
   zu,
   onErfasst,
+  eintrag,
 }: {
   offen: boolean
   zu: () => void
   onErfasst: () => void
+  eintrag?: Eintrag
 }) {
   const { personen, aktivePerson } = useApp()
   const reduziert = useReducedMotion()
@@ -36,6 +38,7 @@ export function EintragSheet({
   const [zahler, setZahler] = useState<string | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
   const [laeuft, setLaeuft] = useState(false)
+  const [loeschenFrage, setLoeschenFrage] = useState(false)
 
   useEffect(() => {
     if (!offen) return
@@ -45,17 +48,34 @@ export function EintragSheet({
     lese<Konto[]>('/api/konten')
       .then(setKonten)
       .catch(() => setKonten([]))
-    setArt('ausgabe')
-    setBetrag('')
-    setKategorie('')
-    setIconWahl(null)
-    setDatum(heuteIso())
-    setGemeinsam(false)
-    setPerson(aktivePerson)
-    setZahler(aktivePerson)
-    setKonto(null)
+    if (eintrag) {
+      setArt(eintrag.betrag < 0 ? 'ausgabe' : 'einnahme')
+      setBetrag(
+        new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+          Math.abs(eintrag.betrag),
+        ),
+      )
+      setKategorie(eintrag.kategorie)
+      setIconWahl(null)
+      setDatum(eintrag.datum)
+      setGemeinsam(eintrag.gemeinsam)
+      setPerson(eintrag.person ?? aktivePerson)
+      setZahler(eintrag.zahler ?? aktivePerson)
+      setKonto(eintrag.konto)
+    } else {
+      setArt('ausgabe')
+      setBetrag('')
+      setKategorie('')
+      setIconWahl(null)
+      setDatum(heuteIso())
+      setGemeinsam(false)
+      setPerson(aktivePerson)
+      setZahler(aktivePerson)
+      setKonto(null)
+    }
+    setLoeschenFrage(false)
     setFehler(null)
-  }, [offen, aktivePerson])
+  }, [offen, aktivePerson, eintrag])
 
   const zustaendigePerson = gemeinsam ? zahler : person
   const eigeneKonten = konten.filter((k) => k.person === zustaendigePerson)
@@ -111,7 +131,25 @@ export function EintragSheet({
     }
     setLaeuft(true)
     try {
-      await schreibe<Eintrag>('/api/eintraege', body)
+      if (eintrag) {
+        await schreibe<Eintrag>(`/api/eintraege/${eintrag.id}`, body, 'PUT')
+      } else {
+        await schreibe<Eintrag>('/api/eintraege', body)
+      }
+      zu()
+      onErfasst()
+    } catch (err) {
+      setFehler(err instanceof ApiFehler ? err.message : 'Das hat nicht geklappt.')
+    } finally {
+      setLaeuft(false)
+    }
+  }
+
+  const loeschen = async () => {
+    if (!eintrag) return
+    setLaeuft(true)
+    try {
+      await loesche(`/api/eintraege/${eintrag.id}`)
       zu()
       onErfasst()
     } catch (err) {
@@ -155,6 +193,8 @@ export function EintragSheet({
             }}
           >
             <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-strich" />
+
+            {eintrag && <h3 className="mb-2.5 text-lg font-semibold">Eintrag bearbeiten</h3>}
 
             <div className="mb-2.5 flex gap-2">
               <div className="flex flex-1 gap-2 rounded-xl bg-karte2 p-1">
@@ -383,6 +423,38 @@ export function EintragSheet({
             >
               Speichern
             </button>
+
+            {eintrag && (
+              <div className="mt-2 flex gap-2">
+                {loeschenFrage ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={loeschen}
+                      disabled={laeuft}
+                      className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-schlecht/15 px-3 text-sm font-semibold text-schlecht transition-transform active:scale-[0.98] disabled:opacity-50"
+                    >
+                      Wirklich löschen? — Tippen zum Bestätigen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLoeschenFrage(false)}
+                      className="flex min-h-11 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-medium text-textschwach"
+                    >
+                      Abbrechen
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setLoeschenFrage(true)}
+                    className="w-full py-2.5 font-semibold text-schlecht"
+                  >
+                    Löschen
+                  </button>
+                )}
+              </div>
+            )}
           </motion.form>
         </div>
       )}
