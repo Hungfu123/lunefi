@@ -89,9 +89,28 @@ export interface SplitKonfiguration {
   anteile: Record<string, number> | null
 }
 
+export type Haltung = 'SPAREN' | 'FLEXIBEL' | 'BEWUSST_MEHR'
+
 export interface KategorieInfo {
   name: string
   split: SplitKonfiguration
+  haltung: Haltung
+}
+
+export interface CoachingEmpfehlung {
+  kategorie: string
+  haltung: Haltung
+  ist: number
+  limit: number
+  spielraum: number
+  tipp: string
+}
+
+export interface Coaching {
+  monat: string
+  budgetsUebrig: Record<string, number>
+  empfehlungen: CoachingEmpfehlung[]
+  gutGespart: { kategorie: string; haltung: Haltung; ist: number; limit: number; spielraum: number }[]
 }
 
 export interface EintragNeu {

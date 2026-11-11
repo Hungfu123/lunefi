@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Wallet } from '@phosphor-icons/react'
-import { lese, type Ausgleich, type Konto, type Monatsuebersicht, type VerlaufMonat } from './types'
+import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Sparkle, Wallet } from '@phosphor-icons/react'
+import { lese, type Ausgleich, type Coaching, type Konto, type Monatsuebersicht, type VerlaufMonat } from './types'
 import {
   datumKurz,
   betragKompakt,
@@ -129,6 +129,7 @@ export function Uebersicht() {
   const [eintraegeOffen, setEintraegeOffen] = useState(false)
   const [kategorieDetail, setKategorieDetail] = useState<string | null>(null)
   const [gemeinsamLokal, setGemeinsamLokal] = useState(false)
+  const [coaching, setCoaching] = useState<Coaching | null>(null)
 
   const sichtSetzen = (neu: Sicht) => {
     setSicht(neu)
@@ -171,6 +172,20 @@ export function Uebersicht() {
   }, [monat, gefiltert, zusammen, aktivePerson])
 
   useEffect(laden, [laden])
+
+  useEffect(() => {
+    let aktiv = true
+    lese<Coaching>(`/api/coaching?monat=${monat}`)
+      .then((ergebnis) => {
+        if (aktiv) setCoaching(ergebnis)
+      })
+      .catch(() => {
+        if (aktiv) setCoaching(null)
+      })
+    return () => {
+      aktiv = false
+    }
+  }, [monat])
 
   useEffect(() => {
     const anfrage = zusammen
@@ -385,6 +400,18 @@ export function Uebersicht() {
             )}
           </div>
 
+          {coaching !== null && coaching.empfehlungen.length > 0 && (
+            <div className="mb-2 flex h-7 items-center gap-1.5 overflow-hidden">
+              <Sparkle size={14} weight="fill" className="shrink-0 text-akzent" />
+              <p className="truncate text-[13px] text-akzent">{coaching.empfehlungen[0].tipp}</p>
+              {coaching.empfehlungen.length > 1 && (
+                <span className="ml-auto shrink-0 text-[11px] text-textschwach">
+                  +{coaching.empfehlungen.length - 1} weitere
+                </span>
+              )}
+            </div>
+          )}
+
           {verlauf !== null && verlaufSchnitt !== null && (!zusammen || !gemeinsamLokal) && (
             <section className="mb-1.5 flex h-6 items-center gap-3">
               <p className="shrink-0 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
@@ -525,7 +552,15 @@ export function Uebersicht() {
         </>
       )}
 
-      <KategorieSheet name={kategorieDetail} eintraege={kategorieEintraege} zu={() => setKategorieDetail(null)} />
+      <KategorieSheet
+        name={kategorieDetail}
+        eintraege={kategorieEintraege}
+        budget={kategorieDetail ? (daten?.budgets[kategorieDetail] ?? null) : null}
+        empfehlung={
+          coaching?.empfehlungen.find((e) => e.kategorie === kategorieDetail) ?? null
+        }
+        zu={() => setKategorieDetail(null)}
+      />
     </div>
   )
 }

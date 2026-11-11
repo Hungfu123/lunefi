@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import type { Eintrag } from './types'
+import { lese, type BudgetInfo, type CoachingEmpfehlung, type Eintrag, type Haltung, type KategorieInfo } from './types'
 import { datumKurz, euro, istDieseWoche } from './format'
 import { KategorieIconTile } from './kategorieIcon'
+import { HALTUNG_LABEL, HaltungsSelector } from './HaltungsSelector'
 
 function GeteiltPill() {
   return <span className="text-textschwach">geteilt</span>
@@ -10,20 +12,39 @@ function GeteiltPill() {
 export function KategorieSheet({
   name,
   eintraege,
+  budget,
+  empfehlung,
   zu,
 }: {
   name: string | null
   eintraege: Eintrag[]
+  budget: BudgetInfo | null
+  empfehlung: CoachingEmpfehlung | null
   zu: () => void
 }) {
   const reduziert = useReducedMotion()
   const offen = name !== null
+  const [haltung, setHaltung] = useState<Haltung | null>(null)
+  const [selectorOffen, setSelectorOffen] = useState(false)
+  const hatBudget = budget !== null
+
+  useEffect(() => {
+    setSelectorOffen(false)
+    if (name === null || !hatBudget) {
+      setHaltung(null)
+      return
+    }
+    lese<KategorieInfo[]>('/api/kategorien')
+      .then((liste) => setHaltung(liste.find((k) => k.name === name)?.haltung ?? 'FLEXIBEL'))
+      .catch(() => setHaltung('FLEXIBEL'))
+  }, [name, hatBudget])
 
   const liste = [...eintraege].sort((a, b) =>
     a.datum === b.datum ? b.id - a.id : a.datum < b.datum ? 1 : -1,
   )
   const summe = liste.reduce((s, eintrag) => s + eintrag.betrag, 0)
   const woche = liste.reduce((s, eintrag) => s + (istDieseWoche(eintrag.datum) ? eintrag.betrag : 0), 0)
+  const tipp = empfehlung && haltung === empfehlung.haltung ? empfehlung.tipp : null
 
   return (
     <AnimatePresence>
@@ -69,6 +90,29 @@ export function KategorieSheet({
               Diese Woche:{' '}
               <span className="betragszahl font-medium text-text">{euro(woche)}</span>
             </p>
+            {budget && haltung && (
+              <div className="mt-3 flex min-h-8 flex-wrap items-center gap-2">
+                <p className="text-sm text-textschwach">
+                  Budget{' '}
+                  <span className="betragszahl font-medium text-text">{euro(budget.ist)}</span> von{' '}
+                  <span className="betragszahl font-medium text-text">{euro(budget.limit)}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectorOffen((offenAlt) => !offenAlt)}
+                  aria-expanded={selectorOffen}
+                  className="flex h-7 shrink-0 items-center rounded-full bg-karte2 px-3 text-[12px] font-medium text-textschwach transition-colors"
+                >
+                  {HALTUNG_LABEL[haltung]}
+                </button>
+              </div>
+            )}
+            {budget && haltung && selectorOffen && name !== null && (
+              <div className="mt-1.5">
+                <HaltungsSelector kategorie={name} haltung={haltung} onHaltung={setHaltung} />
+              </div>
+            )}
+            {tipp && <p className="mt-2 text-sm text-gut">{tipp}</p>}
             {liste.length === 0 ? (
               <p className="mt-4 text-sm text-textschwach">Keine Einträge in diesem Monat.</p>
             ) : (

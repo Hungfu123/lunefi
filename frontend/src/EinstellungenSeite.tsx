@@ -3,6 +3,7 @@ import { Moon, Sun } from '@phosphor-icons/react'
 import { ApiFehler, lese, schreibe, type KategorieInfo, type Konto } from './types'
 import { TYP_LABEL, VORDEFINIERTE_KATEGORIEN } from './kategorien'
 import { KategorieIconTile } from './kategorieIcon'
+import { HaltungsSelector } from './HaltungsSelector'
 import { betragAusEingabe, euro, monatAlsString } from './format'
 import { useApp } from './AppKontext'
 
@@ -158,6 +159,9 @@ export function EinstellungenSeite() {
 
       <section className="mb-6">
         <h3 className="mb-2 text-sm font-medium text-textschwach">Aufteilung je Kategorie</h3>
+        <p className="mb-2 text-[12px] text-textschwach">
+          Haltung fürs Budget-Coaching — euer Partner sieht sie ebenfalls.
+        </p>
         {kategorien.length === 0 && (
           <p className="text-sm text-textschwach">Noch keine Kategorien — leg den ersten Eintrag an.</p>
         )}
@@ -167,32 +171,37 @@ export function EinstellungenSeite() {
               (v) => v.name.toLowerCase() === k.name.toLowerCase(),
             )?.typ
             return (
-              <li key={k.name} className="flex items-center gap-3 rounded-xl bg-karte px-3.5 py-1.5">
-                <KategorieIconTile name={k.name} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-semibold leading-tight text-text">{k.name}</p>
-                  <p className="truncate text-[11px] leading-tight text-textschwach">
-                    {typ ? `${TYP_LABEL[typ]} · ` : ''}
-                    {k.split.art === 'ANTEILE' && k.split.anteile
-                      ? Object.entries(k.split.anteile)
-                          .map(([n, a]) => `${n} ${a}%`)
-                          .join(' · ')
-                      : '50/50'}
-                  </p>
+              <li key={k.name} className="rounded-xl bg-karte px-3.5 py-1.5">
+                <div className="flex items-center gap-3">
+                  <KategorieIconTile name={k.name} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-semibold leading-tight text-text">{k.name}</p>
+                    <p className="truncate text-[11px] leading-tight text-textschwach">
+                      {typ ? `${TYP_LABEL[typ]} · ` : ''}
+                      {k.split.art === 'ANTEILE' && k.split.anteile
+                        ? Object.entries(k.split.anteile)
+                            .map(([n, a]) => `${n} ${a}%`)
+                            .join(' · ')
+                        : '50/50'}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-1.5">
+                    <button
+                      onClick={() => splitSetzen(k.name, 'HALBHALB')}
+                      className="flex min-h-8 items-center rounded-lg bg-karte2 px-3 text-xs"
+                    >
+                      50/50
+                    </button>
+                    <button
+                      onClick={() => splitSetzen(k.name, 'ANTEILE')}
+                      className="flex min-h-8 items-center rounded-lg bg-karte2 px-3 text-xs"
+                    >
+                      Anteile
+                    </button>
+                  </div>
                 </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <button
-                    onClick={() => splitSetzen(k.name, 'HALBHALB')}
-                    className="flex min-h-8 items-center rounded-lg bg-karte2 px-3 text-xs"
-                  >
-                    50/50
-                  </button>
-                  <button
-                    onClick={() => splitSetzen(k.name, 'ANTEILE')}
-                    className="flex min-h-8 items-center rounded-lg bg-karte2 px-3 text-xs"
-                  >
-                    Anteile
-                  </button>
+                <div className="mt-1.5">
+                  <HaltungsSelector kategorie={k.name} haltung={k.haltung} />
                 </div>
               </li>
             )
