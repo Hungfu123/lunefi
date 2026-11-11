@@ -34,8 +34,22 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
     "budgets": {"Essen": {"limit": 200.00, "ist": 12.50, "warnung": false}}
   }
   ```
+- `GET /api/monatsuebersicht/{jahr}-{monat}?person=Alex` → Person-Sicht (Regel R7): gleiche Struktur, aber nur persönliche Einträge dieser Person (`person == "Alex"`)
+  - Gemeinsame Einträge (`person: null, gemeinsam: true`) sind NICHT Teil der Person-Sicht — sie bleiben in der Paar-Ansicht (ohne Filter) und im Ausgleich.
+  - `budgets`: Limits bleiben Paar-weit, `ist` wird aus den gefilterten Ausgaben berechnet.
 - Ungültiger Monat (z. B. `2026-13`) → `400`, kein Serverfehler (Regel R4)
 - Betrag 0,00 zählt als Einnahme (F7)
+
+## Monatsverlauf (Regel R8)
+
+- `GET /api/verlauf?monate=3[&person=Alex]` → Liste der letzten N Monate, ältester zuerst:
+  ```json
+  [{"monat": "2026-09", "einnahmen": 2000.00, "ausgaben": 42.50, "differenz": 1957.50}]
+  ```
+  - `differenz` = `einnahmen` − `ausgaben` (Beträge absolut, Differenz positiv = Plus-Monat).
+  - Monate = die letzten N vollen Monate rückwärts vom AKTUELLEN Monat (Server-Uhr).
+  - `monate`: default 3; Werte über 24 werden auf 24 gecappt; Werte unter 1 → `400`.
+  - Mit `person` analog zur Person-Sicht (R7) gefiltert — gemeinsame Einträge zählen nicht; ohne = alle Einträge.
 
 ## Ausgleich (Paar, Regel G2/G3/G6/G7/G8)
 

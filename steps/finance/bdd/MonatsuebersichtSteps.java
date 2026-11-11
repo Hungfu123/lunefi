@@ -44,6 +44,14 @@ public class MonatsuebersichtSteps {
         uebersicht = mapper.readTree(antwort.getBody());
     }
 
+    @Wenn("die Monatsübersicht {monat} für Person {string} aufgerufen wird")
+    public void callMonthlyOverviewForPerson(YearMonth monat, String person) {
+        ResponseEntity<String> antwort = rest.getForEntity(
+                "/api/monatsuebersicht/" + monat + "?person=" + person, String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        uebersicht = mapper.readTree(antwort.getBody());
+    }
+
     @Wenn("die Monatsübersicht Monat {int} im Jahr {int} aufgerufen wird")
     public void callInvalidMonth(int monat, int jahr) {
         ResponseEntity<String> antwort = rest.getForEntity(
