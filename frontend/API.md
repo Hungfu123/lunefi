@@ -75,6 +75,23 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 - Gesamtsaldo einer Person = Summe der `saldo` ihrer Konten (Frontend rechnet, kein eigener Endpoint)
 - `POST /api/eintraege` akzeptiert optional `konto` (Name eines existierenden Kontos) → verändert den Kontosaldo um den Betrag; unbekanntes Konto → `400`
 
+## Quellen und Import (Q1–Q4)
+
+- `POST /api/quellen` Body `{"name": "Commerzbank", "art": "FinTS", "konto": "Girokonto"}` → `201` mit `{"id":1,"name":"Commerzbank","art":"FinTS","konto":"Girokonto","zustand":"offen"}`
+  - `art`: `"FinTS"` (Bank via FinTS/HBCI) oder `"PSD2"` (Bank/PayPal via PSD2-Anbieter wie GoCardless)
+  - `name`/`art`/`konto` Pflicht, `konto` muss existieren, `name` eindeutig → sonst `400`
+  - `zustand`: `"offen"` bis die echte Verbindung hergestellt ist, danach `"verbunden"` (Wechsel folgt mit den Adapter-Spikes)
+- `GET /api/quellen` → Liste aller Quellen
+- `POST /api/quellen/{id}/import` Body `{"umsaetze": [{"externeKennung":"UMS-1","datum":"01.11.2026","betrag":"+2.000,00","verwendungszweck":"Gehalt November"}]}` → `200` mit `{"neu":2,"uebersprungen":0}`
+  - Erzeugt je Umsatz genau einen Eintrag: Datum, Betrag (deutsches Format), Person = Konto-Inhaber, Konto verknüpft
+  - `betrag` deutsches Format mit Vorzeichen: `"+2.000,00"`, `"-42,50"`
+  - `datum` als `dd.MM.uuuu`
+  - Kategorie: gelernte Lernregel (treffer in Verwendungszweck) oder `"Import"`
+  - Re-Import-Schutz: gleiche `externeKennung` je Quelle wird übersprungen (nicht doppelt)
+  - Unbekannte Quellen-ID → `404`
+- `POST /api/lernregeln` Body `{"kennung": "REWE", "kategorie": "Essen"}` → `201`
+  - Import prüft, ob die `kennung` (Groß-/Kleinschreibung egal) im Verwendungszweck vorkommt → erste Trefferregel gewinnt
+
 ## Betrieb
 
 - Backend: Port 8080, `docker compose up -d` startet PostgreSQL (db/user/pass: `lunefi`), dann Backend starten

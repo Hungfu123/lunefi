@@ -49,6 +49,12 @@ public class EintragSteps {
     @Autowired
     private finance.BudgetRepository budgetRepository;
 
+    @Autowired
+    private finance.QuelleRepository quelleRepository;
+
+    @Autowired
+    private finance.LernregelRepository lernregelRepository;
+
     @Before
     public void szenarioZuruecksetzen() {
         eintragRepository.deleteAll();
@@ -57,6 +63,8 @@ public class EintragSteps {
         sparzielRepository.deleteAll();
         budgetRepository.deleteAll();
         kontoRepository.deleteAll();
+        quelleRepository.deleteAll();
+        lernregelRepository.deleteAll();
     }
 
     @ParameterType("\\d{2}\\.\\d{2}\\.\\d{4}")

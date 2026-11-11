@@ -36,6 +36,12 @@ public class EintragEntity {
 
     private String konto;
 
+    private Long quelleId;
+
+    private String externeKennung;
+
+    private String verwendungszweck;
+
     protected EintragEntity() {
     }
 
@@ -80,6 +86,30 @@ public class EintragEntity {
 
     public String getKonto() {
         return konto;
+    }
+
+    public Long getQuelleId() {
+        return quelleId;
+    }
+
+    public void setQuelleId(Long quelleId) {
+        this.quelleId = quelleId;
+    }
+
+    public String getExterneKennung() {
+        return externeKennung;
+    }
+
+    public void setExterneKennung(String externeKennung) {
+        this.externeKennung = externeKennung;
+    }
+
+    public String getVerwendungszweck() {
+        return verwendungszweck;
+    }
+
+    public void setVerwendungszweck(String verwendungszweck) {
+        this.verwendungszweck = verwendungszweck;
     }
 
     public Eintrag alsEintrag() {

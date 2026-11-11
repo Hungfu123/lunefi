@@ -11,5 +11,6 @@ import org.junit.platform.suite.api.Suite;
 @SelectClasspathResource("sparziele")
 @SelectClasspathResource("budgets")
 @SelectClasspathResource("konten")
+@SelectClasspathResource("quellen")
 public class RunCucumberTest {
 }
