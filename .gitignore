@@ -3,3 +3,6 @@ node_modules/
 frontend/dist/
 .playwright-mcp/
 *.log
+
+# TS build cache
+frontend/tsconfig.tsbuildinfo

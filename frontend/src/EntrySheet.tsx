@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { createPortal } from 'react-dom'
 import { ApiError, read, remove, write, type Entry, type NewEntry, type CategoryInfo, type Account } from './types'
 import { amountFromInput, euro, todayIso } from './format'
 import {
@@ -164,7 +165,7 @@ export function EntrySheet({
 
   const soft = reduced ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const }
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-30 flex flex-col justify-end">
@@ -481,6 +482,7 @@ export function EntrySheet({
           </motion.form>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { createPortal } from 'react-dom'
 import { read, type BudgetInfo, type CoachingRecommendation, type Entry, type Attitude, type CategoryInfo } from './types'
 import { shortDate, euro, isThisWeek, shortMonth } from './format'
 import { CategoryIconTile } from './categoryIcon'
@@ -114,7 +115,7 @@ export function CategorySheet({
   const week = list.reduce((s, entry) => s + (isThisWeek(entry.datum) ? entry.betrag : 0), 0)
   const tip = recommendation && attitude === recommendation.haltung ? recommendation.tipp : null
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && name !== null && (
         <div className="fixed inset-0 z-30 flex flex-col justify-end">
@@ -225,6 +226,7 @@ export function CategorySheet({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }

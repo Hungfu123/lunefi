@@ -1,4 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { createPortal } from 'react-dom'
 import {
   ArrowsLeftRight,
   ChartPie,
@@ -24,7 +25,7 @@ function Section({ icon: IconComponent, title, text }: { icon: Icon; title: stri
 export function HelpModal({ open, close }: { open: boolean; close: () => void }) {
   const reduced = useReducedMotion()
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-30 flex flex-col justify-end">
@@ -89,6 +90,7 @@ export function HelpModal({ open, close }: { open: boolean; close: () => void })
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }
