@@ -57,6 +57,9 @@ public class EintragSteps {
     @Autowired
     private finance.LernregelRepository lernregelRepository;
 
+    @Autowired
+    private finance.AusgleichsRepository ausgleichsRepository;
+
     @Before
     public void resetScenario() {
         eintragRepository.deleteAll();
@@ -67,6 +70,7 @@ public class EintragSteps {
         kontoRepository.deleteAll();
         quelleRepository.deleteAll();
         lernregelRepository.deleteAll();
+        ausgleichsRepository.deleteAll();
     }
 
     @ParameterType(value = "\\d{2}\\.\\d{2}\\.\\d{4}", name = "datum")

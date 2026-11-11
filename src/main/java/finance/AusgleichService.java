@@ -17,13 +17,16 @@ public class AusgleichService {
     private final EintragRepository eintragRepository;
     private final PersonRepository personRepository;
     private final KategorieRepository kategorieRepository;
+    private final AusgleichsRepository ausgleichsRepository;
     private final java.time.Clock uhr;
 
     public AusgleichService(EintragRepository eintragRepository, PersonRepository personRepository,
-            KategorieRepository kategorieRepository, java.time.Clock uhr) {
+            KategorieRepository kategorieRepository, AusgleichsRepository ausgleichsRepository,
+            java.time.Clock uhr) {
         this.eintragRepository = eintragRepository;
         this.personRepository = personRepository;
         this.kategorieRepository = kategorieRepository;
+        this.ausgleichsRepository = ausgleichsRepository;
         this.uhr = uhr;
     }
 
@@ -63,8 +66,15 @@ public class AusgleichService {
         }
 
         boolean laeuftNoch = monat.equals(YearMonth.now(uhr));
-        return new AusgleichMitPositionen(monat.toString(), laeuftNoch, saldi,
+        return new AusgleichMitPositionen(monat.toString(), laeuftNoch,
+                ausgleichsRepository.existsByMonat(monat.toString()), saldi,
                 vorschlag(saldi), positionen);
+    }
+
+    public void markAusgeglichen(YearMonth monat) {
+        if (!ausgleichsRepository.existsByMonat(monat.toString())) {
+            ausgleichsRepository.save(new AusgleichsEntity(monat.toString(), true));
+        }
     }
 
     public List<AusgleichMonat> history(int monate) {
@@ -73,7 +83,7 @@ public class AusgleichService {
         for (int zurueck = monate - 1; zurueck >= 0; zurueck--) {
             AusgleichMitPositionen ausgleich = settlement(aktuellerMonat.minusMonths(zurueck));
             verlauf.add(new AusgleichMonat(ausgleich.monat(), ausgleich.laeuftNoch(),
-                    ausgleich.saldi(), ausgleich.vorschlag()));
+                    ausgleich.ausgeglichen(), ausgleich.saldi(), ausgleich.vorschlag()));
         }
         return verlauf;
     }

@@ -55,6 +55,45 @@ public class AusgleichSteps {
         uhr.setTo(monat);
     }
 
+    @Angenommen("der Monat {monat} als ausgeglichen markiert wurde")
+    public void monthAlreadyMarkedAsSettled(YearMonth monat) {
+        markAsSettled(monat);
+    }
+
+    @Wenn("der Monat {monat} als ausgeglichen markiert wird")
+    @Wenn("der Monat {monat} erneut als ausgeglichen markiert wird")
+    public void markMonthAsSettled(YearMonth monat) {
+        markAsSettled(monat);
+    }
+
+    @Dann("zeigt der Ausgleich {monat} den Monat als ausgeglichen")
+    public void monthShownAsSettled(YearMonth monat) {
+        ResponseEntity<String> antwort = rest.getForEntity("/api/ausgleich/" + monat, String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ausgleich = mapper.readTree(antwort.getBody());
+        assertThat(ausgleich.path("ausgeglichen").asBoolean()).isTrue();
+    }
+
+    @Dann("zeigt der Ausgleichsverlauf der letzten {int} Monate die Monate")
+    public void historyShowsSettledState(int monate, DataTable erwartet) {
+        ResponseEntity<String> antwort = rest.getForEntity("/api/ausgleich/verlauf?monate=" + monate, String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verlauf = mapper.readTree(antwort.getBody());
+        List<Map<String, String>> zeilen = erwartet.asMaps();
+        assertThat(verlauf.size()).isEqualTo(zeilen.size());
+        for (int i = 0; i < zeilen.size(); i++) {
+            assertThat(verlauf.get(i).path("monat").asText()).isEqualTo(zeilen.get(i).get("Monat"));
+            assertThat(verlauf.get(i).path("ausgeglichen").asBoolean())
+                    .isEqualTo(Boolean.parseBoolean(zeilen.get(i).get("Ausgeglichen")));
+        }
+    }
+
+    private void markAsSettled(YearMonth monat) {
+        ResponseEntity<String> antwort = rest.postForEntity(
+                "/api/ausgleich/" + monat + "/ausgeglichen", HttpEntity.EMPTY, String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
     @Wenn("der Ausgleich {monat} aufgerufen wird")
     public void callSettlement(YearMonth monat) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/ausgleich/" + monat, String.class);

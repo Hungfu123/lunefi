@@ -37,13 +37,14 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 - Ungültiger Monat (z. B. `2026-13`) → `400`, kein Serverfehler (Regel R4)
 - Betrag 0,00 zählt als Einnahme (F7)
 
-## Ausgleich (Paar, Regel G2/G3/G6)
+## Ausgleich (Paar, Regel G2/G3/G6/G7/G8)
 
 - `GET /api/ausgleich/{jahr}-{monat}` →
   ```json
   {
     "monat": "2026-11",
     "laeuftNoch": true,
+    "ausgeglichen": false,
     "saldi": {"Alex": 15.00, "Kim": -15.00},
     "vorschlag": "Kim schuldet Alex 15,00 €",
     "positionen": [{"id": 1, "kategorie": "Essen", "betrag": -60.00, "zahler": "Alex", "anteile": {"Alex": 30.00, "Kim": 30.00}}]
@@ -52,8 +53,12 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
   - Nur `gemeinsam`-Einträge des Monats zählen in den Ausgleich.
   - `saldi`: + = hat mehr verauslagt als geschuldet (bekommt Geld), − = schuldet.
   - `laeuftNoch`: true, wenn der Monat der aktuelle Kalendermonat ist.
+  - `ausgeglichen`: true, wenn der Monat als ausgeglichen markiert wurde (Regel G7).
   - `vorschlag`: null, wenn Saldo-Unterschied 0,00 €.
-- `GET /api/ausgleich/verlauf?monate=6` → Liste der Ausgleiche der letzten N Monate (ältester zuerst), gleiche Struktur ohne `positionen`
+- `GET /api/ausgleich/verlauf?monate=6` → Liste der Ausgleiche der letzten N Monate (ältester zuerst), gleiche Struktur ohne `positionen`; je Monat inkl. `ausgeglichen` true/false (Regel G8)
+- `POST /api/ausgleich/{jahr}-{monat}/ausgeglichen` → `200`; markiert den Monat als ausgeglichen (Regel G7)
+  - Erneutes Markieren: idempotent, ebenfalls `200`, überschreibt nichts.
+  - Ungültiger Monat → `400`. Rücksetzen/Löschen der Markierung gibt es (noch) nicht.
 
 ## Split-Konfiguration je Kategorie (Regel G3)
 

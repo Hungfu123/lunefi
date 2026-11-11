@@ -27,6 +27,7 @@ class AusgleichServiceTest {
     private EintragRepository eintragRepository;
     private PersonRepository personRepository;
     private KategorieRepository kategorieRepository;
+    private AusgleichsRepository ausgleichsRepository;
     private AusgleichService service;
 
     @BeforeEach
@@ -34,7 +35,9 @@ class AusgleichServiceTest {
         eintragRepository = mock(EintragRepository.class);
         personRepository = mock(PersonRepository.class);
         kategorieRepository = mock(KategorieRepository.class);
-        service = new AusgleichService(eintragRepository, personRepository, kategorieRepository, UHR);
+        ausgleichsRepository = mock(AusgleichsRepository.class);
+        service = new AusgleichService(eintragRepository, personRepository, kategorieRepository,
+                ausgleichsRepository, UHR);
         when(personRepository.findAll()).thenReturn(List.of(
                 new PersonEntity("Alex"),
                 new PersonEntity("Kim")));

@@ -18,6 +18,8 @@ damit am Monatsende klar ist, wer wie viel verauslagt hat und wer wem etwas schu
 | G4 | Wiederkehrende gemeinsame Fixkosten (Miete, Strom) werden nach dem vereinbarten Schlüssel aufgeteilt | **Backlog** (braucht Fixkosten-Erkennung) — Split folgt bereits G3 |
 | G5 | Ein Sparziel ist erreicht, wenn die Summe aller Einzahlungen den Zielbetrag erreicht | bestätigt 2026-11-10 |
 | G6 | Der Ausgleich ist jederzeit einsehbar (aktueller Monat als „läuft noch" markiert), inklusive Verlauf vergangener Monate | bestätigt 2026-11-10 (ersetzt alten Entwurf „nur nach Monatsende", per GF4) |
+| G7 | Ein Monat kann als ausgeglichen markiert werden und bleibt es; erneutes Markieren überschreibt nichts (idempotent) | hinzugefügt 2026-11-11 (Nach dem Ausgleichsvorschlag fehlt die Erledigt-Markierung, Persona-Befund: „Ich schulde 21 € — und jetzt? Wo markiere ich, dass ich's überwiesen habe?") |
+| G8 | Der Verlauf zeigt je Monat, ob er ausgeglichen ist | hinzugefügt 2026-11-11 (Gegengift zu G6: der Verlauf muss erledigte Monate von offenen unterscheiden) |
 
 ## Offene Fragen
 
@@ -39,6 +41,9 @@ damit am Monatsende klar ist, wer wie viel verauslagt hat und wer wem etwas schu
 | G3 | für die Kategorie „Essen" gilt der Anteil Alex 60 % / Kim 40 % | Alex zahlt eine gemeinsame Ausgabe -100,00 € („Essen") | trägt Kim 40,00 € und Alex 60,00 € davon |
 | G5 | das Sparziel „Urlaub" mit 2.000,00 € existiert, eingezahlt sind 500,00 € | eine Einzahlung von 1.500,00 € durch Kim erfolgt | ist das Ziel erreicht |
 | G6 | der aktuelle Monat ist November 2026 | der Ausgleich November 2026 aufgerufen wird | ist der Monat als „läuft noch" markiert |
+| G7 | die Personen „Alex" und „Kim" existieren, Alex zahlt den Einkauf -60,00 € („Essen", gemeinsam) | der Monat November 2026 als ausgeglichen markiert wird | zeigt der Ausgleich November 2026 den Monat als ausgeglichen (und Kim schuldet Alex weiterhin 30,00 €) |
+| G7 | der Monat November 2026 ist als ausgeglichen markiert | der Monat November 2026 erneut als ausgeglichen markiert wird | bleibt der Monat ausgeglichen (idempotent) |
+| G8 | der aktuelle Monat ist Dezember 2026, der Monat November 2026 ist als ausgeglichen markiert | der Ausgleichsverlauf der letzten 2 Monate abgefragt wird | ist November 2026 ausgeglichen und Dezember 2026 nicht |
 
 ## Daraus entstanden
 
@@ -47,6 +52,7 @@ damit am Monatsende klar ist, wer wie viel verauslagt hat und wer wem etwas schu
 - `features/gemeinsam/ausgleich-halbhalb.feature` (G2-Beispiel)
 - `features/gemeinsam/ausgleich-eigene-anteile.feature` (G3-Beispiel + ungültige Anteile + Kategorien-Standard HALBHALB)
 - `features/gemeinsam/ausgleich-verlauf.feature` (G6-Beispiele: läuft-noch + Verlauf)
+- `features/gemeinsam/ausgleich-wird-markiert.feature` (G7/G8-Beispiele: markieren + idempotent + Verlauf mit ausgeglichen-Flag)
 - `features/sparziele/sparziel-erreicht.feature` (G5-Beispiel + Zielbetrag 0,00 abgelehnt)
 - `features/budgets/budget-warnung.feature` (F2: Limit 200,00 Essen, Ausgabe 250,00 → Warnung)
 - `features/eintraege/ungueltiger-monat-abgelehnt.feature` (R4-Beispiel)

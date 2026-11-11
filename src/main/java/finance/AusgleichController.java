@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,5 +36,14 @@ public class AusgleichController {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);
         }
         return service.history(monate);
+    }
+
+    @PostMapping("/{jahr}-{monat}/ausgeglichen")
+    public void markSettled(@PathVariable int jahr, @PathVariable int monat) {
+        try {
+            service.markAusgeglichen(YearMonth.of(jahr, monat));
+        } catch (java.time.DateTimeException ausnahme) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
     }
 }
