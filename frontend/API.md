@@ -55,6 +55,21 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
   - Mit `person` analog zur Person-Sicht (R7) gefiltert — gemeinsame Einträge zählen nicht; ohne = alle Einträge.
   - Mit `gemeinsam=true` analog zur Paar-Sicht (R9) gefiltert — nur gemeinsame Einträge zählen, unabhängig vom Zahler. `person` und `gemeinsam` zusammen → `400`.
 
+## Monatsprognose (PR1–PR4, `specs/prognose.md`)
+
+- `GET /api/prognose?monate=3[&person=Alex | gemeinsam=true]` →
+  ```json
+  {"monat": "2026-12", "ausgabenJeKategorie": {"Miete": 950.00, "Essen": 180.00}, "einnahmenJeKategorie": {"Gehalt": 2000.00}, "differenz": 870.00, "konfidenz": "OK", "basisMonate": ["2026-08", "2026-09", "2026-10"]}
+  ```
+  - `monat` = Folgemonat des AKTUELLEN Monats (Server-Uhr); `basisMonate` = die N vollen Monate **vor** dem aktuellen Monat, ältester zuerst.
+  - `differenz` = Summe Einnahmen − Summe Ausgaben.
+  - `monate`: default 3; unter 2 → `400`; über 24 → auf 24 gecappt (wie Verlauf).
+  - Sicht wie R7/R9: `person` nur persönliche Einträge, `gemeinsam=true` nur gemeinsame; beide zusammen → `400`.
+  - **PR1 Fixe Kosten zählen immer:** fixe Kategorien (Miete, Strom, Internet, Telefon, Versicherung, Abo — Backend-Konstante) werden mit ihrem letzten bekannten Monatswert übernommen (jüngster Basismonat mit Ausgaben in der Kategorie).
+  - **PR2 Variable Ausgaben = Median mit Ausreißer-Schutz:** alle übrigen Ausgaben-Kategorien = Median der Monatessummen über die Basismonate (Monate ohne Eintrag zählen als 0,00 — Einmalkäufe verschwinden so). Median bei gerader Anzahl: Mittel der beiden mittleren Werte.
+  - **PR3 Nur regelmäßige Einnahmen:** Einnahme-Kategorie zählt nur, wenn sie in ≥ 2 Basismonaten vorkommt UND ihre Spannweite ≤ 50 % des größeren Werts ist; Prognosewert = Median der vorkommenden Monatswerte. Sonst fließt sie nicht ein (Erstattungen, Einmaliges).
+  - **PR4 Wenig Daten = ehrlich:** unter 2 Monate mit Einträgen (in der gewählten Sicht) → `"konfidenz": "WENIG_DATEN"`, leere Kategorien-Maps, `differenz` 0,00 — keine Schätzung aus einem Monat. Sonst `"konfidenz": "OK"`.
+
 ## Ausgleich (Paar, Regel G2/G3/G6/G7/G8)
 
 - `GET /api/ausgleich/{jahr}-{monat}` →
