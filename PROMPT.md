@@ -25,6 +25,18 @@ src/                           der Code
 - **Szenario**: ein Beispiel in Gherkin, mit genau einem `Wenn`.
 - **Step**: die Code-Bindung eines Satzes. Der Satz ist die Schnittstelle.
 
+## App-Ziel und UX-Prinzipien (Paar-App, beschlossen 11.11.2026)
+
+LuneFi ist eine **Paar-App**, keine Einzel-Finanz-App. Jede Änderung wird gegen diese fünf Prinzipien geprüft (Quellen: Honeydue/Zeta-Modelle, Gladstone et al. 2022, JCR "Common Cents", Privacy-vs-Secrecy-Forschung):
+
+1. **Sichtbarkeit ist opt-in:** Private Daten (Saldo, Einnahmen, persönliche Einträge) sind default privat; Teilen ist bewusste Wahl, nicht Zwang.
+2. **Privat ist ein Feature:** Die App kommuniziert das Privatsphäre-Modell aktiv (Onboarding, Labels) — Verstecken darf nie wie ein Workaround wirken.
+3. **Ausgleich ohne Kleinkariertheit:** Laufender Saldo, ruhiges monatliches Settlement (markieren), nie per-Kauf-Nags.
+4. **Gemeinsame Ziele sind der Kitt:** Sparziele/Budgets für beide sichtbar, Fortschritt wird gefeiert.
+5. **Emotional neutral:** Keine Überwachungs- oder Vorhalts-Features; Warnungen sachlich; Rechte symmetrisch (beide haben dieselbe Privatsphäre).
+
+Struktur-Folge: zwei gleichwertige Sichten („Meine" und „Zusammen" = Paar-Raum mit NUR gemeinsamen Daten).
+
 ## Sprache (beschlossen 11.11.2026, aktualisiert)
 
 - Gherkin-Text (Feature-Dateien) und die Annotations-Strings in den Steps: **deutsch**.
