@@ -41,6 +41,14 @@ public class VerlaufSteps {
         verlauf = mapper.readTree(antwort.getBody());
     }
 
+    @Wenn("der Monatsverlauf der letzten {int} Monate in der Paar-Sicht abgefragt wird")
+    public void queryHistoryForCouple(int monate) {
+        ResponseEntity<String> antwort = rest.getForEntity(
+                "/api/verlauf?monate=" + monate + "&gemeinsam=true", String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verlauf = mapper.readTree(antwort.getBody());
+    }
+
     @Dann("enthält der Monatsverlauf die Monate")
     public void historyContains(DataTable erwartet) {
         List<Map<String, String>> zeilen = erwartet.asMaps();

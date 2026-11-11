@@ -28,7 +28,8 @@ public class VerlaufController {
 
     @GetMapping("/api/verlauf")
     public List<VerlaufMonat> verlauf(@RequestParam(defaultValue = "" + STANDARD_MONATE) int monate,
-            @RequestParam(required = false) String person) {
+            @RequestParam(required = false) String person,
+            @RequestParam(required = false) Boolean gemeinsam) {
         if (monate < 1) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);
         }
@@ -37,6 +38,7 @@ public class VerlaufController {
         List<Eintrag> gefiltert = eintragRepository.findAll().stream()
                 .map(EintragEntity::asEntry)
                 .filter(eintrag -> person == null || person.equals(eintrag.person()))
+                .filter(eintrag -> !Boolean.TRUE.equals(gemeinsam) || Boolean.TRUE.equals(eintrag.gemeinsam()))
                 .sorted(Comparator.comparing(Eintrag::datum))
                 .toList();
 

@@ -28,11 +28,16 @@ public class MonatsuebersichtController {
 
     @GetMapping("/{jahr}-{monat}")
     public Monatsuebersicht forMonth(@PathVariable int jahr, @PathVariable int monat,
-            @RequestParam(required = false) String person) {
+            @RequestParam(required = false) String person,
+            @RequestParam(required = false) Boolean gemeinsam) {
         YearMonth zeitraum;
         try {
             zeitraum = YearMonth.of(jahr, monat);
         } catch (java.time.DateTimeException ausnahme) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+        if (person != null && gemeinsam != null) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST);
         }
@@ -41,6 +46,7 @@ public class MonatsuebersichtController {
                 .map(EintragEntity::asEntry)
                 .filter(eintrag -> YearMonth.from(eintrag.datum()).equals(zeitraum))
                 .filter(eintrag -> person == null || person.equals(eintrag.person()))
+                .filter(eintrag -> !Boolean.TRUE.equals(gemeinsam) || Boolean.TRUE.equals(eintrag.gemeinsam()))
                 .sorted(Comparator.comparing(Eintrag::datum))
                 .toList();
 

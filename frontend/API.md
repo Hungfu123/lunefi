@@ -37,6 +37,9 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 - `GET /api/monatsuebersicht/{jahr}-{monat}?person=Alex` → Person-Sicht (Regel R7): gleiche Struktur, aber nur persönliche Einträge dieser Person (`person == "Alex"`)
   - Gemeinsame Einträge (`person: null, gemeinsam: true`) sind NICHT Teil der Person-Sicht — sie bleiben in der Paar-Ansicht (ohne Filter) und im Ausgleich.
   - `budgets`: Limits bleiben Paar-weit, `ist` wird aus den gefilterten Ausgaben berechnet.
+- `GET /api/monatsuebersicht/{jahr}-{monat}?gemeinsam=true` → Paar-Sicht (Regel R9): gleiche Struktur, aber nur Einträge mit `gemeinsam: true` (unabhängig vom Zahler). Saldi und persönliche Einträge (inkl. Einnahmen) sind privat.
+  - `budgets`: Limits bleiben Paar-weit, `ist` wird aus den gemeinsamen Ausgaben berechnet.
+- `person` und `gemeinsam` zusammen in einer Anfrage → `400` (schlicht abgelehnt, keine Ausnahme-Logik).
 - Ungültiger Monat (z. B. `2026-13`) → `400`, kein Serverfehler (Regel R4)
 - Betrag 0,00 zählt als Einnahme (F7)
 
@@ -50,6 +53,7 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
   - Monate = die letzten N vollen Monate rückwärts vom AKTUELLEN Monat (Server-Uhr).
   - `monate`: default 3; Werte über 24 werden auf 24 gecappt; Werte unter 1 → `400`.
   - Mit `person` analog zur Person-Sicht (R7) gefiltert — gemeinsame Einträge zählen nicht; ohne = alle Einträge.
+  - Mit `gemeinsam=true` analog zur Paar-Sicht (R9) gefiltert — nur gemeinsame Einträge zählen, unabhängig vom Zahler. `person` und `gemeinsam` zusammen → `400`.
 
 ## Ausgleich (Paar, Regel G2/G3/G6/G7/G8)
 

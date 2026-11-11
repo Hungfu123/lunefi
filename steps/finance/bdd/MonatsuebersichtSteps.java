@@ -52,6 +52,26 @@ public class MonatsuebersichtSteps {
         uebersicht = mapper.readTree(antwort.getBody());
     }
 
+    @Wenn("die Monatsübersicht {monat} in der Paar-Sicht aufgerufen wird")
+    public void callMonthlyOverviewForCouple(YearMonth monat) {
+        ResponseEntity<String> antwort = rest.getForEntity(
+                "/api/monatsuebersicht/" + monat + "?gemeinsam=true", String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        uebersicht = mapper.readTree(antwort.getBody());
+    }
+
+    @Wenn("die Monatsübersicht {monat} für Person {string} und in der Paar-Sicht aufgerufen wird")
+    public void callMonthlyOverviewForPersonAndCouple(YearMonth monat, String person) {
+        ResponseEntity<String> antwort = rest.getForEntity(
+                "/api/monatsuebersicht/" + monat + "?person=" + person + "&gemeinsam=true", String.class);
+        antwortStatus = antwort.getStatusCode();
+    }
+
+    @Dann("wird die Abfrage abgelehnt")
+    public void queryRejected() {
+        assertThat(antwortStatus).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
     @Wenn("die Monatsübersicht Monat {int} im Jahr {int} aufgerufen wird")
     public void callInvalidMonth(int monat, int jahr) {
         ResponseEntity<String> antwort = rest.getForEntity(

@@ -20,6 +20,7 @@ damit ich mein Budget im Blick habe
 | R6 | Einträge lassen sich löschen: danach existiert der Eintrag nicht mehr. Kontostand und Salden passen sich automatisch an, da alles berechnet wird |
 | R7 | Die Monatsübersicht kann nach Person gefiltert werden („Person-Sicht"): dann zählen nur persönliche Einträge dieser Person. Gemeinsame Einträge (person=null, gemeinsam=true) gehören NICHT in die Person-Sicht — sie leben in der Paar-Ansicht (ohne Filter, Verhalten unverändert) und im Ausgleich. Budget-Limits bleiben Paar-weit, `ist` wird aus den gefilterten Ausgaben berechnet. *(Vorschlag 11.11.2026: gemeinsame Einträge fließen über den Ausgleich, nicht in persönliche Statistiken)* |
 | R8 | Ein Monatsverlauf zeigt je Monat Einnahmen und Ausgaben als absolute Beträge sowie die Differenz (einnahmen − ausgaben; positiv = Plus-Monat). Monate = die letzten N vollen Monate rückwärts vom AKTUELLEN Monat (Uhr), ältester zuerst. `monate` default 3, Werte über 24 werden auf 24 gecappt *(Entscheidung 11.11.2026: cappen statt 400)*. Mit `person` analog R7 gefiltert, ohne = alle Einträge |
+| R9 | Die Paar-Sicht zeigt NUR gemeinsame Einträge (unabhängig vom Zahler), bei Monatsübersicht und Verlauf. Saldi und persönliche Einträge (inkl. Einnahmen) sind PRIVAT — sie bleiben in der Paar-Ansicht ohne Filter. Feldform identisch; `budgets.ist` wird aus den gemeinsamen Ausgaben berechnet. `person` und `gemeinsam` zusammen: schlicht 400 *(Entscheidung 11.11.2026: „Saldi und Einnahmen sind privat — geteilt werden nur gemeinsame Kategorien")* |
 
 ## Beispiele
 
@@ -41,6 +42,9 @@ Konkrete Werte, keine Prosa. Jede Regel braucht mindestens eins.
 | R7 | Kim: Freizeit -42,50 € (15.11.2026); Alex: Gehalt +2.000,00 € (30.11.2026); gemeinsam: Essen -60,00 € (15.11.2026, Zahler Alex) | die Monatsübersicht November 2026 ohne Person-Filter aufgerufen wird | zeigt alles: Ausgaben Freizeit 42,50 € und Essen 60,00 €, Einnahmen Gehalt 2.000,00 € — Paar-Sicht unverändert |
 | R8 | aktueller Monat November 2026; September 2026: Gehalt +2.000,00 € (Alex), Freizeit -42,50 € (Kim); Oktober 2026: keine Einträge; November 2026: gemeinsames Essen -60,00 € (Zahler Alex) | der Monatsverlauf der letzten 3 Monate abgefragt wird | enthält ältester zuerst: 2026-09 (Einnahmen 2.000,00 €, Ausgaben 42,50 €, Differenz +1.957,50 €), 2026-10 (0,00 / 0,00 / 0,00), 2026-11 (0,00 / 60,00 / -60,00 € Minus-Monat) |
 | R8 | aktueller Monat November 2026; September 2026: Gehalt +2.000,00 € (Alex), Freizeit -42,50 € (Kim); Oktober 2026: keine Einträge; November 2026: gemeinsames Essen -60,00 € (Zahler Alex) | der Monatsverlauf der letzten 3 Monate für Person „Alex" abgefragt wird | enthält ältester zuerst: 2026-09 (2.000,00 / 0,00 / +2.000,00 — nur Alex' Gehalt), 2026-10 (0,00 / 0,00 / 0,00), 2026-11 (0,00 / 0,00 / 0,00 — gemeinsames Essen zählt nicht, Freizeitausgabe gehört Kim) |
+| R9 | Kim: Freizeit -42,50 € (15.11.2026); Alex: Gehalt +2.000,00 € (30.11.2026); gemeinsam: Essen -60,00 € (15.11.2026, Zahler Alex) | die Monatsübersicht November 2026 in der Paar-Sicht (gemeinsam=true) aufgerufen wird | zeigt NUR das gemeinsame Essen: Ausgaben Essen 60,00 €, keine Einnahmen, 1 Eintrag. Ohne Filter unverändert alles (deckt das bestehende R7-Szenario „Paar-Sicht bleibt unverändert" ab) |
+| R9 | aktueller Monat November 2026; September 2026: Gehalt +2.000,00 € (Alex), Freizeit -42,50 € (Kim); Oktober 2026: keine Einträge; November 2026: gemeinsames Essen -60,00 € (Zahler Alex) | der Monatsverlauf der letzten 3 Monate in der Paar-Sicht (gemeinsam=true) abgefragt wird | enthält ältester zuerst: 2026-09 (0,00 / 0,00 / 0,00 — Gehalt und Freizeit sind privat), 2026-10 (0,00 / 0,00 / 0,00), 2026-11 (0,00 / 60,00 / -60,00 — nur das gemeinsame Essen) |
+| R9 | — | die Monatsübersicht November 2026 für Person „Alex" UND in der Paar-Sicht aufgerufen wird | wird die Abfrage abgelehnt (400) |
 
 Hinweis: Der Zielbetrag -50,00 € im R5-Beispiel ist ein Vorschlag (Aufgabenstellung 11.11.2026); alle übrigen Werte stammen aus bestehenden Beispielen. Die R7/R8-Beispiele nutzen bestehende Werte (-42,50 €, +2.000,00 €, -60,00 €); die Kombination „-42,50 € Freizeit von Kim" ist ein Vorschlag (Aufgabenstellung 11.11.2026), da -42,50 € in den Specs bislang nur als REWE-Essen-Import vorkommt. Der R7-Regeltext (gemeinsame Einträge fließen über den Ausgleich, nicht in persönliche Statistiken) ist als Vorschlag markiert und braucht eure Freigabe.
 
@@ -64,6 +68,7 @@ Hinweis: Der Zielbetrag -50,00 € im R5-Beispiel ist ein Vorschlag (Aufgabenste
 - `features/eintraege/monatsuebersicht-zeigt-alles.feature`
 - `features/eintraege/monatsuebersicht-person.feature` (R7)
 - `features/eintraege/monatsverlauf.feature` (R8)
+- `features/eintraege/monatsuebersicht-paar.feature` (R9)
 - `features/eintraege/einnahme-zaehlt-nicht-zu-ausgaben.feature`
 - `features/eintraege/eintrag-ohne-datum-oder-betrag-wird-nicht-uebernommen.feature`
 - `features/eintraege/eintrag-wird-geaendert.feature` (R5)
