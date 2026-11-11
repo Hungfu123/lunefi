@@ -25,6 +25,12 @@ src/                           der Code
 - **Szenario**: ein Beispiel in Gherkin, mit genau einem `Wenn`.
 - **Step**: die Code-Bindung eines Satzes. Der Satz ist die Schnittstelle.
 
+## Sprache (beschlossen 11.11.2026)
+
+- Gherkin-Text (Feature-Dateien) und die Annotations-Strings in den Steps: **deutsch**.
+- Methodennamen im Java-Code: **deutsch** (Repo-Konvention, passend zu den Gherkin-Texten).
+- Technische Bezeichner, die API-Felder, JSON-Schlüssel und Git-Commits: **englisch**.
+
 ## Protokoll
 
 **Phase 1 — Verstehen**
