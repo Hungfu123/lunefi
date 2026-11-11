@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Sparkle, Wallet } from '@phosphor-icons/react'
-import { lese, type Ausgleich, type Coaching, type Eintrag, type Konto, type Monatsuebersicht, type VerlaufMonat } from './types'
+import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Sparkle, Target, Wallet } from '@phosphor-icons/react'
+import { lese, type Ausgleich, type Coaching, type Eintrag, type Konto, type Monatsuebersicht, type Sparziel, type VerlaufMonat } from './types'
 import {
   datumKurz,
   betragKompakt,
@@ -13,12 +13,14 @@ import {
   monatLabel,
   monatVerschieben,
 } from './format'
-import { KategorieIconTile } from './kategorieIcon'
+import { KategorieIcon, KategorieIconTile, kategorieIcon, kategorieIconName } from './kategorieIcon'
 import { KategorieSheet } from './KategorieSheet'
 import { useApp } from './AppKontext'
 
 const KATEGORIEN_SICHTBAR = 3
 const EINTRAEGE_SICHTBAR = 3
+const UEBRIG_SICHTBAR = 3
+const ZIELE_SICHTBAR = 2
 
 const BALKEN_STAERKE = ['bg-schlecht', 'bg-schlecht/70', 'bg-schlecht/55', 'bg-schlecht/45', 'bg-schlecht/35']
 
@@ -114,6 +116,41 @@ function TrendBalken({ eintrag, skala }: { eintrag: VerlaufMonat; skala: number 
   )
 }
 
+function UebrigZeile({ name, rest }: { name: string; rest: number }) {
+  return (
+    <li className="flex h-7 items-center justify-between gap-2">
+      <span className="flex min-w-0 items-center gap-2">
+        <KategorieIcon name={name} size={15} />
+        <span className="truncate text-[13px] font-medium text-text">{name}</span>
+      </span>
+      <span
+        className={`betragszahl shrink-0 text-[13px] font-semibold ${
+          rest >= 0 ? 'text-gut' : 'text-schlecht'
+        }`}
+      >
+        {rest >= 0 ? `noch ${euro(rest)}` : `${euro(Math.abs(rest))} drüber`}
+      </span>
+    </li>
+  )
+}
+
+function ZielZeile({ ziel }: { ziel: Sparziel }) {
+  const prozent = Math.min(100, Math.floor((ziel.eingezahlt / Math.max(ziel.zielbetrag, 1)) * 100))
+  const aufloesung = kategorieIconName(ziel.name)
+  const Icon = aufloesung === 'Wallet' ? Target : kategorieIcon(ziel.name)
+  return (
+    <li className="flex h-7 items-center justify-between gap-2">
+      <span className="flex min-w-0 items-center gap-2">
+        <Icon size={15} aria-hidden="true" className="shrink-0 text-textschwach" />
+        <span className="truncate text-[13px] font-medium text-text">{ziel.name}</span>
+      </span>
+      <span className="betragszahl shrink-0 text-[13px] font-medium text-textschwach">
+        {betragKompakt(ziel.eingezahlt)} von {betragKompakt(ziel.zielbetrag)} ({prozent} %)
+      </span>
+    </li>
+  )
+}
+
 export function Uebersicht({
   onEintragBearbeiten,
 }: {
@@ -134,6 +171,9 @@ export function Uebersicht({
   const [kategorieDetail, setKategorieDetail] = useState<string | null>(null)
   const [gemeinsamLokal, setGemeinsamLokal] = useState(false)
   const [coaching, setCoaching] = useState<Coaching | null>(null)
+  const [sparziele, setSparziele] = useState<Sparziel[]>([])
+  const [uebrigOffen, setUebrigOffen] = useState(false)
+  const [zieleOffen, setZieleOffen] = useState(false)
 
   const sichtSetzen = (neu: Sicht) => {
     setSicht(neu)
@@ -204,6 +244,21 @@ export function Uebersicht({
       .catch(() => setVerlauf(null))
   }, [gefiltert, zusammen, aktivePerson])
 
+  useEffect(() => {
+    if (!zusammen) return
+    let aktiv = true
+    lese<Sparziel[]>('/api/sparziele')
+      .then((liste) => {
+        if (aktiv) setSparziele(Array.isArray(liste) ? liste : [])
+      })
+      .catch(() => {
+        if (aktiv) setSparziele([])
+      })
+    return () => {
+      aktiv = false
+    }
+  }, [zusammen])
+
   const gesamt = konten.reduce((summe, konto) => summe + konto.saldo, 0)
   const ausgaben = Object.values(daten?.ausgabenJeKategorie ?? {}).reduce((a, b) => a + b, 0)
   const einnahmen = Object.values(daten?.einnahmenJeKategorie ?? {}).reduce((a, b) => a + b, 0)
@@ -214,6 +269,9 @@ export function Uebersicht({
   const budgetLimit = budgetListe.reduce((a, b) => a + b.limit, 0)
   const budgetUeber = budgetListe.some((b) => b.warnung)
   const budgetSkala = Math.max(budgetIst, budgetLimit, 1)
+  const uebrigListe = Object.entries(daten?.budgets ?? {})
+    .map(([name, budget]) => ({ name, rest: budget.limit - budget.ist }))
+    .sort((a, b) => a.rest - b.rest)
   const eintraege = [...(daten?.eintraege ?? [])].sort((a, b) =>
     a.datum === b.datum ? b.id - a.id : a.datum < b.datum ? 1 : -1,
   )
@@ -316,7 +374,7 @@ export function Uebersicht({
                   !gefiltert ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
                 }`}
               >
-                Zusammen
+                Gemeinsam
               </button>
             </div>
             {ausgleich && (
@@ -404,6 +462,53 @@ export function Uebersicht({
             )}
           </div>
 
+          {zusammen && (uebrigListe.length > 0 || sparziele.length > 0) && (
+            <section className="mb-2">
+              {uebrigListe.length > 0 && (
+                <div>
+                  <div className="mb-1 flex items-baseline justify-between">
+                    <h3 className="text-[13px] font-semibold">Übrig</h3>
+                    {uebrigListe.length > UEBRIG_SICHTBAR && (
+                      <button
+                        onClick={() => setUebrigOffen((offen) => !offen)}
+                        className="flex items-center gap-0.5 text-xs font-medium text-akzent"
+                      >
+                        {uebrigOffen ? 'Weniger' : 'Alle anzeigen'}
+                        <CaretDown size={11} className={uebrigOffen ? '' : 'rotate-180'} />
+                      </button>
+                    )}
+                  </div>
+                  <ul className="space-y-0.5">
+                    {(uebrigOffen ? uebrigListe : uebrigListe.slice(0, UEBRIG_SICHTBAR)).map((eintrag) => (
+                      <UebrigZeile key={eintrag.name} name={eintrag.name} rest={eintrag.rest} />
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sparziele.length > 0 && (
+                <div className={uebrigListe.length > 0 ? 'mt-1.5' : undefined}>
+                  <div className="mb-1 flex items-baseline justify-between">
+                    <h3 className="text-[13px] font-semibold">Ziele</h3>
+                    {sparziele.length > ZIELE_SICHTBAR && (
+                      <button
+                        onClick={() => setZieleOffen((offen) => !offen)}
+                        className="flex items-center gap-0.5 text-xs font-medium text-akzent"
+                      >
+                        {zieleOffen ? 'Weniger' : 'Alle anzeigen'}
+                        <CaretDown size={11} className={zieleOffen ? '' : 'rotate-180'} />
+                      </button>
+                    )}
+                  </div>
+                  <ul className="space-y-0.5">
+                    {(zieleOffen ? sparziele : sparziele.slice(0, ZIELE_SICHTBAR)).map((ziel) => (
+                      <ZielZeile key={ziel.id} ziel={ziel} />
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          )}
+
           {coaching !== null && coaching.empfehlungen.length > 0 && (
             <div className="mb-2 flex h-7 items-center gap-1.5 overflow-hidden">
               <Sparkle size={14} weight="fill" className="shrink-0 text-akzent" />
@@ -433,7 +538,7 @@ export function Uebersicht({
             </section>
           )}
 
-          {kategorien.length > 0 && (
+          {!zusammen && kategorien.length > 0 && (
           <section className="mb-2">
               <div className="mb-1 flex items-baseline justify-between">
                 <h3 className="text-[13px] font-semibold">Kategorien</h3>

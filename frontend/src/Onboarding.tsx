@@ -3,27 +3,32 @@ import { schreibe, type Person } from './types'
 import { useApp } from './AppKontext'
 import { Mond } from './Layout'
 
-export function Onboarding() {
+export function Onboarding({ onFertig }: { onFertig: (name?: string) => void }) {
   const { personenNeuLaden } = useApp()
   const [name1, setName1] = useState('')
   const [name2, setName2] = useState('')
+  const [passwort1, setPasswort1] = useState('')
+  const [passwort2, setPasswort2] = useState('')
   const [fehler, setFehler] = useState<string | null>(null)
   const [laeuft, setLaeuft] = useState(false)
+
+  const gueltig =
+    name1.trim().length > 0 &&
+    name2.trim().length > 0 &&
+    passwort1.length >= 6 &&
+    passwort2.length >= 6
 
   const absenden = async (e: FormEvent) => {
     e.preventDefault()
     const a = name1.trim()
     const b = name2.trim()
-    if (!a || !b) {
-      setFehler('Bitte beide Namen eintragen.')
-      return
-    }
+    if (!a || !b || !gueltig || laeuft) return
     setLaeuft(true)
     setFehler(null)
     try {
-      await schreibe<Person>('/api/personen', { name: a })
-      await schreibe<Person>('/api/personen', { name: b })
-      personenNeuLaden()
+      await schreibe<Person>('/api/personen', { name: a, passwort: passwort1 })
+      await schreibe<Person>('/api/personen', { name: b, passwort: passwort2 })
+      onFertig(a)
     } catch {
       setFehler('Das hat nicht geklappt. Nochmal versuchen.')
       personenNeuLaden()
@@ -60,6 +65,21 @@ export function Onboarding() {
           />
         </div>
         <div>
+          <label htmlFor="passwort1" className="mb-1 block text-xs text-textschwach">
+            Dein Passwort
+          </label>
+          <input
+            id="passwort1"
+            type="password"
+            value={passwort1}
+            onChange={(e) => setPasswort1(e.target.value)}
+            className="w-full rounded-xl bg-karte px-4 py-3 outline-none ring-strich focus:ring-2"
+          />
+          {passwort1.length > 0 && passwort1.length < 6 && (
+            <p className="mt-1 text-left text-xs text-schlecht">Mindestens 6 Zeichen</p>
+          )}
+        </div>
+        <div>
           <label htmlFor="name2" className="mb-1 block text-xs text-textschwach">
             Name deiner Partnerin / deines Partners
           </label>
@@ -70,10 +90,26 @@ export function Onboarding() {
             className="w-full rounded-xl bg-karte px-4 py-3 outline-none ring-strich focus:ring-2"
           />
         </div>
+        <div>
+          <label htmlFor="passwort2" className="mb-1 block text-xs text-textschwach">
+            Passwort deiner Partnerin / deines Partners
+          </label>
+          <input
+            id="passwort2"
+            type="password"
+            value={passwort2}
+            onChange={(e) => setPasswort2(e.target.value)}
+            className="w-full rounded-xl bg-karte px-4 py-3 outline-none ring-strich focus:ring-2"
+          />
+          {passwort2.length > 0 && passwort2.length < 6 && (
+            <p className="mt-1 text-left text-xs text-schlecht">Mindestens 6 Zeichen</p>
+          )}
+        </div>
+        <p className="text-xs text-textschwach">Damit nur ihr beide rein kommt.</p>
         {fehler && <p className="text-sm text-schlecht">{fehler}</p>}
         <button
           type="submit"
-          disabled={laeuft}
+          disabled={!gueltig || laeuft}
           className="rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           Los geht's

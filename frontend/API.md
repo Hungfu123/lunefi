@@ -178,3 +178,12 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 
 - Backend: Port 8080, `docker compose up -d` startet PostgreSQL (db/user/pass: `lunefi`), dann Backend starten
 - Fehlerkörper: leeres JSON mit `400` (keine Pflicht am Body)
+
+## Nachrüst-Login & Identität (`specs/auth.md`, Regeln AU7–AU8)
+
+- **Passwörter nachrüsten:** `POST /api/ersteinrichtung` (ungemeldet erlaubt, CSRF-Pflicht wie überall) Body `{"passwoerter": {"Alex": "geheim123", "Kim": "geheim456"}}` → `200`
+  - Nur solange NOCH KEIN App-Nutzer existiert; existiert bereits einer → `403` (gleiche Schloss-Semantik wie die offene Ersteinrichtung, AU6)
+  - Jeder Name muss eine existierende Person sein, jedes Passwort mindestens 6 Zeichen → sonst `400` (komplett abgewiesen, es wird nichts angelegt)
+  - Legt für jede genannte Person einen App-User mit bcrypt-Hash an; danach ist die App „eingerichtet" (AU6 schließt die offene Ersteinrichtung, AU7 selbst bleibt danach ebenfalls zu)
+- **Wer bin ich:** `GET /api/wer` → `200 {"name": "Alex"}` — der Name des ANGEMELDETEN Nutzers; ungemeldet → `401`
+  - Das Frontend leitet die Person hiervon ab (ersetzt die bisherige localStorage-Auswahl: der Angemeldete IST die Person)

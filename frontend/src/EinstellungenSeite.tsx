@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Moon, Sun } from '@phosphor-icons/react'
+import { Moon, Question, Sun } from '@phosphor-icons/react'
 import { ApiFehler, lese, schreibe, type KategorieInfo, type Konto } from './types'
 import { TYP_LABEL, VORDEFINIERTE_KATEGORIEN } from './kategorien'
 import { KategorieIconTile } from './kategorieIcon'
 import { HaltungsSelector } from './HaltungsSelector'
+import { HilfeModal } from './HilfeModal'
 import { betragAusEingabe, euro, monatAlsString } from './format'
 import { useApp } from './AppKontext'
 
@@ -25,6 +26,7 @@ export function EinstellungenSeite() {
   const [budgets, setBudgets] = useState<Record<string, string>>({})
   const [meldung, setMeldung] = useState<string | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
+  const [hilfeOffen, setHilfeOffen] = useState(false)
 
   const laden = useCallback(() => {
     lese<KategorieInfo[]>('/api/kategorien')
@@ -121,6 +123,17 @@ export function EinstellungenSeite() {
             Hell
           </button>
         </div>
+      </section>
+
+      <section className="mb-6">
+        <h3 className="mb-2 text-sm font-medium text-textschwach">Hilfe</h3>
+        <button
+          onClick={() => setHilfeOffen(true)}
+          className="flex min-h-11 w-full items-center gap-3 rounded-xl bg-karte px-4 text-sm text-text"
+        >
+          <Question size={18} className="shrink-0" />
+          So funktioniert LuneFi
+        </button>
       </section>
 
       <section className="mb-6">
@@ -241,6 +254,8 @@ export function EinstellungenSeite() {
       <p className="mt-8 text-center text-xs text-textschwach">
         LuneFi · {personen.map((p) => p.name).join(' & ')}
       </p>
+
+      <HilfeModal offen={hilfeOffen} zu={() => setHilfeOffen(false)} />
     </div>
   )
 }

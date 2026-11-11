@@ -118,7 +118,7 @@ export function SparzieleSeite() {
                     onClick={() => setEinzahlenOffen(ziel)}
                     className="flex min-h-11 shrink-0 items-center text-sm font-semibold text-akzent active:scale-[0.98]"
                   >
-                    Einzahlen
+                    Gespart
                   </button>
                 )}
               </div>
@@ -136,6 +136,12 @@ export function SparzieleSeite() {
           )
         })}
       </ul>
+
+      {!laedt && !fehler && ziele.length > 0 && (
+        <p className="mt-4 text-[12px] text-textschwach">
+          Zählt euren Fortschritt. Kein echtes Konto — das Geld bleibt, wo es ist.
+        </p>
+      )}
 
       <AnimatePresence>
         {neuOffen && (
@@ -258,8 +264,13 @@ function EinzahlDialog({
   }
 
   return (
-    <Dialog titel={`Auf ${ziel.name} einzahlen`} zu={zu}>
+    <Dialog titel={`Gespart: ${ziel.name}`} zu={zu}>
       <form onSubmit={absenden} className="flex flex-col gap-3">
+        {ziel.eingezahlt === 0 && (
+          <p className="text-sm text-textschwach">
+            Trag hier ein, wie viel ihr beiseite gelegt habt.
+          </p>
+        )}
         <input
           value={betrag}
           onChange={(e) => setBetrag(e.target.value)}
@@ -288,7 +299,7 @@ function EinzahlDialog({
           disabled={laeuft}
           className="rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext disabled:opacity-50"
         >
-          Einzahlen
+          Als gespart vermerken
         </button>
       </form>
     </Dialog>

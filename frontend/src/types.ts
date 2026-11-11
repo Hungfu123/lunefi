@@ -130,18 +130,50 @@ export class ApiFehler extends Error {
   }
 }
 
+export const SITZUNG_ABGELAUFEN = 'lunefi:sitzung-abgelaufen'
+
+function xsrfToken(): string | null {
+  const eintrag = document.cookie.split('; ').find((c) => c.startsWith('XSRF-TOKEN='))
+  if (!eintrag) return null
+  return decodeURIComponent(eintrag.slice('XSRF-TOKEN='.length))
+}
+
+export async function xsrfTokenFrisch(): Promise<string | null> {
+  try {
+    await fetch('/api/personen', { credentials: 'same-origin' })
+  } catch {
+    return null
+  }
+  return xsrfToken()
+}
+
+function schreibend(methode?: string): boolean {
+  return methode === 'POST' || methode === 'PUT' || methode === 'DELETE'
+}
+
 async function api<T>(pfad: string, init?: RequestInit): Promise<T> {
+  const kopf: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((init?.headers as Record<string, string>) ?? {}),
+  }
+  if (schreibend(init?.method)) {
+    const token = xsrfToken()
+    if (token) kopf['X-XSRF-TOKEN'] = token
+  }
   let antwort: Response
   try {
-    antwort = await fetch(pfad, {
-      ...init,
-      headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-    })
+    antwort = await fetch(pfad, { ...init, credentials: 'same-origin', headers: kopf })
   } catch {
     throw new ApiFehler(0)
   }
+  if (antwort.status === 401) {
+    window.dispatchEvent(new Event(SITZUNG_ABGELAUFEN))
+  }
   if (!antwort.ok) {
     throw new ApiFehler(antwort.status)
+  }
+  if (antwort.status === 204) {
+    return undefined as T
   }
   return antwort.json() as Promise<T>
 }
@@ -152,14 +184,17 @@ export const schreibe = <T>(pfad: string, body: unknown, methode: 'POST' | 'PUT'
   api<T>(pfad, { method: methode, body: JSON.stringify(body) })
 
 export const sende = async (pfad: string, methode: 'POST' | 'PUT' | 'DELETE' = 'POST'): Promise<void> => {
+  const kopf: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = xsrfToken()
+  if (token) kopf['X-XSRF-TOKEN'] = token
   let antwort: Response
   try {
-    antwort = await fetch(pfad, {
-      method: methode,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    antwort = await fetch(pfad, { method: methode, credentials: 'same-origin', headers: kopf })
   } catch {
     throw new ApiFehler(0)
+  }
+  if (antwort.status === 401) {
+    window.dispatchEvent(new Event(SITZUNG_ABGELAUFEN))
   }
   if (!antwort.ok) {
     throw new ApiFehler(antwort.status)

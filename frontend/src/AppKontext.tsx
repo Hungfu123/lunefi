@@ -1,12 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { lese, type Person } from './types'
+import { ApiFehler, lese, type Person } from './types'
+
+export type WerErgebnis = 'server' | 'legacy' | 'abwesend'
 
 interface AppState {
   personen: Person[]
   personenLaden: boolean
   personenNeuLaden: () => void
   aktivePerson: string | null
-  setAktivePerson: (name: string) => void
+  werLaden: () => Promise<WerErgebnis>
 }
 
 const AppKontext = createContext<AppState>({
@@ -14,7 +16,7 @@ const AppKontext = createContext<AppState>({
   personenLaden: true,
   personenNeuLaden: () => {},
   aktivePerson: null,
-  setAktivePerson: () => {},
+  werLaden: async () => 'abwesend',
 })
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -23,6 +25,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [aktivePerson, setAktive] = useState<string | null>(null)
 
   const personenNeuLaden = useCallback(() => {
+    setPersonenLaden(true)
     lese<Person[]>('/api/personen')
       .then((p) => {
         setPersonen(p)
@@ -37,9 +40,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(personenNeuLaden, [personenNeuLaden])
 
-  const setAktivePerson = useCallback((name: string) => {
-    setAktive(name)
-    localStorage.setItem('lunefi:person', name)
+  const werLaden = useCallback(async (): Promise<WerErgebnis> => {
+    try {
+      const wer = await lese<{ name: string }>('/api/wer')
+      setAktive(wer.name)
+      return 'server'
+    } catch (e) {
+      if (e instanceof ApiFehler && e.status === 404) return 'legacy'
+      return 'abwesend'
+    }
   }, [])
 
   useEffect(() => {
@@ -48,7 +57,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AppKontext.Provider value={{ personen, personenLaden, personenNeuLaden, aktivePerson, setAktivePerson }}>
+    <AppKontext.Provider value={{ personen, personenLaden, personenNeuLaden, aktivePerson, werLaden }}>
       {children}
     </AppKontext.Provider>
   )

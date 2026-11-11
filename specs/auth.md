@@ -18,6 +18,8 @@ damit niemand fremde persönliche Finanzdaten einsehen oder ändern kann
 | AU4 | Persönliche Einträge (Anlegen, Ändern, Löschen) dürfen nur von der eigenen Person erfasst/bearbeitet werden — fremde Person → Abweisung. Gemeinsame Einträge gehören beiden (auch mit dem Partner als Zahler) |
 | AU5 | Konten sind privat: die Kontenübersicht mit fremdem `person`-Parameter → Abweisung; Konten anlegen nur für den eigenen Namen, für den Partner → Abweisung |
 | AU6 | Die Ersteinrichtung (Personen anlegen ohne Login) bleibt offen, solange NOCH KEIN App-Nutzer existiert; sobald ein App-Nutzer existiert, ist sie für Unangemeldete geschlossen (die App ist eingerichtet) |
+| AU7 | Bestehende Personen OHNE App-Nutzer können ihre Passwörter nachrüsten: ungemeldete Übergabe von Name → Passwort je Person. Nur erlaubt, solange NOCH KEIN App-Nutzer existiert (Schloss-Semantik wie AU6) — existiert bereits einer, wird die Nachrüstung abgewiesen. Existiert eine übergebene Person nicht oder ist ein Passwort unter 6 Zeichen, wird die Nachrüstung komplett abgewiesen (nichts wird angelegt). Die Passwörter werden bcrypt-gehasht als App-User angelegt (Vorschlag 11.11.2026 für die Demo-DB mit bereits angelegten Personen) |
+| AU8 | Der Server teilt dem Angemeldeten mit, wer er ist (Identitäts-Auskunft): der Name des angemeldeten Nutzers; ungemeldet wird abgewiesen. Das Frontend leitet die Person davon ab und ersetzt damit die bisherige lokale Personen-Auswahl — der Angemeldete IST die Person |
 
 Technische Entscheidungen (dokumentiert, kein fachlicher Inhalt):
 
@@ -53,10 +55,18 @@ Konkrete Werte, keine Prosa. Jede Regel braucht mindestens eins.
 | AU5 | die Personen Alex und Kim existieren | Alex ein Konto für Kim anlegt | wird der Zugriff wegen fehlender Berechtigung abgelehnt |
 | AU6 | noch kein Nutzer eingerichtet ist | jemand ohne Anmeldung die Person Nova mit Passwort „geheim123" anlegt | ist die Person Nova eingerichtet |
 | AU6 | die App eingerichtet ist (mindestens ein App-Nutzer existiert) | jemand ohne Anmeldung die Person Nova mit Passwort „geheim123" anlegt | wird der Zugriff wegen fehlender Anmeldung abgelehnt |
+| AU7 | die Personen Alex und Kim ohne App-Nutzer existieren | jemand ohne Anmeldung die Passwörter „geheim123" für Alex und „geheim456" für Kim übergibt | ist die Nachrüstung erfolgreich und die Anmeldung mit den neuen Passwörtern klappt |
+| AU7 | die App eingerichtet ist (mindestens ein App-Nutzer existiert) | jemand ohne Anmeldung die Passwörter „geheim123" für Alex übergibt | wird die Nachrüstung wegen bestehender Einrichtung abgewiesen |
+| AU7 | die Person Alex ohne App-Nutzer existiert | jemand ohne Anmeldung die Passwörter „geheim123" für Alex und „geheim789" für die nicht existierende Person Unbekannt übergibt | wird die Nachrüstung wegen ungültiger Angaben abgewiesen |
+| AU7 | die Person Alex ohne App-Nutzer existiert | jemand ohne Anmeldung das Passwort „kurz" für Alex übergibt | wird die Nachrüstung wegen ungültiger Angaben abgewiesen |
+| AU8 | Kim angemeldet ist | Kim abfragt, wer angemeldet ist | lautet der gemeldete Name „Kim" |
+| AU8 | — | jemand ohne Anmeldung abfragt, wer angemeldet ist | wird die Abfrage wegen fehlender Anmeldung abgewiesen |
 
 Hinweise zu Werten (Vorschlags-Markierung):
 
 - Alle Passwörter („geheim123", „falsches-passwort", „kurz") sind **Test-Vorschlagswerte** (Aufgabenstellung 11.11.2026), absichtlich als Klartext in den Szenarien — für die private Test-App okay, niemals aus Env-Dateien.
+- Auch „geheim456" (Kim) und „geheim789" (unbekannte Person) in den AU7-Beispielen sind **Vorschlagswerte** (11.11.2026) — freigewählt, um je Person unterscheidbare Passwörter zu zeigen; keine Vorgabe aus der Aufgabenstellung.
+- Test-Hinweis AU7: Der AuthSteps-`@Before` legt vor JEDEM Szenario Alex und Kim als App-User an. Die AU7-Szenarien brauchen den Zustand „Personen existieren, aber KEIN App-User" — der Given-Step legt die Personen direkt an und leert dafür die `app_user`-Tabelle (dokumentiert erlaubt). Damit das Fixture danach wieder hält, setzt der `@Before` die Passwörter von Alex und Kim je Szenario neu (Upsert statt Nur-anlegen).
 - Die Namen Alex/Kim stammen aus den bestehenden Specs (R7-Beispiele).
 - Der Betrag −42,50 € für Kims Freizeitausgabe folgt dem R7-Beispiel; −50,00 € als Änderungsbetrag folgt dem R5-Muster.
 
@@ -75,4 +85,6 @@ Hinweise zu Werten (Vorschlags-Markierung):
 - `features/auth/sichtschutz.feature` (AU2/AU5: fremder `person`-Parameter → Abweisung auf Monatsübersicht, Verlauf, Einträgen, Prognose, Konten; Konto für Partner)
 - `features/auth/paar-raum.feature` (AU3: Paar-Sicht und Ausgleich für Kim nutzbar)
 - `features/auth/eintrag-schutz.feature` (AU4: Ausgabe für Partner, gemeinsamen Eintrag ändern, fremde persönliche Einträge ändern/löschen)
+- `features/auth/ersteinrichtung.feature` (AU7: Nachrüstung klappt + Anmeldung danach, bereits eingerichtet → Abweisung, unbekannte Person / zu kurzes Passwort → Abweisung)
+- `features/auth/wer-bin-ich.feature` (AU8: gemeldeter Name des Angemeldeten, ungemeldete Abfrage → Abweisung)
 - Szenarien tragen den Tag ihrer Regel, z. B. `@AU1`

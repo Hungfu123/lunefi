@@ -64,8 +64,10 @@ public class AuthSteps {
     }
 
     private void sichererNutzer(String name, String passwort) {
-        appUserRepository.findByUsername(name)
-                .orElseGet(() -> appUserRepository.save(new finance.AppUserEntity(name, encoder.encode(passwort))));
+        finance.AppUserEntity nutzer = appUserRepository.findByUsername(name)
+                .orElseGet(() -> new finance.AppUserEntity(name, null));
+        nutzer.setPasswordHash(encoder.encode(passwort));
+        appUserRepository.save(nutzer);
     }
 
     private void anmelden(TestRestTemplate template, String name, String passwort) {
