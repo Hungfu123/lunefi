@@ -22,6 +22,23 @@ const BALKEN_STAERKE = ['bg-schlecht', 'bg-schlecht/70', 'bg-schlecht/55', 'bg-s
 
 type Sicht = 'meine' | 'zusammen'
 
+function nurGemeinsam(daten: Monatsuebersicht): Monatsuebersicht {
+  const eintraege = daten.eintraege.filter((eintrag) => eintrag.gemeinsam)
+  const ausgabenJeKategorie: Record<string, number> = {}
+  const einnahmenJeKategorie: Record<string, number> = {}
+  for (const eintrag of eintraege) {
+    const ziel = eintrag.betrag < 0 ? ausgabenJeKategorie : einnahmenJeKategorie
+    ziel[eintrag.kategorie] = (ziel[eintrag.kategorie] ?? 0) + Math.abs(eintrag.betrag)
+  }
+  const budgets = Object.fromEntries(
+    Object.entries(daten.budgets).map(([name, budget]) => {
+      const ist = ausgabenJeKategorie[name] ?? 0
+      return [name, { limit: budget.limit, ist, warnung: ist > budget.limit }]
+    }),
+  )
+  return { ...daten, eintraege, ausgabenJeKategorie, einnahmenJeKategorie, budgets }
+}
+
 function sichtLaden(): Sicht {
   return localStorage.getItem('lunefi:sicht') === 'zusammen' ? 'zusammen' : 'meine'
 }
@@ -89,6 +106,7 @@ export function Uebersicht() {
   const [fehler, setFehler] = useState(false)
   const [kategorienOffen, setKategorienOffen] = useState(false)
   const [eintraegeOffen, setEintraegeOffen] = useState(false)
+  const [gemeinsamLokal, setGemeinsamLokal] = useState(false)
 
   const sichtSetzen = (neu: Sicht) => {
     setSicht(neu)
@@ -96,16 +114,30 @@ export function Uebersicht() {
   }
 
   const gefiltert = sicht === 'meine' && aktivePerson !== null
+  const zusammen = sicht === 'zusammen'
 
   const laden = useCallback(() => {
     setLaedt(true)
     const personParam = gefiltert ? `?person=${encodeURIComponent(aktivePerson ?? '')}` : ''
-    const kontenPfad = gefiltert ? `/api/konten${personParam}` : '/api/konten'
-    Promise.all([
-      lese<Monatsuebersicht>(`/api/monatsuebersicht/${monat}${personParam}`),
-      lese<Ausgleich>(`/api/ausgleich/${monat}`),
-      lese<Konto[]>(kontenPfad),
-    ])
+    const uebersichtLaden = zusammen
+      ? lese<Monatsuebersicht>(`/api/monatsuebersicht/${monat}?gemeinsam=true`)
+          .catch(() => lese<Monatsuebersicht>(`/api/monatsuebersicht/${monat}`))
+          .then((roh) => {
+            if (roh.eintraege.some((eintrag) => !eintrag.gemeinsam)) {
+              setGemeinsamLokal(true)
+              return nurGemeinsam(roh)
+            }
+            setGemeinsamLokal(false)
+            return roh
+          })
+      : lese<Monatsuebersicht>(`/api/monatsuebersicht/${monat}${personParam}`).then((roh) => {
+          setGemeinsamLokal(false)
+          return roh
+        })
+    const kontenLaden = zusammen
+      ? Promise.resolve<Konto[]>([])
+      : lese<Konto[]>(gefiltert ? `/api/konten${personParam}` : '/api/konten')
+    Promise.all([uebersichtLaden, lese<Ausgleich>(`/api/ausgleich/${monat}`), kontenLaden])
       .then(([uebersicht, ausgleichsDaten, kontoListe]) => {
         setDaten(uebersicht)
         setAusgleich(ausgleichsDaten)
@@ -114,18 +146,22 @@ export function Uebersicht() {
       })
       .catch(() => setFehler(true))
       .finally(() => setLaedt(false))
-  }, [monat, gefiltert, aktivePerson])
+  }, [monat, gefiltert, zusammen, aktivePerson])
 
   useEffect(laden, [laden])
 
   useEffect(() => {
-    const pfad = gefiltert
-      ? `/api/verlauf?monate=3&person=${encodeURIComponent(aktivePerson ?? '')}`
-      : '/api/verlauf?monate=3'
-    lese<VerlaufMonat[]>(pfad)
+    const anfrage = zusammen
+      ? lese<VerlaufMonat[]>('/api/verlauf?monate=3&gemeinsam=true').catch(() =>
+          lese<VerlaufMonat[]>('/api/verlauf?monate=3'),
+        )
+      : lese<VerlaufMonat[]>(
+          gefiltert ? `/api/verlauf?monate=3&person=${encodeURIComponent(aktivePerson ?? '')}` : '/api/verlauf?monate=3',
+        )
+    anfrage
       .then((liste) => setVerlauf(Array.isArray(liste) && liste.length > 0 ? liste : null))
       .catch(() => setVerlauf(null))
-  }, [gefiltert, aktivePerson])
+  }, [gefiltert, zusammen, aktivePerson])
 
   const gesamt = konten.reduce((summe, konto) => summe + konto.saldo, 0)
   const ausgaben = Object.values(daten?.ausgabenJeKategorie ?? {}).reduce((a, b) => a + b, 0)
@@ -180,16 +216,35 @@ export function Uebersicht() {
       {daten && !laedt && (
         <>
           <section className="mb-2">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
-              {gefiltert ? 'Mein Saldo' : 'Gesamtsaldo'}
-            </p>
-            <p
-              className={`betragszahl mt-1 text-[44px] font-semibold leading-none tracking-tight ${
-                gesamt < 0 ? 'text-schlecht' : 'text-text'
-              }`}
-            >
-              {betragKompakt(gesamt, 1000000)}
-            </p>
+            {zusammen ? (
+              <>
+                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                  Gemeinsam
+                </p>
+                {ausgleich && (
+                  <p
+                    className={`betragszahl mt-1 text-[34px] font-semibold leading-[1.15] tracking-tight ${
+                      ausgleich.vorschlag ? 'text-text' : 'text-gut'
+                    }`}
+                  >
+                    {ausgleich.vorschlag ?? 'Alles ausgeglichen'}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                  {gefiltert ? 'Mein Saldo' : 'Gesamtsaldo'}
+                </p>
+                <p
+                  className={`betragszahl mt-1 text-[44px] font-semibold leading-none tracking-tight ${
+                    gesamt < 0 ? 'text-schlecht' : 'text-text'
+                  }`}
+                >
+                  {betragKompakt(gesamt, 1000000)}
+                </p>
+              </>
+            )}
             <div className="mt-1.5 flex h-8 w-fit items-center gap-0.5 rounded-full bg-karte2 p-0.5">
               <button
                 onClick={() => sichtSetzen('meine')}
@@ -221,7 +276,7 @@ export function Uebersicht() {
                 <CaretRight size={13} className="ml-auto shrink-0 text-textschwach" />
               </Link>
             )}
-            {konten.length === 0 && (
+            {!zusammen && konten.length === 0 && (
               <Link to="/einstellungen" className="mt-2 flex items-center gap-1 text-sm text-akzent">
                 Erstes Konto anlegen
                 <CaretRight size={12} />
@@ -229,7 +284,7 @@ export function Uebersicht() {
             )}
           </section>
 
-          {konten.length > 0 && (
+          {!zusammen && konten.length > 0 && (
             <div className="mb-2 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {konten.map((konto) => (
                 <Link
@@ -287,7 +342,7 @@ export function Uebersicht() {
             )}
           </div>
 
-          {verlauf !== null && verlaufSchnitt !== null && (
+          {verlauf !== null && verlaufSchnitt !== null && (!zusammen || !gemeinsamLokal) && (
             <section className="mb-1.5 flex h-6 items-center gap-3">
               <p className="shrink-0 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
                 Verlauf
