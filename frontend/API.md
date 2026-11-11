@@ -16,6 +16,11 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
   - `datum`, `betrag`, `kategorie` Pflicht, sonst `400` (Regel R1)
   - → `201` mit dem gespeicherten Eintrag (inkl. `id`, Felder: `id, datum, betrag, kategorie, person, gemeinsam, zahler`)
 - `GET /api/eintraege?monat=2026-11` (Filter optional: `monat`, `person`, `gemeinsam`) → Liste
+- `PUT /api/eintraege/{id}` Body wie `POST` (voller Eintrag: `datum`, `betrag`, `kategorie` + `person`/`gemeinsam`-Zuordnung, optional `zahler`, `konto`)
+  - gleiche Validierungen wie `POST` (Regeln R1/G1, unbekanntes Konto) → sonst `400`
+  - unbekannte `id` → `404`
+  - → `200` mit dem geänderten Eintrag (Regel R5)
+- `DELETE /api/eintraege/{id}` → `204`, danach ist der Eintrag weg (Liste, Monatsübersicht, Kontostand/Salden rechnen sich neu); unbekannte `id` → `404` (Regel R6)
 
 ## Monatsübersicht
 

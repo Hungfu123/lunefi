@@ -85,6 +85,15 @@ public class MonatsuebersichtSteps {
         }
     }
 
+    @Dann("zeigt die Monatsübersicht {monat} bei {string} Ausgaben von {betrag} Euro")
+    public void expensesOfCategoryInMonth(YearMonth monat, String kategorie, BigDecimal betrag) {
+        ResponseEntity<String> antwort = rest.getForEntity("/api/monatsuebersicht/" + monat, String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        JsonNode aktuelleUebersicht = mapper.readTree(antwort.getBody());
+        assertThat(aktuelleUebersicht.path("ausgabenJeKategorie").path(kategorie).decimalValue())
+                .isEqualByComparingTo(betrag);
+    }
+
     @Angenommen("das Budget für Kategorie {string} im {monat} auf {betrag} Euro gesetzt wird")
     public void setBudget(String kategorie, YearMonth monat, BigDecimal limit) {
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();

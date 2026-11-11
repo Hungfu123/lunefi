@@ -16,6 +16,8 @@ damit ich mein Budget im Blick habe
 | R2 | Negative Beträge sind Ausgaben, positive Einnahmen. Währung: immer Euro |
 | R3 | Die Monatsübersicht zeigt Ausgaben und Einnahmen je Kategorie als Summe und listet jeden Eintrag einzeln (Datum, Betrag) |
 | R4 | Die Monatsübersicht lehnt Monate ab, die es nicht gibt |
+| R5 | Einträge lassen sich ändern: Betrag, Datum, Kategorie, Person, gemeinsam, zahler und konto. Es gelten die gleichen Validierungen wie beim Anlegen. Ein unbekannter Eintrag wird mit 404 abgelehnt |
+| R6 | Einträge lassen sich löschen: danach existiert der Eintrag nicht mehr. Kontostand und Salden passen sich automatisch an, da alles berechnet wird |
 
 ## Beispiele
 
@@ -30,6 +32,11 @@ Konkrete Werte, keine Prosa. Jede Regel braucht mindestens eins.
 | R2 | ein Eintrag +2.000,00 € („Gehalt", 30.11.2026) | die Monatsübersicht November 2026 aufgerufen wird | zählt er zu den Einnahmen, nicht zu den Ausgaben |
 | R3 | Essen -12,50 € (15.11.), Miete -950,00 € (01.11.), Gehalt +2.000,00 € (30.11.) | die Monatsübersicht November 2026 aufgerufen wird | Ausgaben je Kategorie (Essen 12,50 €, Miete 950,00 €), Einnahmen (Gehalt 2.000,00 €) und alle drei Einträge einzeln gelistet |
 | R4 | noch kein Eintrag | die Monatsübersicht Monat 13 im Jahr 2026 aufgerufen wird | wird der Monat abgelehnt (kein Serverfehler) |
+| R5 | ein Eintrag -12,50 € („Essen", 15.11.2026, von „Alex") erfasst | der Betrag dieses Eintrags zu -50,00 € geändert wird | zeigt die Monatsübersicht November 2026 bei „Essen" 50,00 € Ausgaben, und der Eintrag ist mit -50,00 € gespeichert |
+| R5 | kein Eintrag mit der Nummer 999 | der Eintrag mit der Nummer 999 geändert werden soll | wird das Ändern abgelehnt (404) |
+| R6 | der Eintrag -12,50 € („Essen", 15.11.2026, von „Alex") auf dem Konto „Girokonto" (Startsaldo 3.450,00 €) erfasst | dieser Eintrag gelöscht wird | existiert der Eintrag nicht mehr, und die Kontenübersicht zeigt den Saldo 3.450,00 € |
+
+Hinweis: Der Zielbetrag -50,00 € im R5-Beispiel ist ein Vorschlag (Aufgabenstellung 11.11.2026); alle übrigen Werte stammen aus bestehenden Beispielen.
 
 ## Offene Fragen
 
@@ -51,4 +58,6 @@ Konkrete Werte, keine Prosa. Jede Regel braucht mindestens eins.
 - `features/eintraege/monatsuebersicht-zeigt-alles.feature`
 - `features/eintraege/einnahme-zaehlt-nicht-zu-ausgaben.feature`
 - `features/eintraege/eintrag-ohne-datum-oder-betrag-wird-nicht-uebernommen.feature`
+- `features/eintraege/eintrag-wird-geaendert.feature` (R5)
+- `features/eintraege/eintrag-wird-geloescht.feature` (R6)
 - Szenarien tragen den Tag ihrer Regel, z. B. `@R1`

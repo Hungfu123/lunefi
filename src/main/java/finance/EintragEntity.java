@@ -112,6 +112,17 @@ public class EintragEntity {
         this.verwendungszweck = verwendungszweck;
     }
 
+    public void update(LocalDate datum, BigDecimal betrag, String kategorie,
+            String person, Boolean gemeinsam, String zahler, String konto) {
+        this.datum = datum;
+        this.betrag = betrag;
+        this.kategorie = kategorie;
+        this.person = person;
+        this.gemeinsam = gemeinsam;
+        this.zahler = zahler;
+        this.konto = konto;
+    }
+
     public Eintrag asEntry() {
         return new Eintrag(id, datum, betrag, kategorie, person, gemeinsam, zahler, konto);
     }

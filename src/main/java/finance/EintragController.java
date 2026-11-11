@@ -5,8 +5,11 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,12 +32,7 @@ public class EintragController {
 
     @PostMapping
     public ResponseEntity<Eintrag> capture(@RequestBody Eintrag eintrag) {
-        if (eintrag.kategorie() == null || eintrag.kategorie().isBlank()
-                || eintrag.datum() == null
-                || eintrag.betrag() == null
-                || !exactlyOneAssignment(eintrag)
-                || !payerIfShared(eintrag)
-                || (eintrag.konto() != null && !konten.existsByName(eintrag.konto()))) {
+        if (!isValid(eintrag)) {
             return ResponseEntity.badRequest().build();
         }
         EintragEntity gespeichert = repository.save(new EintragEntity(
@@ -42,6 +40,30 @@ public class EintragController {
                 eintrag.person(), Boolean.TRUE.equals(eintrag.gemeinsam()), eintrag.zahler(),
                 eintrag.konto()));
         return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.asEntry());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Eintrag> update(@PathVariable long id, @RequestBody Eintrag eintrag) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!isValid(eintrag)) {
+            return ResponseEntity.badRequest().build();
+        }
+        EintragEntity vorhandener = repository.findById(id).orElseThrow();
+        vorhandener.update(eintrag.datum(), eintrag.betrag(), eintrag.kategorie(),
+                eintrag.person(), Boolean.TRUE.equals(eintrag.gemeinsam()), eintrag.zahler(),
+                eintrag.konto());
+        return ResponseEntity.ok(repository.save(vorhandener).asEntry());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable long id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        repository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping
@@ -56,6 +78,15 @@ public class EintragController {
                 .filter(eintrag -> gemeinsam == null
                         || gemeinsam.equals(Boolean.TRUE.equals(eintrag.gemeinsam())))
                 .toList();
+    }
+
+    private boolean isValid(Eintrag eintrag) {
+        return eintrag.kategorie() != null && !eintrag.kategorie().isBlank()
+                && eintrag.datum() != null
+                && eintrag.betrag() != null
+                && exactlyOneAssignment(eintrag)
+                && payerIfShared(eintrag)
+                && (eintrag.konto() == null || konten.existsByName(eintrag.konto()));
     }
 
     private boolean exactlyOneAssignment(Eintrag eintrag) {

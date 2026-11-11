@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -224,6 +226,79 @@ public class EintragSteps {
         assertThat(ergebnis.size()).isEqualTo(1);
         assertThat(ergebnis.get(0).path("betrag").decimalValue()).isEqualByComparingTo(betrag);
         assertThat(ergebnis.get(0).path("kategorie").asText()).isEqualTo(kategorie);
+    }
+
+    @Wenn("der Betrag dieses Eintrags zu {betrag} Euro geändert wird")
+    public void changeAmountOfThisEntry(BigDecimal neuerBetrag) {
+        JsonNode vorhandener = singleEntry();
+        Map<String, Object> body = fullBody(vorhandener, neuerBetrag);
+        ResponseEntity<String> antwort = put("/api/eintraege/" + vorhandener.path("id").asLong(), body);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Wenn("der Eintrag mit der Nummer {long} geändert werden soll")
+    public void changeEntryByNumber(long nummer) {
+        ResponseEntity<String> antwort = put("/api/eintraege/" + nummer, Map.of(
+                "datum", LocalDate.of(2026, 11, 16).toString(),
+                "betrag", new BigDecimal("-8.99"),
+                "kategorie", "Essen",
+                "person", "Alex",
+                "gemeinsam", false));
+        aenderungStatus = antwort.getStatusCode();
+    }
+
+    @Dann("wird das Ändern abgelehnt")
+    public void changeRejected() {
+        assertThat(aenderungStatus).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Wenn("dieser Eintrag gelöscht wird")
+    public void deleteThisEntry() {
+        geloeschteEintragId = singleEntry().path("id").asLong();
+        ResponseEntity<String> antwort = rest.exchange(
+                "/api/eintraege/" + geloeschteEintragId, HttpMethod.DELETE, HttpEntity.EMPTY, String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Dann("wird ein erneutes Löschen abgelehnt")
+    public void repeatedDeleteRejected() {
+        ResponseEntity<String> antwort = rest.exchange(
+                "/api/eintraege/" + geloeschteEintragId, HttpMethod.DELETE, HttpEntity.EMPTY, String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    private org.springframework.http.HttpStatusCode aenderungStatus;
+
+    private long geloeschteEintragId;
+
+    private JsonNode singleEntry() {
+        JsonNode eintraege = query(Map.of());
+        assertThat(eintraege.size()).isEqualTo(1);
+        return eintraege.get(0);
+    }
+
+    private Map<String, Object> fullBody(JsonNode vorhandener, BigDecimal neuerBetrag) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("datum", vorhandener.path("datum").asText());
+        body.put("betrag", neuerBetrag);
+        body.put("kategorie", vorhandener.path("kategorie").asText());
+        if (vorhandener.path("gemeinsam").asBoolean()) {
+            body.put("gemeinsam", true);
+            body.put("zahler", vorhandener.path("zahler").asText());
+        } else {
+            body.put("person", vorhandener.path("person").asText());
+            body.put("gemeinsam", false);
+        }
+        if (vorhandener.hasNonNull("konto")) {
+            body.put("konto", vorhandener.path("konto").asText());
+        }
+        return body;
+    }
+
+    private ResponseEntity<String> put(String url, Map<String, Object> body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return rest.exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), String.class);
     }
 
     private JsonNode ergebnis;
