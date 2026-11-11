@@ -8,6 +8,6 @@ Funktionalität: Einträge erfassen
 
     @R2
     Szenario: Einnahme zählt zu den Einnahmen und nicht zu den Ausgaben
-      Angenommen ein Eintrag mit Datum 30.11.2026, Betrag +2.000,00 Euro und Kategorie "Gehalt" erfasst wird
+      Angenommen ein Eintrag mit Datum 30.11.2026, Betrag +2.000,00 Euro und Kategorie "Gehalt" von "Alex" erfasst wird
       Wenn die Monatsübersicht November 2026 aufgerufen wird
       Dann zählt der Eintrag zu den Einnahmen und nicht zu den Ausgaben

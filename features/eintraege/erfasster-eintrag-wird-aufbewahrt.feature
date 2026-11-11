@@ -9,5 +9,5 @@ Funktionalität: Einträge erfassen
     @R1
     Szenario: Erfasster Eintrag wird aufbewahrt
       Angenommen noch kein Eintrag erfasst wurde
-      Wenn ein Eintrag mit Datum 15.11.2026, Betrag -12,50 Euro und Kategorie "Essen" erfasst wird
+      Wenn ein Eintrag mit Datum 15.11.2026, Betrag -12,50 Euro und Kategorie "Essen" von "Alex" erfasst wird
       Dann existiert genau ein Eintrag mit Datum 15.11.2026, Betrag -12,50 Euro und Kategorie "Essen"

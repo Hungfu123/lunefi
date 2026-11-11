@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: LuneFi
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lunefi
+    username: lunefi
+    password: lunefi
+  jpa:
+    hibernate:
+      ddl-auto: update

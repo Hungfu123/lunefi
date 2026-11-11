@@ -10,6 +10,7 @@ import java.util.Map;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java.ParameterType;
+import io.cucumber.java.de.Angenommen;
 import io.cucumber.java.de.Dann;
 import io.cucumber.java.de.Wenn;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,20 @@ public class MonatsuebersichtSteps {
         uebersicht = mapper.readTree(antwort.getBody());
     }
 
+    @Wenn("die Monatsübersicht Monat {int} im Jahr {int} aufgerufen wird")
+    public void ungueltigenMonatAufrufen(int monat, int jahr) {
+        ResponseEntity<String> antwort = rest.getForEntity(
+                "/api/monatsuebersicht/" + jahr + "-" + monat, String.class);
+        antwortStatus = antwort.getStatusCode();
+    }
+
+    @Dann("wird der Monat abgelehnt")
+    public void monatAbgelehnt() {
+        assertThat(antwortStatus).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    private org.springframework.http.HttpStatusCode antwortStatus;
+
     @Dann("zeigt die Monatsübersicht die Ausgaben je Kategorie")
     public void ausgabenJeKategorie(DataTable erwartet) {
         kategorieSummenAbgleichen(erwartet, "Kategorie", "Ausgaben", "ausgabenJeKategorie");
@@ -68,6 +83,29 @@ public class MonatsuebersichtSteps {
             assertThat(eintrag.hasNonNull("datum")).isTrue();
             assertThat(eintrag.hasNonNull("betrag")).isTrue();
         }
+    }
+
+    @Angenommen("das Budget für Kategorie {string} im {monat} auf {betrag} Euro gesetzt wird")
+    public void budgetSetzen(String kategorie, YearMonth monat, BigDecimal limit) {
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        org.springframework.http.ResponseEntity<String> antwort = rest.exchange(
+                "/api/budgets",
+                org.springframework.http.HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(java.util.Map.of(
+                        "monat", monat.toString(),
+                        "kategorie", kategorie,
+                        "limit", limit), headers),
+                String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Dann("warnt die Monatsübersicht bei Kategorie {string}")
+    public void budgetWarnung(String kategorie) {
+        JsonNode budget = uebersicht.path("budgets").path(kategorie);
+        assertThat(budget.path("limit").decimalValue()).isEqualByComparingTo(new BigDecimal("200.00"));
+        assertThat(budget.path("ist").decimalValue()).isEqualByComparingTo(new BigDecimal("250.00"));
+        assertThat(budget.path("warnung").asBoolean()).isTrue();
     }
 
     private void kategorieSummenAbgleichen(DataTable erwartet, String kategorieSpalte, String summenSpalte, String feld) {

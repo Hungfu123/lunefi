@@ -8,9 +8,9 @@ Funktionalität: Monatsübersicht
 
     @R3
     Szenario: Monatsübersicht zeigt Ausgaben, Einnahmen und alle Einträge
-      Angenommen ein Eintrag mit Datum 15.11.2026, Betrag -12,50 Euro und Kategorie "Essen" erfasst wird
-      Und ein Eintrag mit Datum 01.11.2026, Betrag -950,00 Euro und Kategorie "Miete" erfasst wird
-      Und ein Eintrag mit Datum 30.11.2026, Betrag +2.000,00 Euro und Kategorie "Gehalt" erfasst wird
+      Angenommen ein Eintrag mit Datum 15.11.2026, Betrag -12,50 Euro und Kategorie "Essen" von "Alex" erfasst wird
+      Und ein Eintrag mit Datum 01.11.2026, Betrag -950,00 Euro und Kategorie "Miete" von "Alex" erfasst wird
+      Und ein Eintrag mit Datum 30.11.2026, Betrag +2.000,00 Euro und Kategorie "Gehalt" von "Alex" erfasst wird
       Wenn die Monatsübersicht November 2026 aufgerufen wird
       Dann zeigt die Monatsübersicht die Ausgaben je Kategorie
         | Kategorie | Ausgaben |

@@ -1,0 +1,81 @@
+package finance;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "eintrag")
+public class EintragEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private LocalDate datum;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal betrag;
+
+    @Column(nullable = false)
+    private String kategorie;
+
+    private String person;
+
+    @Column(nullable = false)
+    private Boolean gemeinsam;
+
+    private String zahler;
+
+    protected EintragEntity() {
+    }
+
+    public EintragEntity(LocalDate datum, BigDecimal betrag, String kategorie,
+            String person, Boolean gemeinsam, String zahler) {
+        this.datum = datum;
+        this.betrag = betrag;
+        this.kategorie = kategorie;
+        this.person = person;
+        this.gemeinsam = gemeinsam;
+        this.zahler = zahler;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public LocalDate getDatum() {
+        return datum;
+    }
+
+    public BigDecimal getBetrag() {
+        return betrag;
+    }
+
+    public String getKategorie() {
+        return kategorie;
+    }
+
+    public String getPerson() {
+        return person;
+    }
+
+    public Boolean getGemeinsam() {
+        return gemeinsam;
+    }
+
+    public String getZahler() {
+        return zahler;
+    }
+
+    public Eintrag alsEintrag() {
+        return new Eintrag(id, datum, betrag, kategorie, person, gemeinsam, zahler);
+    }
+}
