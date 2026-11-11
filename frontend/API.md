@@ -96,8 +96,33 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 ## Split-Konfiguration je Kategorie (Regel G3)
 
 - `PUT /api/kategorien/{kategorie}/split` Body `{"art": "HALBHALB"}` oder `{"art": "ANTEILE", "anteile": {"Alex": 60, "Kim": 40}}` (Prozent, Summe 100) → `200` mit der gespeicherten Konfiguration
-- `GET /api/kategorien` → `[{"name": "Essen", "split": {"art": "HALBHALB", "anteile": null}}]` (Kategorien entstehen durch Nutzung; Standard: HALBHALB)
+- `GET /api/kategorien` → `[{"name": "Essen", "split": {"art": "HALBHALB", "anteile": null}, "haltung": "FLEXIBEL"}]` (Kategorien entstehen durch Nutzung; Standard: HALBHALB, Haltung FLEXIBEL)
 - Ungültige Anteile (Summe ≠ 100, leere Person, unbekannte Art) → `400`
+
+## Spar-Coaching: Haltung je Kategorie (Regeln C1–C3, `specs/budgets.md` — Vorschläge, noch nicht bestätigt)
+
+- `PUT /api/kategorien/{kategorie}/haltung` Body `{"haltung": "SPAREN"|"FLEXIBEL"|"BEWUSST_MEHR"}` → `200` mit `{"haltung": "<gespeicherte Haltung>"}`
+  - Ungültige Haltung → `400`
+  - Default für neue Kategorien: `FLEXIBEL` (auch Kategorien nur aus Einträgen, ohne konfigurierte Zeile)
+  - Kategorie ohne Budget darf die Haltung trotzdem haben — sie wirkt erst, wenn ein Budget existiert
+  - Haltungen sind Paar-Daten (C3): kein Person-Filter, beide Partner sehen/dasselbe; ein späterer `PUT …/split` überschreibt die Haltung nicht
+- `GET /api/coaching?monat=2026-11` →
+  ```json
+  {
+    "monat": "2026-11",
+    "budgetsUebrig": {"Freizeit": 15.00},
+    "empfehlungen": [{"kategorie": "Freizeit", "haltung": "BEWUSST_MEHR", "ist": 25.00, "limit": 40.00, "spielraum": 15.00, "tipp": "Freizeit verträgt 15,00 € mehr — bewusst genießen"}],
+    "gutGespart": [{"kategorie": "Miete", "haltung": "SPAREN", "ist": 950.00, "limit": 950.00, "spielraum": 0.00}]
+  }
+  ```
+  - Nur Kategorien mit Budget im Monat; `ist` = Summe aller Ausgaben der Kategorie im Monat (persönliche und gemeinsame — Paar-weit).
+  - `spielraum` = max(`limit` − `ist`; 0).
+  - Haltung `BEWUSST_MEHR` mit `spielraum` > 0 → Eintrag in `empfehlungen` (mit Tipp-Text; Ermutigung nur, weil der Nutzer die Haltung selbst gewählt hat).
+  - Haltung `SPAREN` mit `ist` ≤ `limit` → Eintrag in `gutGespart` (Lob, ohne Tipp; `spielraum` 0,00 möglich).
+  - Haltung `FLEXIBEL` → nur Eintrag in `budgetsUebrig` (Zahl, keine Wertung — Prinzip „emotional neutral").
+  - Über-Limit-Kategorien (`ist` > `limit`) erscheinen in keiner der drei Listen (die F2-Budget-Warnung existiert schon).
+  - Kein `person`/`gemeinsam`-Parameter (C3): Coaching ist reine Paar-Sicht, beide Partner sehen dieselben Haltungen und Tipps.
+  - Ungültiger/fehlender `monat` → `400`.
 
 ## Sparziele (Regel G5)
 

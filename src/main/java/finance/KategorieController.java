@@ -41,9 +41,25 @@ public class KategorieController {
             SplitKonfiguration split = konfiguriert == null
                     ? new SplitKonfiguration("HALBHALB", null)
                     : konfiguriert.asSplitConfiguration();
-            kategorien.add(new KategorieInfo(name, split));
+            String haltung = konfiguriert == null ? Haltung.FLEXIBEL : konfiguriert.asHaltung();
+            kategorien.add(new KategorieInfo(name, split, haltung));
         }
         return kategorien;
+    }
+
+    @PutMapping("/{kategorie}/haltung")
+    public ResponseEntity<Haltung> setHaltung(@PathVariable String kategorie,
+            @RequestBody Haltung haltung) {
+        if (haltung == null || !haltung.istGueltig()) {
+            return ResponseEntity.badRequest().build();
+        }
+        KategorieEntity gespeichert = kategorieRepository.findById(kategorie)
+                .map(vorhandenes -> {
+                    vorhandenes.setHaltung(haltung.haltung());
+                    return vorhandenes;
+                })
+                .orElseGet(() -> new KategorieEntity(kategorie, "HALBHALB", Map.of(), haltung.haltung()));
+        return ResponseEntity.ok(new Haltung(kategorieRepository.save(gespeichert).asHaltung()));
     }
 
     @PutMapping("/{kategorie}/split")
@@ -53,9 +69,15 @@ public class KategorieController {
             return ResponseEntity.badRequest().build();
         }
         Map<String, Integer> anteile = "ANTEILE".equals(split.art()) ? split.anteile() : Map.of();
-        KategorieEntity gespeichert = kategorieRepository.save(
-                new KategorieEntity(kategorie, split.art(), anteile));
-        return ResponseEntity.ok(gespeichert.asSplitConfiguration());
+        KategorieEntity gespeichert = kategorieRepository.findById(kategorie)
+                .map(vorhandenes -> {
+                    vorhandenes.setArt(split.art());
+                    vorhandenes.getAnteile().clear();
+                    vorhandenes.getAnteile().putAll(anteile);
+                    return vorhandenes;
+                })
+                .orElseGet(() -> new KategorieEntity(kategorie, split.art(), anteile));
+        return ResponseEntity.ok(kategorieRepository.save(gespeichert).asSplitConfiguration());
     }
 
     private boolean isValid(SplitKonfiguration split) {

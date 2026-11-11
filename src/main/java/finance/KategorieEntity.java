@@ -26,13 +26,20 @@ public class KategorieEntity {
     @Column(name = "anteil")
     private Map<String, Integer> anteile = new HashMap<>();
 
+    private String haltung;
+
     protected KategorieEntity() {
     }
 
     public KategorieEntity(String name, String art, Map<String, Integer> anteile) {
+        this(name, art, anteile, null);
+    }
+
+    public KategorieEntity(String name, String art, Map<String, Integer> anteile, String haltung) {
         this.name = name;
         this.art = art;
         this.anteile = anteile;
+        this.haltung = haltung;
     }
 
     public String getName() {
@@ -43,8 +50,24 @@ public class KategorieEntity {
         return art;
     }
 
+    public void setArt(String art) {
+        this.art = art;
+    }
+
     public Map<String, Integer> getAnteile() {
         return anteile;
+    }
+
+    public String getHaltung() {
+        return haltung;
+    }
+
+    public void setHaltung(String haltung) {
+        this.haltung = haltung;
+    }
+
+    public String asHaltung() {
+        return haltung == null ? "FLEXIBEL" : haltung;
     }
 
     public SplitKonfiguration asSplitConfiguration() {
