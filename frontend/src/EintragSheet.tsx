@@ -5,6 +5,7 @@ import { betragAusEingabe, euro, heuteIso } from './format'
 import {
   KategorieIconTile,
   PICKER_ICONS,
+  iconVonName,
   iconNameVon,
   kategorieIconName,
   setzeKategorieIcon,
@@ -85,6 +86,8 @@ export function EintragSheet({
   )
 
   const betragWert = betragAusEingabe(betrag)
+  const aktivesIconName = kategorie.trim() === '' ? null : (iconWahl ?? kategorieIconName(kategorie))
+  const AktivesIcon = aktivesIconName === null ? null : iconVonName(aktivesIconName)
   const splitInfo = kategorien.find((k) => k.name === kategorie)?.split
   const anteileText =
     splitInfo?.art === 'ANTEILE' && splitInfo.anteile
@@ -250,12 +253,32 @@ export function EintragSheet({
                 ))}
               </div>
             )}
-            <input
-              value={kategorie}
-              onChange={(e) => setKategorie(e.target.value)}
-              placeholder="Neue Kategorie"
-              className="mb-2 w-full rounded-xl bg-karte2 px-4 py-2.5 outline-none ring-strich focus:ring-2"
-            />
+            <div className="relative mb-1">
+              <input
+                value={kategorie}
+                onChange={(e) => {
+                  setKategorie(e.target.value)
+                  setIconWahl(null)
+                }}
+                placeholder="Neue Kategorie"
+                className="w-full rounded-xl bg-karte2 px-4 py-2.5 pr-11 outline-none ring-strich focus:ring-2"
+              />
+              {AktivesIcon && (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-text"
+                >
+                  <AktivesIcon size={17} />
+                </span>
+              )}
+            </div>
+            {AktivesIcon && aktivesIconName !== null && (
+              <p className="mb-2 flex items-center gap-1.5 text-xs text-textschwach">
+                Gewähltes Icon:
+                <AktivesIcon size={13} className="shrink-0 text-akzent" aria-hidden="true" />
+                <span className="font-medium text-text">{aktivesIconName}</span>
+              </p>
+            )}
 
             <AnimatePresence initial={false}>
               {kategorie.trim() !== '' ? (

@@ -84,20 +84,23 @@ export const PICKER_ICONS: PhosphorIcon[] = [
 
 const REGELN: Array<[RegExp, string]> = [
   [/mietwagen/, 'Car'],
-  [/ess(e|en)|restaurant|supermarkt|grocer|lebensmittel/, 'ForkKnife'],
+  [/ess(e|en)|restaurant|caf(e|é)|b(a|ä)ckerei|supermarkt|lebensmittel|rewe|edeka|aldi|lidl/, 'ForkKnife'],
   [/freizeit|kino|spiel/, 'GameController'],
-  [/miete|wohnung|haus/, 'House'],
+  [/konzert|musik/, 'MusicNotes'],
+  [/miete|wohnung|haus|hypothek|nebenkosten/, 'House'],
   [/strom|energie/, 'Lightning'],
   [/internet|wifi|netzwerk/, 'WifiHigh'],
   [/telefon|handy/, 'DeviceMobile'],
   [/versicher/, 'ShieldCheck'],
-  [/abo/, 'ArrowsClockwise'],
+  [/abo|netflix|spotify/, 'ArrowsClockwise'],
   [/gehalt|lohn|salary/, 'Money'],
-  [/erstattung/, 'ArrowCounterClockwise'],
-  [/urlaub|reise|flug/, 'AirplaneTakeoff'],
-  [/transport|bahn|auto|tanken/, 'Car'],
-  [/shopping|kleidung/, 'ShoppingBag'],
-  [/gesundheit|arzt|apotheke/, 'FirstAid'],
+  [/erstattung|refund|gutschrift/, 'ArrowCounterClockwise'],
+  [/urlaub|reise|flug|hotel/, 'AirplaneTakeoff'],
+  [/bahn/, 'Train'],
+  [/transport|auto|bus|tank/, 'Car'],
+  [/shopping|kleidung|einkauf/, 'ShoppingBag'],
+  [/gesundheit|arzt|apotheke|medizin/, 'FirstAid'],
+  [/sport|fitness/, 'Heart'],
   [/geschenk/, 'Gift'],
   [/spar/, 'PiggyBank'],
 ]
@@ -137,6 +140,10 @@ export function iconNameVon(icon: PhosphorIcon): string {
 
 export function kategorieIcon(name: string): PhosphorIcon {
   return ICONS[kategorieIconName(name)] ?? Wallet
+}
+
+export function iconVonName(name: string): PhosphorIcon {
+  return ICONS[name] ?? Wallet
 }
 
 export function KategorieIcon({ name, size = 17, className }: { name: string; size?: number; className?: string }) {
