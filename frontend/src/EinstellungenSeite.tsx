@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Moon, Question, Sun } from '@phosphor-icons/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { CaretDown, Moon, Question, Sun } from '@phosphor-icons/react'
 import { ApiFehler, lese, schreibe, type KategorieInfo, type Konto } from './types'
-import { TYP_LABEL, VORDEFINIERTE_KATEGORIEN } from './kategorien'
 import { KategorieIconTile } from './kategorieIcon'
-import { HaltungsSelector } from './HaltungsSelector'
+import { HALTUNG_LABEL, HaltungsSelector } from './HaltungsSelector'
 import { HilfeModal } from './HilfeModal'
 import { betragAusEingabe, euro, monatAlsString } from './format'
 import { useApp } from './AppKontext'
 
 export function EinstellungenSeite() {
   const { personen, aktivePerson } = useApp()
+  const reduziert = useReducedMotion()
   const [kategorien, setKategorien] = useState<KategorieInfo[]>([])
   const [konten, setKonten] = useState<Konto[]>([])
   const [kontoName, setKontoName] = useState('')
   const [kontoSaldo, setKontoSaldo] = useState('')
+  const [offeneKategorie, setOffeneKategorie] = useState<string | null>(null)
   const [theme, setTheme] = useState<'mond' | 'sonne'>(
     () => (document.documentElement.dataset.theme === 'sonne' ? 'sonne' : 'mond'),
   )
@@ -37,10 +39,12 @@ export function EinstellungenSeite() {
         setBudgets(verzeichnis)
       })
       .catch(() => setKategorien([]))
-    lese<Konto[]>('/api/konten')
+    lese<Konto[]>(
+      aktivePerson ? `/api/konten?person=${encodeURIComponent(aktivePerson)}` : '/api/konten',
+    )
       .then(setKonten)
       .catch(() => setKonten([]))
-  }, [])
+  }, [aktivePerson])
 
   useEffect(laden, [laden])
 
@@ -171,80 +175,124 @@ export function EinstellungenSeite() {
       </section>
 
       <section className="mb-6">
-        <h3 className="mb-2 text-sm font-medium text-textschwach">Aufteilung je Kategorie</h3>
+        <h3 className="mb-2 text-sm font-medium text-textschwach">Kategorien</h3>
         <p className="mb-2 text-[12px] text-textschwach">
           Haltung fürs Budget-Coaching — euer Partner sieht sie ebenfalls.
         </p>
         {kategorien.length === 0 && (
           <p className="text-sm text-textschwach">Noch keine Kategorien — leg den ersten Eintrag an.</p>
         )}
-        <ul className="space-y-1.5">
+        <ul className="space-y-1">
           {kategorien.map((k) => {
-            const typ = VORDEFINIERTE_KATEGORIEN.find(
-              (v) => v.name.toLowerCase() === k.name.toLowerCase(),
-            )?.typ
+            const offen = offeneKategorie === k.name
             return (
-              <li key={k.name} className="rounded-xl bg-karte px-3.5 py-1.5">
-                <div className="flex items-center gap-3">
-                  <KategorieIconTile name={k.name} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-semibold leading-tight text-text">{k.name}</p>
-                    <p className="truncate text-[11px] leading-tight text-textschwach">
-                      {typ ? `${TYP_LABEL[typ]} · ` : ''}
-                      {k.split.art === 'ANTEILE' && k.split.anteile
-                        ? Object.entries(k.split.anteile)
-                            .map(([n, a]) => `${n} ${a}%`)
-                            .join(' · ')
-                        : '50/50'}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 gap-1.5">
-                    <button
-                      onClick={() => splitSetzen(k.name, 'HALBHALB')}
-                      className="flex min-h-8 items-center rounded-lg bg-karte2 px-3 text-xs"
+              <li key={k.name} className="overflow-hidden rounded-xl bg-karte px-3.5">
+                <button
+                  type="button"
+                  aria-expanded={offen}
+                  onClick={() => setOffeneKategorie(offen ? null : k.name)}
+                  className="flex h-8 w-full items-center gap-3 text-left"
+                >
+                  <KategorieIconTile name={k.name} groesse={22} iconGroesse={13} />
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-text">
+                    {k.name}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span className="rounded-full bg-karte2 px-2 py-0.5 text-[11px] text-textschwach">
+                      {k.split.art === 'ANTEILE' ? 'Anteile' : '50/50'}
+                    </span>
+                    {k.haltung !== 'FLEXIBEL' && (
+                      <span className="rounded-full bg-akzent/15 px-2 py-0.5 text-[11px] text-akzent">
+                        {HALTUNG_LABEL[k.haltung]}
+                      </span>
+                    )}
+                    <CaretDown
+                      size={12}
+                      aria-hidden="true"
+                      className={`shrink-0 text-textschwach transition-transform ${offen ? '' : 'rotate-180'}`}
+                    />
+                  </span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {offen && (
+                    <motion.div
+                      className="overflow-hidden"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={reduziert ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                     >
-                      50/50
-                    </button>
-                    <button
-                      onClick={() => splitSetzen(k.name, 'ANTEILE')}
-                      className="flex min-h-8 items-center rounded-lg bg-karte2 px-3 text-xs"
-                    >
-                      Anteile
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-1.5">
-                  <HaltungsSelector kategorie={k.name} haltung={k.haltung} />
-                </div>
+                      <div className="space-y-2.5 px-0.5 pb-3 pt-1">
+                        <div>
+                          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                            Aufteilung
+                          </p>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => splitSetzen(k.name, 'HALBHALB')}
+                              aria-pressed={k.split.art !== 'ANTEILE'}
+                              className={`flex min-h-8 flex-1 items-center justify-center rounded-lg text-xs ${
+                                k.split.art !== 'ANTEILE'
+                                  ? 'bg-akzentstark text-akzenttext'
+                                  : 'bg-karte2 text-textschwach'
+                              }`}
+                            >
+                              50/50
+                            </button>
+                            <button
+                              onClick={() => splitSetzen(k.name, 'ANTEILE')}
+                              aria-pressed={k.split.art === 'ANTEILE'}
+                              className={`flex min-h-8 flex-1 items-center justify-center rounded-lg text-xs ${
+                                k.split.art === 'ANTEILE'
+                                  ? 'bg-akzentstark text-akzenttext'
+                                  : 'bg-karte2 text-textschwach'
+                              }`}
+                            >
+                              Anteile
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                            Haltung
+                          </p>
+                          <HaltungsSelector
+                            kategorie={k.name}
+                            haltung={k.haltung}
+                            onHaltung={(wert) =>
+                              setKategorien((alt) =>
+                                alt.map((x) => (x.name === k.name ? { ...x, haltung: wert } : x)),
+                              )
+                            }
+                          />
+                        </div>
+                        <div>
+                          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                            Budget-Limit
+                          </p>
+                          <form onSubmit={(e) => budgetSetzen(k.name, e)} className="flex items-center gap-2">
+                            <input
+                              value={budgets[k.name] ?? ''}
+                              onChange={(e) => setBudgets((alt) => ({ ...alt, [k.name]: e.target.value }))}
+                              inputMode="decimal"
+                              placeholder="Limit in Euro"
+                              className="min-w-0 flex-1 rounded-xl bg-karte2 px-3 py-2 outline-none ring-strich focus:ring-2"
+                            />
+                            <button
+                              type="submit"
+                              className="flex min-h-9 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-xs font-semibold text-akzenttext"
+                            >
+                              Speichern
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </li>
             )
           })}
-        </ul>
-        <p className="mt-2 text-xs text-textschwach">
-          Gemeinsam gekauft? Standard 50/50 — Prozente hier anpassen.
-        </p>
-      </section>
-
-      <section>
-        <h3 className="mb-2 text-sm font-medium text-textschwach">Budget-Limit setzen</h3>
-        <ul className="space-y-2">
-          {kategorien.map((k) => (
-            <li key={k.name}>
-              <form onSubmit={(e) => budgetSetzen(k.name, e)} className="flex items-center gap-2">
-                <span className="w-28 shrink-0 truncate text-sm">{k.name}</span>
-                <input
-                  value={budgets[k.name] ?? ''}
-                  onChange={(e) => setBudgets((alt) => ({ ...alt, [k.name]: e.target.value }))}
-                  inputMode="decimal"
-                  placeholder="Limit in Euro"
-                  className="min-w-0 flex-1 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
-                />
-                <button type="submit" className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-akzenttext">
-                  Speichern
-                </button>
-              </form>
-            </li>
-          ))}
         </ul>
       </section>
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { CheckCircle } from '@phosphor-icons/react'
 import { lese, sende, type Ausgleich, type AusgleichMonat, type AusgleichPosition } from './types'
-import { euro, monatAlsString, monatLabel, monatVerschieben } from './format'
+import { euro, monatAlsString, monatKurz, monatLabel, monatVerschieben } from './format'
 import { KategorieIconTile } from './kategorieIcon'
 
 function AusgeglichenPill() {
@@ -215,26 +215,34 @@ export function AusgleichSeite() {
           {verlauf.length > 1 && (
             <>
               <h3 className="mb-2 text-sm font-medium text-textschwach">Verlauf</h3>
-              <ul className="space-y-2">
-                {verlauf.map((m) => (
-                  <li key={m.monat}>
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {verlauf.map((m) => {
+                  const betrag = Math.max(0, ...Object.values(m.saldi).map(Math.abs))
+                  return (
                     <button
+                      key={m.monat}
                       onClick={() => monatWaehlen(m.monat)}
-                      className={`flex w-full items-center justify-between rounded-xl bg-karte px-4 py-2.5 text-left transition-colors ${
+                      aria-label={`${monatLabel(m.monat)} laden`}
+                      className={`flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-karte px-3.5 ${
                         m.monat === monat ? 'ring-2 ring-akzent' : ''
                       }`}
                     >
-                      <span className="text-sm">{monatLabel(m.monat)}</span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-sm text-textschwach">{m.vorschlag ?? 'ausgeglichen'}</span>
-                        {m.ausgeglichen && (
-                          <CheckCircle size={14} weight="fill" className="shrink-0 text-gut" aria-label="ausgeglichen" />
-                        )}
-                      </span>
+                      <span className="text-[13px] font-medium">{monatKurz(m.monat)}</span>
+                      {m.ausgeglichen ? (
+                        <CheckCircle size={14} weight="fill" className="shrink-0 text-gut" aria-label="ausgeglichen" />
+                      ) : m.laeuftNoch ? (
+                        <span className="text-[11px] text-akzent">läuft noch</span>
+                      ) : m.vorschlag ? (
+                        <span className="betragszahl text-[11px] font-semibold text-textschwach">
+                          {euro(betrag)}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-textschwach">nichts offen</span>
+                      )}
                     </button>
-                  </li>
-                ))}
-              </ul>
+                  )
+                })}
+              </div>
             </>
           )}
         </>

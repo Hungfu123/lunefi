@@ -617,7 +617,7 @@ export function Uebersicht({
                       type="button"
                       onClick={() => onEintragBearbeiten(eintrag)}
                       aria-label={`${eintrag.kategorie} bearbeiten`}
-                      className="flex w-full items-center justify-between gap-3 py-1.5 text-left"
+                      className="flex w-full items-center justify-between gap-3 py-1 text-left"
                     >
                     <div className="flex min-w-0 items-center gap-3">
                       <KategorieIconTile name={eintrag.kategorie} />
