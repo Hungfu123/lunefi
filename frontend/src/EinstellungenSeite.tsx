@@ -102,7 +102,7 @@ export function EinstellungenSeite() {
           <button
             onClick={() => themeSetzen('mond')}
             className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 transition-colors ${
-              theme === 'mond' ? 'bg-akzentstark text-white' : 'bg-karte text-textschwach'
+              theme === 'mond' ? 'bg-akzentstark text-akzenttext' : 'bg-karte text-textschwach'
             }`}
           >
             <Moon size={18} weight={theme === 'mond' ? 'fill' : 'regular'} />
@@ -111,7 +111,7 @@ export function EinstellungenSeite() {
           <button
             onClick={() => themeSetzen('sonne')}
             className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 transition-colors ${
-              theme === 'sonne' ? 'bg-akzentstark text-white' : 'bg-karte text-textschwach'
+              theme === 'sonne' ? 'bg-akzentstark text-akzenttext' : 'bg-karte text-textschwach'
             }`}
           >
             <Sun size={18} weight={theme === 'sonne' ? 'fill' : 'regular'} />
@@ -129,7 +129,7 @@ export function EinstellungenSeite() {
                 <span className="truncate text-sm">
                   {k.name} <span className="text-textschwach">· {k.person}</span>
                 </span>
-                <span className="text-sm font-semibold">{euro(k.saldo)}</span>
+                <span className="betragszahl text-sm font-semibold">{euro(k.saldo)}</span>
               </li>
             ))}
           </ul>
@@ -148,7 +148,7 @@ export function EinstellungenSeite() {
             placeholder="Startsaldo"
             className="w-28 shrink-0 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
           />
-          <button type="submit" className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-white">
+          <button type="submit" className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-akzenttext">
             Anlegen
           </button>
         </form>
@@ -165,7 +165,7 @@ export function EinstellungenSeite() {
               key={p.id}
               onClick={() => setAktivePerson(p.name)}
               className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 ${
-                aktivePerson === p.name ? 'bg-akzentstark text-white' : 'bg-karte'
+                aktivePerson === p.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte'
               }`}
             >
               {p.name}
@@ -230,7 +230,7 @@ export function EinstellungenSeite() {
                   placeholder="Limit in Euro"
                   className="min-w-0 flex-1 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
                 />
-                <button type="submit" className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-white">
+                <button type="submit" className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-akzenttext">
                   Speichern
                 </button>
               </form>

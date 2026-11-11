@@ -1,42 +1,47 @@
 @import "tailwindcss";
-@import "@fontsource-variable/manrope";
+@import "@fontsource-variable/inter";
 
 @theme {
-  --color-base: #0d0b17;
-  --color-karte: #17142a;
-  --color-karte2: #221d3d;
-  --color-strich: #332c56;
-  --color-akzent: #a78bfa;
-  --color-akzentstark: #7c4ae8;
+  --color-base: #0f1115;
+  --color-karte: #171a20;
+  --color-karte2: #1f232b;
+  --color-strich: color-mix(in srgb, var(--color-text) 9%, transparent);
+  --color-akzent: #2dd4bf;
+  --color-akzentstark: #2dd4bf;
+  --color-akzenttext: #0f1115;
   --color-gut: #4ade80;
   --color-schlecht: #f87171;
   --color-warn: #fbbf24;
-  --color-text: #eceaf8;
-  --color-textschwach: #b9b3d6;
-  --font-sans: "Manrope Variable", system-ui, sans-serif;
+  --color-text: #f0f2f5;
+  --color-textschwach: #9aa3af;
+  --font-sans: "Inter Variable", system-ui, sans-serif;
 }
 
 :root {
-  --hg-oben: #0d0b17;
-  --hg-unten: #100d1f;
+  --hg-oben: #0f1115;
+  --hg-unten: #141822;
   color-scheme: dark;
 }
 
 html[data-theme="sonne"] {
-  --color-base: #fbf7ef;
+  --color-base: #f7f8fa;
   --color-karte: #ffffff;
-  --color-karte2: #f3ecdf;
-  --color-strich: #e0d5bf;
-  --color-akzent: #b45309;
-  --color-akzentstark: #c2410c;
+  --color-karte2: #eef0f3;
+  --color-akzent: #0f766e;
+  --color-akzentstark: #0f766e;
+  --color-akzenttext: #ffffff;
   --color-gut: #15803d;
-  --color-schlecht: #b91c1c;
+  --color-schlecht: #dc2626;
   --color-warn: #a16207;
-  --color-text: #292524;
-  --color-textschwach: #6f6657;
-  --hg-oben: #fbf7ef;
-  --hg-unten: #f4edde;
+  --color-text: #171a20;
+  --color-textschwach: #5f6b7a;
+  --hg-oben: #f7f8fa;
+  --hg-unten: #eef0f3;
   color-scheme: light;
+}
+
+.betragszahl {
+  font-variant-numeric: tabular-nums;
 }
 
 @keyframes seite-erscheinen {

@@ -66,7 +66,7 @@ export function SparzieleSeite() {
         <h2 className="text-lg font-semibold">Sparziele</h2>
         <button
           onClick={() => setNeuOffen(true)}
-          className="flex min-h-11 items-center rounded-xl bg-akzentstark px-4 text-sm font-semibold text-white active:scale-[0.98]"
+          className="flex min-h-11 items-center rounded-xl bg-akzentstark px-4 text-sm font-semibold text-akzenttext active:scale-[0.98]"
         >
           Neues Ziel
         </button>
@@ -101,7 +101,7 @@ export function SparzieleSeite() {
               <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-karte2">
                 <div className="h-full rounded-full bg-akzent" style={{ width: `${anteil}%` }} />
               </div>
-              <p className="mt-1.5 text-xs text-textschwach">
+              <p className="betragszahl mt-1.5 text-xs text-textschwach">
                 {euro(ziel.eingezahlt)} von {euro(ziel.zielbetrag)}
               </p>
             </li>
@@ -184,7 +184,7 @@ function NeuesZielDialog({ zu, erstellt }: { zu: () => void; erstellt: () => voi
         <button
           type="submit"
           disabled={laeuft}
-          className="rounded-xl bg-akzentstark py-3 font-semibold text-white disabled:opacity-50"
+          className="rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext disabled:opacity-50"
         >
           Anlegen
         </button>
@@ -247,7 +247,7 @@ function EinzahlDialog({
               key={p}
               onClick={() => setPerson(p)}
               className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 text-sm ${
-                person === p ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
+                person === p ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
               }`}
             >
               {p}
@@ -258,7 +258,7 @@ function EinzahlDialog({
         <button
           type="submit"
           disabled={laeuft}
-          className="rounded-xl bg-akzentstark py-3 font-semibold text-white disabled:opacity-50"
+          className="rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext disabled:opacity-50"
         >
           Einzahlen
         </button>

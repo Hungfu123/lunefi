@@ -71,7 +71,7 @@ export function Onboarding() {
         <button
           type="submit"
           disabled={laeuft}
-          className="rounded-xl bg-akzentstark py-3 font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-50"
+          className="rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
         >
           Los geht's
         </button>

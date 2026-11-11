@@ -76,7 +76,7 @@ export function Layout({ onEintragNeu }: { onEintragNeu: () => void }) {
         <button
           onClick={onEintragNeu}
           aria-label="Eintrag erfassen"
-          className="fixed bottom-24 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-akzentstark text-3xl font-light text-white shadow-lg shadow-black/40 transition-transform active:scale-95 sm:right-auto sm:left-[calc(50%+208px)]"
+          className="fixed bottom-24 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-akzentstark text-3xl font-light text-akzenttext shadow-lg shadow-black/40 transition-transform active:scale-95 sm:right-auto sm:left-[calc(50%+208px)]"
         >
           +
         </button>

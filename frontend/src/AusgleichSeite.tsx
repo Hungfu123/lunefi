@@ -82,7 +82,7 @@ export function AusgleichSeite() {
               return (
                 <div key={person} className="rounded-2xl bg-karte p-4">
                   <p className="truncate text-xs text-textschwach">{person}</p>
-                  <p className={`mt-1 text-lg font-semibold ${saldo > 0 ? 'text-gut' : saldo < 0 ? 'text-schlecht' : ''}`}>
+                  <p className={`betragszahl mt-1 text-lg font-semibold ${saldo > 0 ? 'text-gut' : saldo < 0 ? 'text-schlecht' : ''}`}>
                     {euro(saldo)}
                   </p>
                   <p className="mt-0.5 text-xs text-textschwach">
@@ -102,7 +102,7 @@ export function AusgleichSeite() {
               <li key={position.id} className="rounded-xl bg-karte px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{position.kategorie}</span>
-                  <span className="text-sm font-semibold">{euro(Math.abs(position.betrag))}</span>
+                  <span className="betragszahl text-sm font-semibold">{euro(Math.abs(position.betrag))}</span>
                 </div>
                 <p className="mt-1 text-xs text-textschwach">
                   {position.zahler} {position.betrag >= 0 ? 'hat erhalten' : 'hat bezahlt'}

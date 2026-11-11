@@ -125,7 +125,7 @@ export function EintragSheet({
                 type="button"
                 onClick={() => setArt('ausgabe')}
                 className={`flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
-                  art === 'ausgabe' ? 'bg-akzentstark text-white' : 'text-textschwach'
+                  art === 'ausgabe' ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
                 }`}
               >
                 Ausgabe
@@ -134,7 +134,7 @@ export function EintragSheet({
                 type="button"
                 onClick={() => setArt('einnahme')}
                 className={`flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
-                  art === 'einnahme' ? 'bg-akzentstark text-white' : 'text-textschwach'
+                  art === 'einnahme' ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
                 }`}
               >
                 Einnahme
@@ -158,7 +158,7 @@ export function EintragSheet({
                   key={k}
                   onClick={() => setKategorie(k)}
                   className={`flex min-h-11 items-center rounded-full px-4 text-sm transition-colors ${
-                    kategorie === k ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
+                    kategorie === k ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
                   }`}
                 >
                   {k}
@@ -210,7 +210,7 @@ export function EintragSheet({
                     key={p.id}
                     onClick={() => (gemeinsam ? setZahler(p.name) : setPerson(p.name))}
                     className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 transition-colors ${
-                      gewaehlt ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
+                      gewaehlt ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
                     }`}
                   >
                     {p.name}
@@ -229,7 +229,7 @@ export function EintragSheet({
                       key={k.id}
                       onClick={() => setKonto(konto === k.name ? null : k.name)}
                       className={`flex min-h-11 items-center rounded-full px-4 text-sm transition-colors ${
-                        konto === k.name ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
+                        konto === k.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
                       }`}
                     >
                       {k.name}
@@ -244,7 +244,7 @@ export function EintragSheet({
             <button
               type="submit"
               disabled={laeuft}
-              className="w-full rounded-xl bg-akzentstark py-3 font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-50"
+              className="w-full rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
             >
               Speichern
             </button>
