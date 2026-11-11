@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ApiFehler, lese, schreibe, type Sparziel } from './types'
 import { betragAusEingabe, euro, heuteIso } from './format'
 import { useApp } from './AppKontext'
@@ -12,13 +13,28 @@ function Dialog({
   zu: () => void
   children: React.ReactNode
 }) {
+  const reduziert = useReducedMotion()
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center p-5">
-      <button aria-label="Schließen" className="absolute inset-0 bg-black/60" onClick={zu} />
-      <div className="relative w-full max-w-xs rounded-2xl border border-strich bg-karte p-5">
+      <motion.button
+        aria-label="Schließen"
+        className="absolute inset-0 bg-black/60"
+        onClick={zu}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18 }}
+      />
+      <motion.div
+        className="relative w-full max-w-xs rounded-2xl border border-strich bg-karte p-5"
+        initial={{ opacity: 0, transform: 'scale(0.94)' }}
+        animate={{ opacity: 1, transform: 'scale(1)' }}
+        exit={{ opacity: 0, transform: 'scale(0.94)' }}
+        transition={reduziert ? { duration: 0 } : { type: 'spring', duration: 0.35, bounce: 0.2 }}
+      >
         <h3 className="mb-4 font-semibold">{titel}</h3>
         {children}
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -93,7 +109,8 @@ export function SparzieleSeite() {
         })}
       </ul>
 
-      {neuOffen && (
+      <AnimatePresence>
+        {neuOffen && (
         <NeuesZielDialog
           zu={() => setNeuOffen(false)}
           erstellt={() => {
@@ -101,9 +118,11 @@ export function SparzieleSeite() {
             laden()
           }}
         />
-      )}
+        )}
+      </AnimatePresence>
 
-      {einzahlenOffen && (
+      <AnimatePresence>
+        {einzahlenOffen && (
         <EinzahlDialog
           ziel={einzahlenOffen}
           personen={personen.map((p) => p.name)}
@@ -114,7 +133,8 @@ export function SparzieleSeite() {
             laden()
           }}
         />
-      )}
+        )}
+      </AnimatePresence>
     </div>
   )
 }

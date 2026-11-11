@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@fontsource-variable/manrope";
 
 @theme {
   --color-base: #0d0b17;
@@ -12,11 +13,66 @@
   --color-warn: #fbbf24;
   --color-text: #eceaf8;
   --color-textschwach: #b9b3d6;
+  --font-sans: "Manrope Variable", system-ui, sans-serif;
+}
+
+:root {
+  --hg-oben: #0d0b17;
+  --hg-unten: #100d1f;
+  color-scheme: dark;
+}
+
+html[data-theme="sonne"] {
+  --color-base: #fbf7ef;
+  --color-karte: #ffffff;
+  --color-karte2: #f3ecdf;
+  --color-strich: #e0d5bf;
+  --color-akzent: #b45309;
+  --color-akzentstark: #d97706;
+  --color-gut: #15803d;
+  --color-schlecht: #b91c1c;
+  --color-warn: #a16207;
+  --color-text: #292524;
+  --color-textschwach: #6f6657;
+  --hg-oben: #fbf7ef;
+  --hg-unten: #f4edde;
+  color-scheme: light;
+}
+
+@keyframes seite-erscheinen {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.seite {
+  animation: seite-erscheinen 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seite {
+    animation: none;
+  }
 }
 
 html {
   background: var(--color-base);
   color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, var(--hg-oben) 0%, var(--hg-unten) 100%);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  transition: background 400ms ease;
 }
 
 @media (pointer: coarse) {
@@ -26,15 +82,6 @@ html {
   ::-webkit-scrollbar {
     display: none;
   }
-}
-
-body {
-  margin: 0;
-  background: linear-gradient(180deg, #0d0b17 0%, #100d1f 100%);
-  color: var(--color-text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  min-height: 100dvh;
-  -webkit-font-smoothing: antialiased;
 }
 
 input,

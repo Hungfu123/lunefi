@@ -1,11 +1,12 @@
 import { NavLink, Outlet, useLocation } from 'react-router'
+import { ArrowsLeftRight, ChartPie, GearSix, Target, type Icon as PhosphorIcon } from '@phosphor-icons/react'
 import { useApp } from './AppKontext'
 
 const tabs = [
-  { zu: '/', label: 'Übersicht' },
-  { zu: '/ausgleich', label: 'Ausgleich' },
-  { zu: '/sparziele', label: 'Ziele' },
-  { zu: '/einstellungen', label: 'Mehr' },
+  { zu: '/', label: 'Übersicht', Icon: ChartPie },
+  { zu: '/ausgleich', label: 'Ausgleich', Icon: ArrowsLeftRight },
+  { zu: '/sparziele', label: 'Ziele', Icon: Target },
+  { zu: '/einstellungen', label: 'Mehr', Icon: GearSix },
 ]
 
 export function Mond() {
@@ -16,17 +17,32 @@ export function Mond() {
   )
 }
 
-function Tab({ zu, label }: { zu: string; label: string }) {
+function Tab({
+  zu,
+  label,
+  Icon,
+}: {
+  zu: string
+  label: string
+  Icon: PhosphorIcon
+}) {
   return (
     <NavLink
       to={zu}
       className={({ isActive }) =>
-        `flex-1 py-2 text-center text-[13px] font-medium transition-colors ${
+        `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors duration-200 ${
           isActive ? 'text-akzent' : 'text-textschwach'
         }`
       }
     >
-      {label}
+      {({ isActive }) => (
+        <>
+          <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
+            <Icon size={22} weight={isActive ? 'fill' : 'regular'} />
+          </span>
+          {label}
+        </>
+      )}
     </NavLink>
   )
 }
@@ -51,7 +67,9 @@ export function Layout({ onEintragNeu }: { onEintragNeu: () => void }) {
       </header>
 
       <main className="flex-1 px-4 pb-40 pt-2">
-        <Outlet />
+        <div key={ort.pathname} className="seite">
+          <Outlet />
+        </div>
       </main>
 
       {zeigeFab && (

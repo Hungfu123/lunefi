@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { Moon, Sun } from '@phosphor-icons/react'
 import { ApiFehler, lese, schreibe, type KategorieInfo, type Konto } from './types'
 import { betragAusEingabe, euro, monatAlsString } from './format'
 import { useApp } from './AppKontext'
@@ -9,6 +10,15 @@ export function EinstellungenSeite() {
   const [konten, setKonten] = useState<Konto[]>([])
   const [kontoName, setKontoName] = useState('')
   const [kontoSaldo, setKontoSaldo] = useState('')
+  const [theme, setTheme] = useState<'mond' | 'sonne'>(
+    () => (document.documentElement.dataset.theme === 'sonne' ? 'sonne' : 'mond'),
+  )
+
+  const themeSetzen = (neu: 'mond' | 'sonne') => {
+    setTheme(neu)
+    document.documentElement.dataset.theme = neu
+    localStorage.setItem('lunefi:theme', neu)
+  }
   const [budgets, setBudgets] = useState<Record<string, string>>({})
   const [meldung, setMeldung] = useState<string | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
@@ -85,6 +95,30 @@ export function EinstellungenSeite() {
   return (
     <div>
       <h2 className="mb-4 text-lg font-semibold">Einstellungen</h2>
+
+      <section className="mb-6">
+        <h3 className="mb-2 text-sm font-medium text-textschwach">Erscheinungsbild</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => themeSetzen('mond')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 transition-colors ${
+              theme === 'mond' ? 'bg-akzentstark text-white' : 'bg-karte text-textschwach'
+            }`}
+          >
+            <Moon size={18} weight={theme === 'mond' ? 'fill' : 'regular'} />
+            Mond (dunkel)
+          </button>
+          <button
+            onClick={() => themeSetzen('sonne')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 transition-colors ${
+              theme === 'sonne' ? 'bg-akzentstark text-white' : 'bg-karte text-textschwach'
+            }`}
+          >
+            <Sun size={18} weight={theme === 'sonne' ? 'fill' : 'regular'} />
+            Sonne (hell)
+          </button>
+        </div>
+      </section>
 
       <section className="mb-6">
         <h3 className="mb-2 text-sm font-medium text-textschwach">Konten</h3>
@@ -178,7 +212,7 @@ export function EinstellungenSeite() {
           ))}
         </ul>
         <p className="mt-2 text-xs text-textschwach">
-          „Anteile" verteilt zunächst gleichmäßig — danach feinjustieren über die API möglich.
+          „Anteile" verteilt zunächst gleichmäßig — ihr könnt die Prozente später jederzeit anpassen.
         </p>
       </section>
 
@@ -193,11 +227,11 @@ export function EinstellungenSeite() {
                   value={budgets[k.name] ?? ''}
                   onChange={(e) => setBudgets((alt) => ({ ...alt, [k.name]: e.target.value }))}
                   inputMode="decimal"
-                  placeholder="Limit"
+                  placeholder="Limit in Euro"
                   className="min-w-0 flex-1 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
                 />
                 <button type="submit" className="shrink-0 rounded-xl bg-akzentstark px-3 py-2.5 text-sm font-semibold text-white">
-                  OK
+                  Speichern
                 </button>
               </form>
             </li>

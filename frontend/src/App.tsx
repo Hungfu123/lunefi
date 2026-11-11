@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { AppProvider, useApp } from './AppKontext'
 import { Layout } from './Layout'
@@ -8,6 +8,15 @@ import { EintragSheet } from './EintragSheet'
 import { AusgleichSeite } from './AusgleichSeite'
 import { SparzieleSeite } from './SparzieleSeite'
 import { EinstellungenSeite } from './EinstellungenSeite'
+
+function useTheme() {
+  useEffect(() => {
+    const gespeichert = localStorage.getItem('lunefi:theme')
+    if (gespeichert === 'sonne' || gespeichert === 'mond') {
+      document.documentElement.dataset.theme = gespeichert
+    }
+  }, [])
+}
 
 function Inhalt() {
   const { personen, personenLaden } = useApp()
@@ -49,6 +58,7 @@ function Inhalt() {
 }
 
 export default function App() {
+  useTheme()
   return (
     <AppProvider>
       <Inhalt />

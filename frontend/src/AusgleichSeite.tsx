@@ -86,7 +86,7 @@ export function AusgleichSeite() {
                     {euro(saldo)}
                   </p>
                   <p className="mt-0.5 text-xs text-textschwach">
-                    {saldo > 0 ? 'bekommt' : saldo < 0 ? 'schuldet' : 'ausgeglichen'} · Ø {euro(durchschnitt(person))} pro Monat
+                    {saldo > 0 ? 'bekommt' : saldo < 0 ? 'schuldet' : 'ausgeglichen'} · Ø {euro(durchschnitt(person))} der letzten Monate
                   </p>
                 </div>
               )
