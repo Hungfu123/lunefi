@@ -3,7 +3,8 @@ import { Link } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { CaretDown, CaretRight, Wallet } from '@phosphor-icons/react'
 import { lese, type Ausgleich, type Konto, type Monatsuebersicht } from './types'
-import { datumKurz, euro, monatAlsString, monatLabel, monatVerschieben } from './format'
+import { datumKurz, betragKompakt, euro, monatAlsString, monatLabel, monatVerschieben } from './format'
+import { KategorieIcon } from './kategorieIcon'
 import { useApp } from './AppKontext'
 
 const KATEGORIEN_SICHTBAR = 3
@@ -16,7 +17,10 @@ function MiniBalken({ name, summe, skala, rang }: { name: string; summe: number;
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate text-[13px] font-medium">{name}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+          <KategorieIcon name={name} size={16} />
+          <span className="truncate text-[13px] font-medium">{name}</span>
+        </span>
         <span className="betragszahl shrink-0 text-[13px] font-semibold">{euro(summe)}</span>
       </div>
       <div className="mt-1 h-1.5 rounded-full bg-karte2">
@@ -113,7 +117,7 @@ export function Uebersicht() {
                 gesamt < 0 ? 'text-schlecht' : 'text-text'
               }`}
             >
-              {euro(gesamt)}
+              {betragKompakt(gesamt, 1000000)}
             </p>
             {ausgleich && (
               <Link to="/ausgleich" className="-my-1 flex min-h-8 items-center gap-2 py-1">
@@ -160,11 +164,11 @@ export function Uebersicht() {
             <div className="rounded-2xl bg-karte p-3.5">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">Ausgaben</p>
-                <p className="betragszahl text-[17px] font-semibold text-schlecht">{euro(ausgaben)}</p>
+                <p className="betragszahl text-[17px] font-semibold text-schlecht">{betragKompakt(ausgaben)}</p>
               </div>
               <div className="mt-2 flex items-baseline justify-between gap-2">
                 <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">Einnahmen</p>
-                <p className="betragszahl text-[17px] font-semibold text-gut">{euro(einnahmen)}</p>
+                <p className="betragszahl text-[17px] font-semibold text-gut">{betragKompakt(einnahmen)}</p>
               </div>
             </div>
             {budgetListe.length > 0 && (
@@ -181,11 +185,11 @@ export function Uebersicht() {
                   />
                 </div>
                 <p className="betragszahl mt-1.5 text-[13px] font-medium text-textschwach">
-                  {euro(budgetIst)} von {euro(budgetLimit)}
+                  {betragKompakt(budgetIst)} von {betragKompakt(budgetLimit)}
                 </p>
                 {budgetUeber && (
                   <p className="betragszahl mt-1 text-xs font-medium text-warn">
-                    {euro(budgetIst - budgetLimit)} über Budget
+                    {euro(budgetIst - budgetLimit)} drüber
                   </p>
                 )}
               </div>
@@ -195,7 +199,7 @@ export function Uebersicht() {
           {kategorien.length > 0 && (
             <section className="mb-3">
               <div className="mb-1 flex items-baseline justify-between">
-                <h3 className="text-[13px] font-semibold">Top-Kategorien</h3>
+                <h3 className="text-[13px] font-semibold">Kategorien</h3>
                 {kategorien.length > KATEGORIEN_SICHTBAR && (
                   <button
                     onClick={() => setKategorienOffen((offen) => !offen)}
@@ -240,7 +244,7 @@ export function Uebersicht() {
 
           <section>
             <div className="flex items-baseline justify-between">
-              <h3 className="text-[13px] font-semibold">Letzte Buchungen</h3>
+              <h3 className="text-[13px] font-semibold">Buchungen</h3>
               {eintraege.length > EINTRAEGE_SICHTBAR && (
                 <button
                   onClick={() => setEintraegeOffen((offen) => !offen)}
@@ -262,7 +266,10 @@ export function Uebersicht() {
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-[15px] font-semibold leading-tight">{eintrag.kategorie}</p>
+                      <p className="flex items-center gap-1.5 leading-tight">
+                        <KategorieIcon name={eintrag.kategorie} size={16} />
+                        <span className="truncate text-[15px] font-semibold">{eintrag.kategorie}</span>
+                      </p>
                       <p className="text-xs leading-tight text-textschwach">
                         {datumKurz(eintrag.datum)} ·{' '}
                         {eintrag.gemeinsam ? `gemeinsam · ${eintrag.zahler}` : eintrag.person}

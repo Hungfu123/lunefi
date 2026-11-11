@@ -152,9 +152,7 @@ export function EinstellungenSeite() {
             Anlegen
           </button>
         </form>
-        <p className="mt-2 text-xs text-textschwach">
-          Später ersetzt der FinTS-Import die manuellen Konten — der Startsaldo wird dann durch echte Kontostände abgelöst.
-        </p>
+        <p className="mt-2 text-xs text-textschwach">Bald: Konten automatisch importieren</p>
       </section>
 
       <section className="mb-6">
@@ -177,7 +175,7 @@ export function EinstellungenSeite() {
       <section className="mb-6">
         <h3 className="mb-2 text-sm font-medium text-textschwach">Aufteilung je Kategorie</h3>
         {kategorien.length === 0 && (
-          <p className="text-sm text-textschwach">Kategorien entstehen, sobald ihr Einträge erfasst.</p>
+          <p className="text-sm text-textschwach">Noch keine Kategorien — leg den ersten Eintrag an.</p>
         )}
         <ul className="space-y-2">
           {kategorien.map((k) => (
@@ -212,7 +210,7 @@ export function EinstellungenSeite() {
           ))}
         </ul>
         <p className="mt-2 text-xs text-textschwach">
-          „Anteile" verteilt zunächst gleichmäßig — ihr könnt die Prozente später jederzeit anpassen.
+          Gemeinsam gekauft? Standard 50/50 — Prozente hier anpassen.
         </p>
       </section>
 
@@ -243,7 +241,7 @@ export function EinstellungenSeite() {
       {fehler && <p className="mt-4 text-sm text-schlecht">{fehler}</p>}
 
       <p className="mt-8 text-center text-xs text-textschwach">
-        LuneFi — mit {personen.map((p) => p.name).join(' und ')} · alles in Euro
+        LuneFi · {personen.map((p) => p.name).join(' & ')}
       </p>
     </div>
   )

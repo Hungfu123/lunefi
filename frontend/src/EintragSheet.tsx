@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ApiFehler, lese, schreibe, type Eintrag, type EintragNeu, type KategorieInfo, type Konto } from './types'
-import { betragAusEingabe, heuteIso } from './format'
+import { betragAusEingabe, euro, heuteIso } from './format'
+import { KategorieIcon } from './kategorieIcon'
 import { useApp } from './AppKontext'
 
 export function EintragSheet({
@@ -18,7 +19,7 @@ export function EintragSheet({
   const [art, setArt] = useState<'ausgabe' | 'einnahme'>('ausgabe')
   const [betrag, setBetrag] = useState('')
   const [kategorie, setKategorie] = useState('')
-  const [kategorien, setKategorien] = useState<string[]>([])
+  const [kategorien, setKategorien] = useState<KategorieInfo[]>([])
   const [konten, setKonten] = useState<Konto[]>([])
   const [konto, setKonto] = useState<string | null>(null)
   const [datum, setDatum] = useState(heuteIso())
@@ -31,7 +32,7 @@ export function EintragSheet({
   useEffect(() => {
     if (!offen) return
     lese<KategorieInfo[]>('/api/kategorien')
-      .then((liste) => setKategorien(liste.map((k) => k.name)))
+      .then(setKategorien)
       .catch(() => setKategorien([]))
     lese<Konto[]>('/api/konten')
       .then(setKonten)
@@ -49,6 +50,22 @@ export function EintragSheet({
 
   const zustaendigePerson = gemeinsam ? zahler : person
   const eigeneKonten = konten.filter((k) => k.person === zustaendigePerson)
+
+  const betragWert = betragAusEingabe(betrag)
+  const splitInfo = kategorien.find((k) => k.name === kategorie)?.split
+  const anteileText =
+    splitInfo?.art === 'ANTEILE' && splitInfo.anteile
+      ? Object.values(splitInfo.anteile).join('/')
+      : null
+  const schuldner = personen.map((p) => p.name).find((n) => n !== zahler) ?? null
+  const schuldnerAnteil =
+    splitInfo?.art === 'ANTEILE' && splitInfo.anteile && schuldner && splitInfo.anteile[schuldner] != null
+      ? splitInfo.anteile[schuldner] / 100
+      : 0.5
+  const schuldBetrag =
+    gemeinsam && betragWert !== null && betragWert !== 0 && zahler && schuldner
+      ? Math.round(betragWert * schuldnerAnteil * 100) / 100
+      : null
 
   const absenden = async (e: FormEvent) => {
     e.preventDefault()
@@ -88,6 +105,8 @@ export function EintragSheet({
     }
   }
 
+  const weiche = reduziert ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const }
+
   return (
     <AnimatePresence>
       {offen && (
@@ -103,7 +122,7 @@ export function EintragSheet({
           />
           <motion.form
             onSubmit={absenden}
-            className="relative mx-auto w-full max-w-[560px] rounded-t-3xl border-t border-strich bg-karte px-5 pb-8 pt-5"
+            className="relative mx-auto w-full max-w-[560px] rounded-t-3xl border-t border-strich bg-karte px-5 pb-5 pt-4"
             initial={{ transform: 'translateY(100%)' }}
             animate={{ transform: 'translateY(0%)' }}
             exit={{ transform: 'translateY(100%)' }}
@@ -119,89 +138,105 @@ export function EintragSheet({
               }
             }}
           >
-            <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-strich" />
-            <div className="mb-4 flex gap-2 rounded-xl bg-karte2 p-1">
-              <button
-                type="button"
-                onClick={() => setArt('ausgabe')}
-                className={`flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
-                  art === 'ausgabe' ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
-                }`}
-              >
-                Ausgabe
-              </button>
-              <button
-                type="button"
-                onClick={() => setArt('einnahme')}
-                className={`flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
-                  art === 'einnahme' ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
-                }`}
-              >
-                Einnahme
-              </button>
-            </div>
+            <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-strich" />
 
-            <label className="mb-1 block text-xs text-textschwach">Betrag</label>
-            <input
-              value={betrag}
-              onChange={(e) => setBetrag(e.target.value)}
-              inputMode="decimal"
-              placeholder="12,50"
-              className="mb-4 w-full rounded-xl bg-karte2 px-4 py-3 text-2xl font-semibold outline-none ring-strich focus:ring-2"
-            />
-
-            <label className="mb-1 block text-xs text-textschwach">Kategorie</label>
-            <div className="mb-2 flex flex-wrap gap-2">
-              {kategorien.map((k) => (
+            <div className="mb-2.5 flex gap-2">
+              <div className="flex flex-1 gap-2 rounded-xl bg-karte2 p-1">
                 <button
                   type="button"
-                  key={k}
-                  onClick={() => setKategorie(k)}
-                  className={`flex min-h-11 items-center rounded-full px-4 text-sm transition-colors ${
-                    kategorie === k ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
+                  onClick={() => setArt('ausgabe')}
+                  className={`flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
+                    art === 'ausgabe' ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
                   }`}
                 >
-                  {k}
+                  Ausgabe
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setArt('einnahme')}
+                  className={`flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
+                    art === 'einnahme' ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
+                  }`}
+                >
+                  Einnahme
+                </button>
+              </div>
+              <input
+                aria-label="Betrag"
+                value={betrag}
+                onChange={(e) => setBetrag(e.target.value)}
+                inputMode="decimal"
+                placeholder="0,00"
+                className="betragszahl w-32 shrink-0 rounded-xl bg-karte2 px-3 text-right text-xl font-semibold outline-none ring-strich focus:ring-2"
+              />
             </div>
+
+            <label className="mb-1 block text-xs text-textschwach">Kategorie</label>
+            {kategorien.length > 0 && (
+              <div className="mb-1.5 flex flex-wrap gap-2">
+                {kategorien.map((k) => (
+                  <button
+                    type="button"
+                    key={k.name}
+                    onClick={() => setKategorie(k.name)}
+                    className={`flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors ${
+                      kategorie === k.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
+                    }`}
+                  >
+                    <KategorieIcon
+                      name={k.name}
+                      size={16}
+                      className={kategorie === k.name ? 'text-akzenttext' : undefined}
+                    />
+                    {k.name}
+                  </button>
+                ))}
+              </div>
+            )}
             <input
               value={kategorie}
               onChange={(e) => setKategorie(e.target.value)}
-              placeholder="oder neu eingeben"
-              className="mb-4 w-full rounded-xl bg-karte2 px-4 py-3 outline-none ring-strich focus:ring-2"
+              placeholder="Neue Kategorie"
+              className="mb-2.5 w-full rounded-xl bg-karte2 px-4 py-2.5 outline-none ring-strich focus:ring-2"
             />
 
-            <label className="mb-1 block text-xs text-textschwach">Datum</label>
             <input
               type="date"
+              aria-label="Datum"
               value={datum}
               onChange={(e) => setDatum(e.target.value)}
-              className="mb-4 w-full rounded-xl bg-karte2 px-4 py-3 outline-none ring-strich focus:ring-2"
+              className="mb-2.5 w-full rounded-xl bg-karte2 px-4 py-2.5 outline-none ring-strich focus:ring-2"
             />
 
-            <div className="mb-4 flex items-center justify-between rounded-xl bg-karte2 px-4 py-3">
-              <span className="font-medium">Gemeinsame Ausgabe</span>
-              <button
-                type="button"
-                role="switch"
-                aria-label="Gemeinsame Ausgabe"
-                aria-checked={gemeinsam}
-                onClick={() => setGemeinsam(!gemeinsam)}
-                className={`relative h-7 w-12 rounded-full transition-colors before:absolute before:-inset-3 before:content-[''] ${
-                  gemeinsam ? 'bg-akzentstark' : 'bg-strich'
-                }`}
-              >
-                <span
-                  className={`block h-7 w-7 rounded-full bg-white transition-transform duration-200 ${
-                    gemeinsam ? 'translate-x-5' : 'translate-x-0'
+            <div className="mb-2.5 rounded-xl bg-karte2 px-4 py-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Gemeinsame Ausgabe</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label="Gemeinsame Ausgabe"
+                  aria-checked={gemeinsam}
+                  onClick={() => setGemeinsam(!gemeinsam)}
+                  className={`relative h-7 w-12 shrink-0 rounded-full transition-colors before:absolute before:-inset-3 before:content-[''] ${
+                    gemeinsam ? 'bg-akzentstark' : 'bg-strich'
                   }`}
-                />
-              </button>
+                >
+                  <span
+                    className={`block h-7 w-7 rounded-full bg-white transition-transform duration-200 ${
+                      gemeinsam ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+              <p className="mt-0.5 text-[12px] text-textschwach">
+                {anteileText ? `Wird ${anteileText} geteilt` : 'Wird zu gleichen Teilen geteilt'}
+              </p>
             </div>
 
-            <label className="mb-1 block text-xs text-textschwach">{gemeinsam ? 'Bezahlt von' : 'Person'}</label>
-            <div className="mb-4 flex gap-2">
+            <label className="mb-1 block text-xs text-textschwach">
+              {gemeinsam ? 'Bezahlt von' : 'Person'}
+            </label>
+            <div className="mb-2.5 flex gap-2">
               {personen.map((p) => {
                 const gewaehlt = gemeinsam ? zahler === p.name : person === p.name
                 return (
@@ -219,16 +254,31 @@ export function EintragSheet({
               })}
             </div>
 
-            {eigeneKonten.length > 0 && (
-              <div className="mb-4">
-                <label className="mb-1 block text-xs text-textschwach">Konto (optional)</label>
+            <AnimatePresence initial={false}>
+              {schuldBetrag !== null && schuldner && zahler && (
+                <motion.p
+                  key={`${schuldner}-${zahler}-${schuldBetrag}`}
+                  className="betragszahl mb-2.5 text-[13px] text-akzent"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={weiche}
+                >
+                  → {schuldner} schuldet {zahler} {euro(schuldBetrag)}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            <div className="mb-2.5">
+              <label className="mb-1 block text-xs text-textschwach">Konto</label>
+              {eigeneKonten.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {eigeneKonten.map((k) => (
                     <button
                       type="button"
                       key={k.id}
                       onClick={() => setKonto(konto === k.name ? null : k.name)}
-                      className={`flex min-h-11 items-center rounded-full px-4 text-sm transition-colors ${
+                      className={`flex min-h-9 items-center rounded-full px-4 text-sm transition-colors ${
                         konto === k.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
                       }`}
                     >
@@ -236,15 +286,19 @@ export function EintragSheet({
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                zustaendigePerson && (
+                  <p className="text-xs text-textschwach">{zustaendigePerson} hat noch kein Konto</p>
+                )
+              )}
+            </div>
 
-            {fehler && <p className="mb-3 text-sm text-schlecht">{fehler}</p>}
+            {fehler && <p className="mb-2 text-sm text-schlecht">{fehler}</p>}
 
             <button
               type="submit"
               disabled={laeuft}
-              className="w-full rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
+              className="w-full rounded-xl bg-akzentstark py-2.5 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
             >
               Speichern
             </button>

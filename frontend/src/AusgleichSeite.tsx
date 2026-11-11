@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { lese, type Ausgleich, type AusgleichMonat } from './types'
-import { euro, monatAlsString, monatLabel, monatVerschieben } from './format'
+import { betragKompakt, euro, monatAlsString, monatLabel, monatVerschieben } from './format'
 
 export function AusgleichSeite() {
   const [monat, setMonat] = useState(() => monatAlsString(new Date()))
@@ -28,12 +28,6 @@ export function AusgleichSeite() {
   }, [monat])
 
   useEffect(laden, [laden])
-
-  const durchschnitt = (person: string) => {
-    const werte = verlauf.map((m) => m.saldi[person] ?? 0)
-    if (werte.length === 0) return 0
-    return werte.reduce((a, b) => a + b, 0) / werte.length
-  }
 
   const personen = Object.keys(daten?.saldi ?? {})
 
@@ -83,10 +77,10 @@ export function AusgleichSeite() {
                 <div key={person} className="rounded-2xl bg-karte p-4">
                   <p className="truncate text-xs text-textschwach">{person}</p>
                   <p className={`betragszahl mt-1 text-lg font-semibold ${saldo > 0 ? 'text-gut' : saldo < 0 ? 'text-schlecht' : ''}`}>
-                    {euro(saldo)}
+                    {betragKompakt(saldo)}
                   </p>
                   <p className="mt-0.5 text-xs text-textschwach">
-                    {saldo > 0 ? 'bekommt' : saldo < 0 ? 'schuldet' : 'ausgeglichen'} · Ø {euro(durchschnitt(person))} der letzten Monate
+                    {saldo > 0 ? 'bekommt' : saldo < 0 ? 'schuldet' : 'ausgeglichen'}
                   </p>
                 </div>
               )
@@ -98,23 +92,31 @@ export function AusgleichSeite() {
             <p className="text-sm text-textschwach">Keine gemeinsamen Ausgaben in diesem Monat.</p>
           )}
           <ul className="mb-6 space-y-2">
-            {daten.positionen.map((position) => (
-              <li key={position.id} className="rounded-xl bg-karte px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{position.kategorie}</span>
-                  <span className="betragszahl text-sm font-semibold">{euro(Math.abs(position.betrag))}</span>
-                </div>
-                <p className="mt-1 text-xs text-textschwach">
-                  {position.zahler} {position.betrag >= 0 ? 'hat erhalten' : 'hat bezahlt'}
-                  {Object.entries(position.anteile).map(([person, anteil]) => (
-                    <span key={person}>
-                      {' '}
-                      · {person} {euro(anteil)}
-                    </span>
-                  ))}
-                </p>
-              </li>
-            ))}
+            {daten.positionen.map((position) => {
+              const werte = Object.values(position.anteile)
+              const alleGleich = werte.length > 0 && werte.every((w) => w === werte[0])
+              return (
+                <li key={position.id} className="rounded-xl bg-karte px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-sm font-medium">{position.kategorie}</span>
+                    <span className="betragszahl shrink-0 text-sm font-semibold">{euro(Math.abs(position.betrag))}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-textschwach">
+                    {position.zahler} {position.betrag >= 0 ? 'hat erhalten' : 'hat bezahlt'}
+                    {alleGleich ? (
+                      <> — je {euro(werte[0])}</>
+                    ) : (
+                      Object.entries(position.anteile).map(([person, anteil]) => (
+                        <span key={person}>
+                          {' '}
+                          · {person} {euro(anteil)}
+                        </span>
+                      ))
+                    )}
+                  </p>
+                </li>
+              )
+            })}
           </ul>
 
           {verlauf.length > 1 && (

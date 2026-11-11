@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ApiFehler, lese, schreibe, type Sparziel } from './types'
-import { betragAusEingabe, euro, heuteIso } from './format'
+import { betragAusEingabe, betragKompakt, heuteIso } from './format'
 import { useApp } from './AppKontext'
 
 function Dialog({
@@ -41,11 +41,14 @@ function Dialog({
 
 export function SparzieleSeite() {
   const { personen, aktivePerson } = useApp()
+  const reduziert = useReducedMotion()
   const [ziele, setZiele] = useState<Sparziel[]>([])
   const [laedt, setLaedt] = useState(true)
   const [fehler, setFehler] = useState(false)
   const [neuOffen, setNeuOffen] = useState(false)
   const [einzahlenOffen, setEinzahlenOffen] = useState<Sparziel | null>(null)
+  const [feiernde, setFeiernde] = useState<Set<number>>(new Set())
+  const errechnet = useRef<Map<number, boolean>>(new Map())
 
   const laden = useCallback(() => {
     setLaedt(true)
@@ -53,6 +56,19 @@ export function SparzieleSeite() {
       .then((liste) => {
         setZiele(liste)
         setFehler(false)
+        setFeiernde((alt) => {
+          let veraendert = false
+          const neu = new Set(alt)
+          for (const ziel of liste) {
+            const warErreicht = errechnet.current.get(ziel.id) ?? ziel.erreicht
+            if (ziel.erreicht && !warErreicht) {
+              neu.add(ziel.id)
+              veraendert = true
+            }
+            errechnet.current.set(ziel.id, ziel.erreicht)
+          }
+          return veraendert ? neu : alt
+        })
       })
       .catch(() => setFehler(true))
       .finally(() => setLaedt(false))
@@ -83,26 +99,38 @@ export function SparzieleSeite() {
       <ul className="space-y-3">
         {ziele.map((ziel) => {
           const anteil = Math.min(100, (ziel.eingezahlt / ziel.zielbetrag) * 100)
+          const rest = Math.max(0, ziel.zielbetrag - ziel.eingezahlt)
           return (
             <li key={ziel.id} className="rounded-2xl bg-karte p-4">
-              <div className="flex items-baseline justify-between">
-                <span className="font-medium">{ziel.name}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate font-medium">{ziel.name}</span>
                 {ziel.erreicht ? (
-                  <span className="rounded-full bg-gut/15 px-2 py-0.5 text-xs text-gut">erreicht</span>
+                  <motion.span
+                    className="shrink-0 rounded-full bg-gut/15 px-2 py-0.5 text-xs text-gut"
+                    initial={feiernde.has(ziel.id) ? { scale: 1.3 } : false}
+                    animate={{ scale: 1 }}
+                    transition={reduziert ? { duration: 0 } : { type: 'spring', duration: 0.5, bounce: 0.45 }}
+                  >
+                    {ziel.name} ist finanziert!
+                  </motion.span>
                 ) : (
                   <button
                     onClick={() => setEinzahlenOffen(ziel)}
-                    className="flex min-h-11 items-center text-sm font-semibold text-akzent active:scale-[0.98]"
+                    className="flex min-h-11 shrink-0 items-center text-sm font-semibold text-akzent active:scale-[0.98]"
                   >
                     Einzahlen
                   </button>
                 )}
               </div>
               <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-karte2">
-                <div className="h-full rounded-full bg-akzent" style={{ width: `${anteil}%` }} />
+                <div
+                  className={`h-full rounded-full ${ziel.erreicht ? 'bg-gut' : 'bg-akzent'}`}
+                  style={{ width: `${anteil}%` }}
+                />
               </div>
               <p className="betragszahl mt-1.5 text-xs text-textschwach">
-                {euro(ziel.eingezahlt)} von {euro(ziel.zielbetrag)}
+                {betragKompakt(ziel.eingezahlt)} · {Math.floor(anteil)}%
+                {ziel.erreicht ? '' : ` · noch ${betragKompakt(rest)}`}
               </p>
             </li>
           )
@@ -230,13 +258,13 @@ function EinzahlDialog({
   }
 
   return (
-    <Dialog titel={`Einzahlen: ${ziel.name}`} zu={zu}>
+    <Dialog titel={`Auf ${ziel.name} einzahlen`} zu={zu}>
       <form onSubmit={absenden} className="flex flex-col gap-3">
         <input
           value={betrag}
           onChange={(e) => setBetrag(e.target.value)}
           inputMode="decimal"
-          placeholder="100,00"
+          placeholder="0,00"
           autoFocus
           className="rounded-xl bg-karte2 px-4 py-3 outline-none ring-strich focus:ring-2"
         />
