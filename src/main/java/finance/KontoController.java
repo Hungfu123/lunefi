@@ -20,15 +20,21 @@ public class KontoController {
     private final KontoRepository konten;
     private final EintragRepository eintraege;
     private final PersonRepository personen;
+    private final AngemeldetePerson angemeldetePerson;
 
-    public KontoController(KontoRepository konten, EintragRepository eintraege, PersonRepository personen) {
+    public KontoController(KontoRepository konten, EintragRepository eintraege,
+            PersonRepository personen, AngemeldetePerson angemeldetePerson) {
         this.konten = konten;
         this.eintraege = eintraege;
         this.personen = personen;
+        this.angemeldetePerson = angemeldetePerson;
     }
 
     @PostMapping
     public ResponseEntity<Konto> create(@RequestBody Konto konto) {
+        if (konto.person() != null && !konto.person().isBlank()) {
+            angemeldetePerson.pruefeEigenePerson(konto.person());
+        }
         if (konto.name() == null || konto.name().isBlank()
                 || konto.person() == null || konto.person().isBlank()
                 || konto.startSaldo() == null
@@ -44,6 +50,9 @@ public class KontoController {
 
     @GetMapping
     public List<Konto> list(@RequestParam(required = false) String person) {
+        if (person != null) {
+            angemeldetePerson.pruefeEigenePerson(person);
+        }
         List<Konto> ergebnis = new ArrayList<>();
         for (KontoEntity konto : konten.findAll()) {
             if (person != null && !person.equals(konto.getPerson())) {

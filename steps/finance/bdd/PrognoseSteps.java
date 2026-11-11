@@ -25,6 +25,9 @@ public class PrognoseSteps {
     @Autowired
     private TestRestTemplate rest;
 
+    @Autowired
+    private Sitzungen sitzungen;
+
     private JsonNode prognose;
     private org.springframework.http.HttpStatusCode abfrageStatus;
 
@@ -37,7 +40,8 @@ public class PrognoseSteps {
 
     @Wenn("die Monatsprognose für Person {string} abgefragt wird")
     public void queryForecastForPerson(String person) {
-        ResponseEntity<String> antwort = rest.getForEntity("/api/prognose?person=" + person, String.class);
+        ResponseEntity<String> antwort = sitzungen.fuer(person).getForEntity(
+                "/api/prognose?person=" + person, String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         prognose = mapper.readTree(antwort.getBody());
     }

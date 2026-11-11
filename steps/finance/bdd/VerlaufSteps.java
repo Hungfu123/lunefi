@@ -24,6 +24,9 @@ public class VerlaufSteps {
     @Autowired
     private TestRestTemplate rest;
 
+    @Autowired
+    private Sitzungen sitzungen;
+
     private JsonNode verlauf;
 
     @Wenn("der Monatsverlauf der letzten {int} Monate abgefragt wird")
@@ -35,7 +38,7 @@ public class VerlaufSteps {
 
     @Wenn("der Monatsverlauf der letzten {int} Monate für Person {string} abgefragt wird")
     public void queryHistoryForPerson(int monate, String person) {
-        ResponseEntity<String> antwort = rest.getForEntity(
+        ResponseEntity<String> antwort = sitzungen.fuer(person).getForEntity(
                 "/api/verlauf?monate=" + monate + "&person=" + person, String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         verlauf = mapper.readTree(antwort.getBody());

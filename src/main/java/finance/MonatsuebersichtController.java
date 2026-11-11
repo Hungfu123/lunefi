@@ -20,10 +20,13 @@ public class MonatsuebersichtController {
 
     private final EintragRepository eintragRepository;
     private final BudgetRepository budgetRepository;
+    private final AngemeldetePerson angemeldetePerson;
 
-    public MonatsuebersichtController(EintragRepository eintragRepository, BudgetRepository budgetRepository) {
+    public MonatsuebersichtController(EintragRepository eintragRepository, BudgetRepository budgetRepository,
+            AngemeldetePerson angemeldetePerson) {
         this.eintragRepository = eintragRepository;
         this.budgetRepository = budgetRepository;
+        this.angemeldetePerson = angemeldetePerson;
     }
 
     @GetMapping("/{jahr}-{monat}")
@@ -40,6 +43,9 @@ public class MonatsuebersichtController {
         if (person != null && gemeinsam != null) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+        if (person != null) {
+            angemeldetePerson.pruefeEigenePerson(person);
         }
 
         List<Eintrag> imMonat = eintragRepository.findAll().stream()

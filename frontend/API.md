@@ -1,11 +1,25 @@
 # LuneFi — API-Vertrag (Backend ↔ Frontend)
 
-Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintraege.md`, `specs/gemeinsam.md`). Währung immer Euro, Beträge als JSON-Zahlen. Datums-Format im JSON immer ISO (`2026-11-15`), Monate als `2026-11`.
+Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintraege.md`, `specs/gemeinsam.md`, `specs/auth.md`). Währung immer Euro, Beträge als JSON-Zahlen. Datums-Format im JSON immer ISO (`2026-11-15`), Monate als `2026-11`.
+
+## Login & Autorisierung (`specs/auth.md`, Regeln AU1–AU6)
+
+- **Anmeldung:** `POST /api/login` mit `Content-Type: application/x-www-form-urlencoded`, Body `username=<Name>&password=<Passwort>` → `200` + Session-Cookie (`JSESSIONID`). Falsche Zugangsdaten → `401`.
+- **Abmeldung:** `POST /api/logout` (CSRF-Token nötig) → `200`, Session ist danach ungültig.
+- **Ungemeldet:** jeder API-Aufruf (außer `POST /api/login` und die offene Ersteinrichtung, s. u.) → `401` (kein Redirect).
+- **CSRF:** `XSRF-TOKEN`-Cookie (nicht HttpOnly) wird mit jeder Antwort gesetzt/erneuert. Das Frontend liest den Cookie-Wert und schickt ihn bei allen mutating Requests (POST/PUT/DELETE) als Header `X-XSRF-TOKEN` mit — fehlt/ist ungültig → `403`. Wichtig: nach dem Login löscht der Server das alte Token-Cookie; das Frontend sollte nach Login/Logout das Token einmal per GET neu holen.
+- **Autorisierung (server-seitig erzwungen):**
+  - `person`-Parameter nur mit dem eigenen Namen: `GET /api/eintraege?person=…`, `GET /api/monatsuebersicht/…?person=…`, `GET /api/verlauf?person=…`, `GET /api/prognose?person=…`, `GET /api/konten?person=…` — fremder Name → `403`. Ohne Parameter: unverändertes Verhalten.
+  - `POST /api/eintraege` mit `person`: nur der eigene Name → fremder → `403`. `PUT/DELETE /api/eintraege/{id}`: persönliche Einträge nur vom Eigentümer (fremd → `403`), gemeinsame Einträge dürfen beide bearbeiten.
+  - `POST /api/konten`: nur `person` = eigener Name (fremd → `403`).
+  - Paar-Raum offen für beide: `gemeinsam=true`-Sichten, Ausgleich (alle Endpunkte), Budgets, Sparziele, Kategorien, Coaching.
+- **Passwörter:** bcrypt-gehasht in eigener `app_user`-Tabelle (username = Personenname). Die „Wer bist du"-Auswahl im Frontend entfällt — die Identität kommt aus der Session.
+- **Ersteinrichtung (AU6):** solange noch kein App-Nutzer existiert, ist `POST /api/personen` ohne Anmeldung offen; danach für Unangemeldete → `401`.
 
 ## Personen (Onboarding)
 
-- `POST /api/personen` Body `{"name": "Alex"}` → `201 {"id": 1, "name": "Alex"}`; Name leer → `400`
-- `GET /api/personen` → `[{"id": 1, "name": "Alex"}, {"id": 2, "name": "Kim"}]`
+- `POST /api/personen` Body `{"name": "Alex", "passwort": "geheim123"}` → `201 {"id": 1, "name": "Alex"}`; Name leer → `400`; `passwort` fehlt oder kürzer als 6 Zeichen → `400`. Existiert die Person schon → `200` (idempotent, Passwort wird gesetzt)
+- `GET /api/personen` → `[{"id": 1, "name": "Alex"}, {"id": 2, "name": "Kim"}]` (angemeldet, für beide Partner sichtbar)
 
 ## Einträge
 

@@ -18,10 +18,13 @@ public class PrognoseController {
 
     private final EintragRepository eintragRepository;
     private final PrognoseService prognoseService;
+    private final AngemeldetePerson angemeldetePerson;
 
-    public PrognoseController(EintragRepository eintragRepository, PrognoseService prognoseService) {
+    public PrognoseController(EintragRepository eintragRepository, PrognoseService prognoseService,
+            AngemeldetePerson angemeldetePerson) {
         this.eintragRepository = eintragRepository;
         this.prognoseService = prognoseService;
+        this.angemeldetePerson = angemeldetePerson;
     }
 
     @GetMapping("/api/prognose")
@@ -30,6 +33,9 @@ public class PrognoseController {
             @RequestParam(required = false) Boolean gemeinsam) {
         if (person != null && Boolean.TRUE.equals(gemeinsam)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        if (person != null) {
+            angemeldetePerson.pruefeEigenePerson(person);
         }
         if (monate < MIN_MONATE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);

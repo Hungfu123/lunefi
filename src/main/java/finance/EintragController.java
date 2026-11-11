@@ -2,6 +2,7 @@ package finance;
 
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,15 +24,21 @@ public class EintragController {
     private final EintragRepository repository;
     private final PersonRepository personen;
     private final KontoRepository konten;
+    private final AngemeldetePerson angemeldetePerson;
 
-    public EintragController(EintragRepository repository, PersonRepository personen, KontoRepository konten) {
+    public EintragController(EintragRepository repository, PersonRepository personen,
+            KontoRepository konten, AngemeldetePerson angemeldetePerson) {
         this.repository = repository;
         this.personen = personen;
         this.konten = konten;
+        this.angemeldetePerson = angemeldetePerson;
     }
 
     @PostMapping
     public ResponseEntity<Eintrag> capture(@RequestBody Eintrag eintrag) {
+        if (!istEigeneOderGemeinsam(eintrag)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         if (!isValid(eintrag)) {
             return ResponseEntity.badRequest().build();
         }
@@ -47,10 +54,16 @@ public class EintragController {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        if (!istEigeneOderGemeinsam(eintrag)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        EintragEntity vorhandener = repository.findById(id).orElseThrow();
+        if (!Boolean.TRUE.equals(vorhandener.getGemeinsam())) {
+            angemeldetePerson.pruefeEigenePerson(vorhandener.getPerson());
+        }
         if (!isValid(eintrag)) {
             return ResponseEntity.badRequest().build();
         }
-        EintragEntity vorhandener = repository.findById(id).orElseThrow();
         vorhandener.update(eintrag.datum(), eintrag.betrag(), eintrag.kategorie(),
                 eintrag.person(), Boolean.TRUE.equals(eintrag.gemeinsam()), eintrag.zahler(),
                 eintrag.konto());
@@ -62,6 +75,10 @@ public class EintragController {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        EintragEntity vorhandener = repository.findById(id).orElseThrow();
+        if (!Boolean.TRUE.equals(vorhandener.getGemeinsam())) {
+            angemeldetePerson.pruefeEigenePerson(vorhandener.getPerson());
+        }
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
@@ -70,6 +87,9 @@ public class EintragController {
     public List<Eintrag> list(@RequestParam(required = false) String monat,
             @RequestParam(required = false) String person,
             @RequestParam(required = false) Boolean gemeinsam) {
+        if (person != null) {
+            angemeldetePerson.pruefeEigenePerson(person);
+        }
         YearMonth zeitraum = monat == null ? null : monthAsYearMonth(monat);
         return repository.findAll().stream()
                 .map(EintragEntity::asEntry)
@@ -78,6 +98,11 @@ public class EintragController {
                 .filter(eintrag -> gemeinsam == null
                         || gemeinsam.equals(Boolean.TRUE.equals(eintrag.gemeinsam())))
                 .toList();
+    }
+
+    private boolean istEigeneOderGemeinsam(Eintrag eintrag) {
+        boolean persoenlich = eintrag.person() != null && !eintrag.person().isBlank();
+        return !persoenlich || Objects.equals(angemeldetePerson.name(), eintrag.person());
     }
 
     private boolean isValid(Eintrag eintrag) {

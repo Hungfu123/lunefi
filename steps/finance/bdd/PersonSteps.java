@@ -68,7 +68,9 @@ public class PersonSteps {
     private ResponseEntity<String> post(String name) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        Map<String, Object> body = Map.of("name", name);
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("name", name);
+        body.put("passwort", AuthSteps.TEST_PASSWORT);
         return rest.postForEntity("/api/personen", new HttpEntity<>(body, headers), String.class);
     }
 

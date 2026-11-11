@@ -29,6 +29,9 @@ public class MonatsuebersichtSteps {
     @Autowired
     private TestRestTemplate rest;
 
+    @Autowired
+    private Sitzungen sitzungen;
+
     private JsonNode uebersicht;
 
     @ParameterType(value = "[A-Za-zÄÖÜäöüß]+ \\d{4}", name = "monat")
@@ -46,7 +49,7 @@ public class MonatsuebersichtSteps {
 
     @Wenn("die Monatsübersicht {monat} für Person {string} aufgerufen wird")
     public void callMonthlyOverviewForPerson(YearMonth monat, String person) {
-        ResponseEntity<String> antwort = rest.getForEntity(
+        ResponseEntity<String> antwort = sitzungen.fuer(person).getForEntity(
                 "/api/monatsuebersicht/" + monat + "?person=" + person, String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         uebersicht = mapper.readTree(antwort.getBody());
@@ -55,6 +58,14 @@ public class MonatsuebersichtSteps {
     @Wenn("die Monatsübersicht {monat} in der Paar-Sicht aufgerufen wird")
     public void callMonthlyOverviewForCouple(YearMonth monat) {
         ResponseEntity<String> antwort = rest.getForEntity(
+                "/api/monatsuebersicht/" + monat + "?gemeinsam=true", String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        uebersicht = mapper.readTree(antwort.getBody());
+    }
+
+    @Wenn("{string} die Monatsübersicht {monat} in der Paar-Sicht aufruft")
+    public void callMonthlyOverviewForCoupleAs(String aufrufer, YearMonth monat) {
+        ResponseEntity<String> antwort = sitzungen.fuer(aufrufer).getForEntity(
                 "/api/monatsuebersicht/" + monat + "?gemeinsam=true", String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         uebersicht = mapper.readTree(antwort.getBody());

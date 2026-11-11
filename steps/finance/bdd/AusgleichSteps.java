@@ -34,6 +34,9 @@ public class AusgleichSteps {
     private TestRestTemplate rest;
 
     @Autowired
+    private Sitzungen sitzungen;
+
+    @Autowired
     private SetzbareUhr uhr;
 
     private JsonNode ausgleich;
@@ -86,6 +89,13 @@ public class AusgleichSteps {
             assertThat(verlauf.get(i).path("ausgeglichen").asBoolean())
                     .isEqualTo(Boolean.parseBoolean(zeilen.get(i).get("Ausgeglichen")));
         }
+    }
+
+    @Wenn("{string} den Ausgleich {monat} als ausgeglichen markiert")
+    public void markMonthAsSettledAs(String aufrufer, YearMonth monat) {
+        ResponseEntity<String> antwort = sitzungen.fuer(aufrufer).postForEntity(
+                "/api/ausgleich/" + monat + "/ausgeglichen", HttpEntity.EMPTY, String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     private void markAsSettled(YearMonth monat) {
@@ -152,8 +162,11 @@ public class AusgleichSteps {
     }
 
     private void createPerson(String name) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("name", name);
+        body.put("passwort", AuthSteps.TEST_PASSWORT);
         ResponseEntity<String> antwort = rest.postForEntity("/api/personen",
-                new HttpEntity<>(Map.of("name", name), jsonHeader()), String.class);
+                new HttpEntity<>(body, jsonHeader()), String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 

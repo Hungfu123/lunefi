@@ -20,10 +20,12 @@ public class VerlaufController {
 
     private final EintragRepository eintragRepository;
     private final Clock uhr;
+    private final AngemeldetePerson angemeldetePerson;
 
-    public VerlaufController(EintragRepository eintragRepository, Clock uhr) {
+    public VerlaufController(EintragRepository eintragRepository, Clock uhr, AngemeldetePerson angemeldetePerson) {
         this.eintragRepository = eintragRepository;
         this.uhr = uhr;
+        this.angemeldetePerson = angemeldetePerson;
     }
 
     @GetMapping("/api/verlauf")
@@ -32,6 +34,9 @@ public class VerlaufController {
             @RequestParam(required = false) Boolean gemeinsam) {
         if (monate < 1) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+        if (person != null) {
+            angemeldetePerson.pruefeEigenePerson(person);
         }
         int begrenzt = Math.min(monate, MAX_MONATE);
 

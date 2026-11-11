@@ -34,6 +34,9 @@ public class EintragSteps {
     private TestRestTemplate rest;
 
     @Autowired
+    private Sitzungen sitzungen;
+
+    @Autowired
     private finance.EintragRepository eintragRepository;
 
     @Autowired
@@ -99,13 +102,14 @@ public class EintragSteps {
                 "person", person,
                 "gemeinsam", false,
                 "konto", konto);
-        ResponseEntity<String> antwort = rest.postForEntity("/api/eintraege", new HttpEntity<>(body, headers), String.class);
+        ResponseEntity<String> antwort = sitzungen.fuer(person).postForEntity("/api/eintraege",
+                new HttpEntity<>(body, headers), String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Wenn("ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} von {string} erfasst wird")
     public void recordEntry(LocalDate datum, BigDecimal betrag, String kategorie, String person) {
-        ResponseEntity<String> antwort = post(Map.of(
+        ResponseEntity<String> antwort = post(sitzungen.fuer(person), Map.of(
                 "datum", datum.toString(),
                 "betrag", betrag,
                 "kategorie", kategorie,
@@ -179,7 +183,7 @@ public class EintragSteps {
     public void queryEntriesOfPerson(String person, YearMonth monat) {
         ergebnis = query(Map.of(
                 "person", person,
-                "monat", monat.toString()));
+                "monat", monat.toString()), sitzungen.fuer(person));
     }
 
     @Wenn("nur die gemeinsamen Einträge abgefragt werden")
@@ -308,20 +312,28 @@ public class EintragSteps {
     private JsonNode ergebnis;
 
     private JsonNode query(Map<String, String> filter) {
+        return query(filter, rest);
+    }
+
+    private JsonNode query(Map<String, String> filter, TestRestTemplate template) {
         StringBuilder url = new StringBuilder("/api/eintraege");
         if (!filter.isEmpty()) {
             url.append('?');
             filter.forEach((schluessel, wert) -> url.append(schluessel).append('=').append(wert).append('&'));
             url.deleteCharAt(url.length() - 1);
         }
-        ResponseEntity<String> liste = rest.getForEntity(url.toString(), String.class);
+        ResponseEntity<String> liste = template.getForEntity(url.toString(), String.class);
         assertThat(liste.getStatusCode()).isEqualTo(HttpStatus.OK);
         return mapper.readTree(liste.getBody());
     }
 
     private ResponseEntity<String> post(Map<String, Object> body) {
+        return post(rest, body);
+    }
+
+    private ResponseEntity<String> post(TestRestTemplate template, Map<String, Object> body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        return rest.postForEntity("/api/eintraege", new HttpEntity<>(body, headers), String.class);
+        return template.postForEntity("/api/eintraege", new HttpEntity<>(body, headers), String.class);
     }
 }
