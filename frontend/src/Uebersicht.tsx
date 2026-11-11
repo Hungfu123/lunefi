@@ -7,12 +7,14 @@ import {
   datumKurz,
   betragKompakt,
   euro,
+  istDieseWoche,
   monatAlsString,
   monatKurz,
   monatLabel,
   monatVerschieben,
 } from './format'
 import { KategorieIconTile } from './kategorieIcon'
+import { KategorieSheet } from './KategorieSheet'
 import { useApp } from './AppKontext'
 
 const KATEGORIEN_SICHTBAR = 3
@@ -55,23 +57,42 @@ function GeteiltPill() {
   )
 }
 
-function MiniBalken({ name, summe, skala, rang }: { name: string; summe: number; skala: number; rang: number }) {
+function MiniBalken({
+  name,
+  summe,
+  skala,
+  rang,
+  onWahl,
+}: {
+  name: string
+  summe: number
+  skala: number
+  rang: number
+  onWahl: () => void
+}) {
   const breite = Math.min(100, (summe / Math.max(skala, 1)) * 100)
   return (
     <div>
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-3">
-          <KategorieIconTile name={name} />
-          <span className="truncate text-[15px] font-semibold text-text">{name}</span>
-        </span>
-        <span className="betragszahl shrink-0 text-[13px] font-semibold">{euro(summe)}</span>
-      </div>
-      <div className="mt-1 h-1.5 rounded-full bg-karte2">
-        <div
-          className={`h-full rounded-full ${BALKEN_STAERKE[rang] ?? 'bg-schlecht/30'}`}
-          style={{ width: `${breite}%` }}
-        />
-      </div>
+      <button
+        type="button"
+        onClick={onWahl}
+        aria-label={`${name} anzeigen`}
+        className="block w-full text-left"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex min-w-0 items-center gap-3">
+            <KategorieIconTile name={name} />
+            <span className="truncate text-[15px] font-semibold text-text">{name}</span>
+          </span>
+          <span className="betragszahl shrink-0 text-[13px] font-semibold">{euro(summe)}</span>
+        </div>
+        <div className="mt-1 h-1.5 rounded-full bg-karte2">
+          <div
+            className={`h-full rounded-full ${BALKEN_STAERKE[rang] ?? 'bg-schlecht/30'}`}
+            style={{ width: `${breite}%` }}
+          />
+        </div>
+      </button>
     </div>
   )
 }
@@ -106,6 +127,7 @@ export function Uebersicht() {
   const [fehler, setFehler] = useState(false)
   const [kategorienOffen, setKategorienOffen] = useState(false)
   const [eintraegeOffen, setEintraegeOffen] = useState(false)
+  const [kategorieDetail, setKategorieDetail] = useState<string | null>(null)
   const [gemeinsamLokal, setGemeinsamLokal] = useState(false)
 
   const sichtSetzen = (neu: Sicht) => {
@@ -176,6 +198,11 @@ export function Uebersicht() {
   const eintraege = [...(daten?.eintraege ?? [])].sort((a, b) =>
     a.datum === b.datum ? b.id - a.id : a.datum < b.datum ? 1 : -1,
   )
+  const istAktuellerMonat = monat === monatAlsString(new Date())
+  const woche = istAktuellerMonat
+    ? eintraege.reduce((summe, eintrag) => summe + (eintrag.betrag < 0 && istDieseWoche(eintrag.datum) ? eintrag.betrag : 0), 0)
+    : null
+  const kategorieEintraege = daten?.eintraege.filter((eintrag) => eintrag.kategorie === kategorieDetail) ?? []
   const verlaufSkala = verlauf
     ? verlauf.reduce((max, v) => Math.max(max, Math.abs(v.differenz)), 1)
     : 1
@@ -324,6 +351,14 @@ export function Uebersicht() {
                 <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">Einnahmen</p>
                 <p className="betragszahl text-[17px] font-semibold text-gut">{betragKompakt(einnahmen)}</p>
               </div>
+              {woche !== null && (
+                <div className="mt-1.5 flex items-baseline justify-between gap-2">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                    Diese Woche
+                  </p>
+                  <p className="betragszahl text-[13px] font-medium text-textschwach">{euro(woche)}</p>
+                </div>
+              )}
             </div>
             {budgetListe.length > 0 && (
               <div className="flex flex-col justify-center rounded-2xl bg-karte p-3">
@@ -383,7 +418,14 @@ export function Uebersicht() {
               </div>
               <div className="space-y-1">
                 {kategorien.slice(0, KATEGORIEN_SICHTBAR).map(([name, summe], rang) => (
-                  <MiniBalken key={name} name={name} summe={summe} skala={kategorieSkala} rang={rang} />
+                  <MiniBalken
+                    key={name}
+                    name={name}
+                    summe={summe}
+                    skala={kategorieSkala}
+                    rang={rang}
+                    onWahl={() => setKategorieDetail(name)}
+                  />
                 ))}
                 <AnimatePresence initial={false}>
                   {kategorienOffen && kategorien.length > KATEGORIEN_SICHTBAR && (
@@ -403,6 +445,7 @@ export function Uebersicht() {
                             summe={summe}
                             skala={kategorieSkala}
                             rang={i + KATEGORIEN_SICHTBAR}
+                            onWahl={() => setKategorieDetail(name)}
                           />
                         ))}
                       </div>
@@ -432,10 +475,14 @@ export function Uebersicht() {
                 {(eintraegeOffen ? eintraege : eintraege.slice(0, EINTRAEGE_SICHTBAR)).map((eintrag, i, liste) => (
                   <li
                     key={eintrag.id}
-                    className={`flex items-center justify-between gap-3 py-1.5 ${
-                      i < liste.length - 1 ? 'border-b border-strich' : ''
-                    }`}
+                    className={`border-b border-strich ${i < liste.length - 1 ? '' : 'border-b-0'}`}
                   >
+                    <button
+                      type="button"
+                      onClick={() => setKategorieDetail(eintrag.kategorie)}
+                      aria-label={`${eintrag.kategorie} anzeigen`}
+                      className="flex w-full items-center justify-between gap-3 py-1.5 text-left"
+                    >
                     <div className="flex min-w-0 items-center gap-3">
                       <KategorieIconTile name={eintrag.kategorie} />
                       <div className="min-w-0">
@@ -469,6 +516,7 @@ export function Uebersicht() {
                       {eintrag.betrag > 0 ? '+' : ''}
                       {euro(eintrag.betrag)}
                     </span>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -476,6 +524,8 @@ export function Uebersicht() {
           </section>
         </>
       )}
+
+      <KategorieSheet name={kategorieDetail} eintraege={kategorieEintraege} zu={() => setKategorieDetail(null)} />
     </div>
   )
 }

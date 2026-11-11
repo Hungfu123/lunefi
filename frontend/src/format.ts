@@ -54,6 +54,16 @@ export function heuteIso(): string {
   return `${jetzt.getFullYear()}-${monat}-${tag}`
 }
 
+export function istDieseWoche(iso: string): boolean {
+  const jetzt = new Date()
+  const start = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate())
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
+  const ende = new Date(start)
+  ende.setDate(ende.getDate() + 7)
+  const datum = new Date(iso + 'T00:00:00')
+  return datum >= start && datum < ende
+}
+
 export function betragAusEingabe(text: string): number | null {
   const bereinigt = text.trim().replace(/\s/g, '')
   if (bereinigt === '') return null

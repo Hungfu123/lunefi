@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { CheckCircle } from '@phosphor-icons/react'
-import { lese, sende, type Ausgleich, type AusgleichMonat } from './types'
+import { lese, sende, type Ausgleich, type AusgleichMonat, type AusgleichPosition } from './types'
 import { euro, monatAlsString, monatLabel, monatVerschieben } from './format'
+import { KategorieIconTile } from './kategorieIcon'
 
 function AusgeglichenPill() {
   return (
@@ -68,7 +69,25 @@ export function AusgleichSeite() {
 
   const aktuellerMonat = monatAlsString(new Date())
 
-  const personen = Object.keys(daten?.saldi ?? {})
+  const personen = Object.keys(daten?.saldi ?? {}).sort((a, b) => (daten?.saldi[b] ?? 0) - (daten?.saldi[a] ?? 0))
+
+  const positionenGruppen = (() => {
+    const gruppen = new Map<string, { zahler: string; erhalten: boolean; positionen: AusgleichPosition[] }>()
+    for (const position of daten?.positionen ?? []) {
+      const schluessel = `${position.zahler}|${position.betrag >= 0}`
+      const gruppe = gruppen.get(schluessel)
+      if (gruppe) {
+        gruppe.positionen.push(position)
+      } else {
+        gruppen.set(schluessel, {
+          zahler: position.zahler,
+          erhalten: position.betrag >= 0,
+          positionen: [position],
+        })
+      }
+    }
+    return [...gruppen.values()]
+  })()
 
   return (
     <div>
@@ -114,54 +133,63 @@ export function AusgleichSeite() {
             )}
           </div>
 
-          <div className="mb-5 grid grid-cols-2 gap-3">
-            {personen.map((person) => {
-              const saldo = daten.saldi[person] ?? 0
-              return (
-                <div key={person} className="rounded-2xl bg-karte p-4">
-                  <p className="truncate text-xs text-textschwach">{person}</p>
-                  <p className={`betragszahl mt-1 text-lg font-semibold ${saldo > 0 ? 'text-gut' : saldo < 0 ? 'text-schlecht' : ''}`}>
-                    {euro(saldo)}
-                  </p>
-                  <p className="mt-0.5 text-xs text-textschwach">
-                    {saldo > 0 ? 'bekommt' : saldo < 0 ? 'schuldet' : 'ausgeglichen'}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
+          {personen.length > 0 && Object.values(daten.saldi).some((saldo) => saldo !== 0) && (
+            <div className="mb-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-2xl bg-karte px-4 py-3">
+              {personen.map((person, i) => {
+                const saldo = daten.saldi[person] ?? 0
+                const gezeigteBetraege = new Set(
+                  personen.slice(0, i).map((p) => Math.abs(daten.saldi[p] ?? 0)),
+                )
+                return (
+                  <span key={person} className="flex items-center gap-1 text-sm text-textschwach">
+                    {i > 0 && <span aria-hidden="true">·</span>}
+                    <span className="truncate">{person} {saldo > 0 ? 'bekommt' : saldo < 0 ? 'schuldet' : 'ist ausgeglichen'}</span>
+                    {saldo !== 0 && !gezeigteBetraege.has(Math.abs(saldo)) && (
+                      <span
+                        className={`betragszahl text-sm font-semibold ${
+                          saldo > 0 ? 'text-gut' : 'text-schlecht'
+                        }`}
+                      >
+                        {euro(Math.abs(saldo))}
+                      </span>
+                    )}
+                  </span>
+                )
+              })}
+            </div>
+          )}
 
           <h3 className="mb-2 text-sm font-medium text-textschwach">Gemeinsame Ausgaben</h3>
           {daten.positionen.length === 0 && (
             <p className="text-sm text-textschwach">Keine gemeinsamen Ausgaben in diesem Monat.</p>
           )}
-          <ul className="mb-6 space-y-2">
-            {daten.positionen.map((position) => {
-              const werte = Object.values(position.anteile)
-              const alleGleich = werte.length > 0 && werte.every((w) => w === werte[0])
-              return (
-                <li key={position.id} className="rounded-xl bg-karte px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="min-w-0 truncate text-sm font-medium">{position.kategorie}</span>
-                    <span className="betragszahl shrink-0 text-sm font-semibold">{euro(Math.abs(position.betrag))}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-textschwach">
-                    {position.zahler} {position.betrag >= 0 ? 'hat erhalten' : 'hat bezahlt'}
-                    {alleGleich ? (
-                      <> — je {euro(werte[0])}</>
-                    ) : (
-                      Object.entries(position.anteile).map(([person, anteil]) => (
-                        <span key={person}>
-                          {' '}
-                          · {person} {euro(anteil)}
-                        </span>
-                      ))
-                    )}
+          {positionenGruppen.length > 0 && (
+            <ul className="mb-6 space-y-3">
+              {positionenGruppen.map((gruppe) => (
+                <li key={`${gruppe.zahler}-${gruppe.erhalten}`}>
+                  <p className="mb-1 px-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                    {gruppe.zahler} {gruppe.erhalten ? 'hat erhalten' : 'hat bezahlt'}
                   </p>
+                  <ul className="overflow-hidden rounded-xl bg-karte">
+                    {gruppe.positionen.map((position) => (
+                      <li
+                        key={position.id}
+                        className="flex items-center justify-between gap-3 border-b border-strich px-3 py-2.5 last:border-b-0"
+                      >
+                        <span className="flex min-w-0 items-center gap-3">
+                          <KategorieIconTile name={position.kategorie} />
+                          <span className="truncate text-[15px] font-medium">{position.kategorie}</span>
+                        </span>
+                        <span className="betragszahl shrink-0 text-sm font-semibold">
+                          {euro(Math.abs(position.betrag))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </li>
-              )
-            })}
-          </ul>
+              ))}
+            </ul>
+          )}
 
           {!daten.ausgeglichen && daten.vorschlag && (
             <button
