@@ -124,7 +124,7 @@ export function EintragSheet({
               <button
                 type="button"
                 onClick={() => setArt('ausgabe')}
-                className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
+                className={`flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
                   art === 'ausgabe' ? 'bg-akzentstark text-white' : 'text-textschwach'
                 }`}
               >
@@ -133,7 +133,7 @@ export function EintragSheet({
               <button
                 type="button"
                 onClick={() => setArt('einnahme')}
-                className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
+                className={`flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
                   art === 'einnahme' ? 'bg-akzentstark text-white' : 'text-textschwach'
                 }`}
               >
@@ -157,7 +157,7 @@ export function EintragSheet({
                   type="button"
                   key={k}
                   onClick={() => setKategorie(k)}
-                  className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
+                  className={`flex min-h-11 items-center rounded-full px-4 text-sm transition-colors ${
                     kategorie === k ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
                   }`}
                 >
@@ -188,7 +188,9 @@ export function EintragSheet({
                 aria-label="Gemeinsame Ausgabe"
                 aria-checked={gemeinsam}
                 onClick={() => setGemeinsam(!gemeinsam)}
-                className={`h-7 w-12 rounded-full transition-colors ${gemeinsam ? 'bg-akzentstark' : 'bg-strich'}`}
+                className={`relative h-7 w-12 rounded-full transition-colors before:absolute before:-inset-3 before:content-[''] ${
+                  gemeinsam ? 'bg-akzentstark' : 'bg-strich'
+                }`}
               >
                 <span
                   className={`block h-7 w-7 rounded-full bg-white transition-transform duration-200 ${
@@ -207,7 +209,7 @@ export function EintragSheet({
                     type="button"
                     key={p.id}
                     onClick={() => (gemeinsam ? setZahler(p.name) : setPerson(p.name))}
-                    className={`flex-1 rounded-xl px-3 py-2.5 transition-colors ${
+                    className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 transition-colors ${
                       gewaehlt ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
                     }`}
                   >
@@ -226,7 +228,7 @@ export function EintragSheet({
                       type="button"
                       key={k.id}
                       onClick={() => setKonto(konto === k.name ? null : k.name)}
-                      className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
+                      className={`flex min-h-11 items-center rounded-full px-4 text-sm transition-colors ${
                         konto === k.name ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
                       }`}
                     >

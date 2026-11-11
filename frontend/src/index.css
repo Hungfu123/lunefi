@@ -7,7 +7,7 @@
   --color-karte2: #221d3d;
   --color-strich: #332c56;
   --color-akzent: #a78bfa;
-  --color-akzentstark: #8b5cf6;
+  --color-akzentstark: #7c4ae8;
   --color-gut: #4ade80;
   --color-schlecht: #f87171;
   --color-warn: #fbbf24;
@@ -28,7 +28,7 @@ html[data-theme="sonne"] {
   --color-karte2: #f3ecdf;
   --color-strich: #e0d5bf;
   --color-akzent: #b45309;
-  --color-akzentstark: #d97706;
+  --color-akzentstark: #c2410c;
   --color-gut: #15803d;
   --color-schlecht: #b91c1c;
   --color-warn: #a16207;
@@ -84,16 +84,18 @@ body {
   }
 }
 
-input,
-select,
-textarea,
-button {
-  font: inherit;
-  color: inherit;
-}
+@layer base {
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    color: inherit;
+  }
 
-input,
-select,
-textarea {
-  font-size: 16px;
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

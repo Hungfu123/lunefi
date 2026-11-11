@@ -66,7 +66,7 @@ export function SparzieleSeite() {
         <h2 className="text-lg font-semibold">Sparziele</h2>
         <button
           onClick={() => setNeuOffen(true)}
-          className="rounded-xl bg-akzentstark px-4 py-2.5 text-sm font-semibold text-white active:scale-[0.98]"
+          className="flex min-h-11 items-center rounded-xl bg-akzentstark px-4 text-sm font-semibold text-white active:scale-[0.98]"
         >
           Neues Ziel
         </button>
@@ -92,7 +92,7 @@ export function SparzieleSeite() {
                 ) : (
                   <button
                     onClick={() => setEinzahlenOffen(ziel)}
-                    className="text-sm font-semibold text-akzent active:scale-[0.98]"
+                    className="flex min-h-11 items-center text-sm font-semibold text-akzent active:scale-[0.98]"
                   >
                     Einzahlen
                   </button>
@@ -246,7 +246,7 @@ function EinzahlDialog({
               type="button"
               key={p}
               onClick={() => setPerson(p)}
-              className={`flex-1 rounded-xl px-3 py-2.5 text-sm ${
+              className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 text-sm ${
                 person === p ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
               }`}
             >

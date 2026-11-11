@@ -101,7 +101,7 @@ export function EinstellungenSeite() {
         <div className="flex gap-2">
           <button
             onClick={() => themeSetzen('mond')}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 transition-colors ${
+            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 transition-colors ${
               theme === 'mond' ? 'bg-akzentstark text-white' : 'bg-karte text-textschwach'
             }`}
           >
@@ -110,7 +110,7 @@ export function EinstellungenSeite() {
           </button>
           <button
             onClick={() => themeSetzen('sonne')}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 transition-colors ${
+            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 transition-colors ${
               theme === 'sonne' ? 'bg-akzentstark text-white' : 'bg-karte text-textschwach'
             }`}
           >
@@ -148,7 +148,7 @@ export function EinstellungenSeite() {
             placeholder="Startsaldo"
             className="w-28 shrink-0 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
           />
-          <button type="submit" className="shrink-0 rounded-xl bg-akzentstark px-3 py-2.5 text-sm font-semibold text-white">
+          <button type="submit" className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-white">
             Anlegen
           </button>
         </form>
@@ -164,7 +164,7 @@ export function EinstellungenSeite() {
             <button
               key={p.id}
               onClick={() => setAktivePerson(p.name)}
-              className={`flex-1 rounded-xl px-3 py-2.5 ${
+              className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 ${
                 aktivePerson === p.name ? 'bg-akzentstark text-white' : 'bg-karte'
               }`}
             >
@@ -196,13 +196,13 @@ export function EinstellungenSeite() {
                 <div className="flex shrink-0 gap-2">
                   <button
                     onClick={() => splitSetzen(k.name, 'HALBHALB')}
-                    className="rounded-lg bg-karte2 px-3 py-2 text-xs"
+                    className="flex min-h-11 items-center rounded-lg bg-karte2 px-3 text-xs"
                   >
                     50/50
                   </button>
                   <button
                     onClick={() => splitSetzen(k.name, 'ANTEILE')}
-                    className="rounded-lg bg-karte2 px-3 py-2 text-xs"
+                    className="flex min-h-11 items-center rounded-lg bg-karte2 px-3 text-xs"
                   >
                     Anteile
                   </button>
@@ -230,7 +230,7 @@ export function EinstellungenSeite() {
                   placeholder="Limit in Euro"
                   className="min-w-0 flex-1 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
                 />
-                <button type="submit" className="shrink-0 rounded-xl bg-akzentstark px-3 py-2.5 text-sm font-semibold text-white">
+                <button type="submit" className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-white">
                   Speichern
                 </button>
               </form>
