@@ -7,7 +7,7 @@ import { betragAusEingabe, euro, monatAlsString } from './format'
 import { useApp } from './AppKontext'
 
 export function EinstellungenSeite() {
-  const { personen, aktivePerson, setAktivePerson } = useApp()
+  const { personen, aktivePerson } = useApp()
   const [kategorien, setKategorien] = useState<KategorieInfo[]>([])
   const [konten, setKonten] = useState<Konto[]>([])
   const [kontoName, setKontoName] = useState('')
@@ -154,29 +154,6 @@ export function EinstellungenSeite() {
             Anlegen
           </button>
         </form>
-      </section>
-
-      <section className="mb-6">
-        <h3 className="mb-2 text-sm font-medium text-textschwach">Wer ist gerade dran?</h3>
-        <div className="flex gap-2">
-          {personen.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setAktivePerson(p.name)}
-              className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 ${
-                aktivePerson === p.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte'
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
-        <p className="mt-1.5 text-xs text-textschwach">
-          Sagt der App, wer von euch beiden gerade tippt — neue Einträge schlagen dich vor.
-        </p>
-        <p className="mt-1 text-xs text-textschwach">
-          Jeder sieht nur seine eigenen Konten und Einnahmen — gemeinsam geteilt werden Ausgaben, Budgets und Ziele.
-        </p>
       </section>
 
       <section className="mb-6">

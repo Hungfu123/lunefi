@@ -61,6 +61,13 @@ export function AusgleichSeite() {
     setMonat(monatVerschieben(monat, delta))
   }
 
+  const monatWaehlen = (neu: string) => {
+    setMarkiertNeu(false)
+    setMonat(neu)
+  }
+
+  const aktuellerMonat = monatAlsString(new Date())
+
   const personen = Object.keys(daten?.saldi ?? {})
 
   return (
@@ -86,7 +93,8 @@ export function AusgleichSeite() {
         <button
           aria-label="Folgemonat"
           onClick={() => monatWechseln(1)}
-          className="h-11 w-11 rounded-xl bg-karte text-lg"
+          disabled={monat >= aktuellerMonat}
+          className="h-11 w-11 rounded-xl bg-karte text-lg disabled:opacity-40"
         >
           ›
         </button>
@@ -159,9 +167,10 @@ export function AusgleichSeite() {
             <button
               onClick={markieren}
               disabled={markiert}
-              className="mb-5 min-h-11 w-full rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
+              className="mb-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-akzent/10 py-3 text-sm font-semibold text-akzent ring-1 ring-akzent/40 transition-transform active:scale-[0.98] disabled:opacity-50"
             >
-              Als ausgeglichen markieren
+              <CheckCircle size={18} weight="bold" aria-hidden="true" />
+              Ausgeglichen
             </button>
           )}
           {markiertNeu && (
@@ -180,14 +189,21 @@ export function AusgleichSeite() {
               <h3 className="mb-2 text-sm font-medium text-textschwach">Verlauf</h3>
               <ul className="space-y-2">
                 {verlauf.map((m) => (
-                  <li key={m.monat} className="flex items-center justify-between rounded-xl bg-karte px-4 py-2.5">
-                    <span className="text-sm">{monatLabel(m.monat)}</span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="text-sm text-textschwach">{m.vorschlag ?? 'ausgeglichen'}</span>
-                      {m.ausgeglichen && (
-                        <CheckCircle size={14} weight="fill" className="shrink-0 text-gut" aria-label="ausgeglichen" />
-                      )}
-                    </span>
+                  <li key={m.monat}>
+                    <button
+                      onClick={() => monatWaehlen(m.monat)}
+                      className={`flex w-full items-center justify-between rounded-xl bg-karte px-4 py-2.5 text-left transition-colors ${
+                        m.monat === monat ? 'ring-2 ring-akzent' : ''
+                      }`}
+                    >
+                      <span className="text-sm">{monatLabel(m.monat)}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-sm text-textschwach">{m.vorschlag ?? 'ausgeglichen'}</span>
+                        {m.ausgeglichen && (
+                          <CheckCircle size={14} weight="fill" className="shrink-0 text-gut" aria-label="ausgeglichen" />
+                        )}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
