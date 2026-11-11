@@ -174,6 +174,10 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 - `POST /api/lernregeln` Body `{"kennung": "REWE", "kategorie": "Essen"}` → `201`
   - Import prüft, ob die `kennung` (Groß-/Kleinschreibung egal) im Verwendungszweck vorkommt → erste Trefferregel gewinnt
 
+## Einträge: Rückgabe-Felder (ergänzt)
+
+- Jeder Eintrag (GET /api/eintraege, POST/PUT-Antwort) liefert zusätzlich `verwendungszweck` (String oder null) und `quelleId` (Zahl oder null). Importierte Einträge tragen beide Felder; manuell erfasste haben null. POST/PUT akzeptieren diese Felder NICHT (werden ignoriert — Quelle-Zuordnung entsteht nur über den Import).
+
 ## Betrieb
 
 - Backend: Port 8080, `docker compose up -d` startet PostgreSQL (db/user/pass: `lunefi`), dann Backend starten

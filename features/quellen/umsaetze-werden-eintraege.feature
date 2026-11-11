@@ -16,8 +16,7 @@ Funktionalität: Umsätze importieren
         | UMS-1          | 01.11.2026 | +2.000,00 | Gehalt November        |
         | UMS-2          | 02.11.2026 | -42,50    | REWE SAGT DANKE        |
       Dann existieren genau zwei Einträge im November 2026 von "Alex"
-
-  Regel: Derselbe Umsatz wird bei wiederholtem Import nicht doppelt übernommen
+      Und zeigt die Eintragsliste für November 2026 den Verwendungszweck "REWE SAGT DANKE"
 
     @Q3
     Szenario: Wiederholter Import überspringt Doppelte

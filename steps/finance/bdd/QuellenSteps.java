@@ -156,4 +156,17 @@ public class QuellenSteps {
         }
         assertThat(gefunden).as("Eintrag vom %s über %s existiert", datum, betrag).isTrue();
     }
+    @Dann("zeigt die Eintragsliste für November 2026 den Verwendungszweck {string}")
+    public void entriesContainVerwendungszweck(String verwendungszweck) {
+        ResponseEntity<String> antwort = rest.getForEntity("/api/eintraege?monat=2026-11", String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        JsonNode eintraege = mapper.readTree(antwort.getBody());
+        boolean gefunden = false;
+        for (JsonNode eintrag : eintraege) {
+            if (verwendungszweck.equals(eintrag.path("verwendungszweck").asText())) {
+                gefunden = true;
+            }
+        }
+        assertThat(gefunden).as("Verwendungszweck %s fehlt in der Eintragsliste", verwendungszweck).isTrue();
+    }
 }

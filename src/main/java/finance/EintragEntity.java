@@ -124,6 +124,6 @@ public class EintragEntity {
     }
 
     public Eintrag asEntry() {
-        return new Eintrag(id, datum, betrag, kategorie, person, gemeinsam, zahler, konto);
+        return new Eintrag(id, datum, betrag, kategorie, person, gemeinsam, zahler, konto, verwendungszweck, quelleId);
     }
 }
