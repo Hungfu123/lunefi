@@ -108,7 +108,7 @@ export function EinstellungenSeite() {
             }`}
           >
             <Moon size={18} weight={theme === 'mond' ? 'fill' : 'regular'} />
-            Mond (dunkel)
+            Dunkel
           </button>
           <button
             onClick={() => themeSetzen('sonne')}
@@ -117,7 +117,7 @@ export function EinstellungenSeite() {
             }`}
           >
             <Sun size={18} weight={theme === 'sonne' ? 'fill' : 'regular'} />
-            Sonne (hell)
+            Hell
           </button>
         </div>
       </section>
