@@ -67,6 +67,14 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 - `PUT /api/budgets` Body `{"monat": "2026-11", "kategorie": "Essen", "limit": 200.00}` → `200` mit dem gespeicherten Budget; `limit` ≤ 0 → `400`
 - Sichtbar in der Monatsübersicht: `budgets` mit `warnung: true`, sobald `ist > limit`
 
+## Konten und Gesamtsaldo (K1–K3)
+
+- `POST /api/konten` Body `{"name": "Girokonto", "startSaldo": 3450.00, "person": "Alex"}` → `201` mit `{"id":1,"name":"Girokonto","person":"Alex","startSaldo":3450.00,"saldo":3450.00}`
+  - `name`/`person`/`startSaldo` Pflicht, `person` muss existieren, `name` eindeutig → sonst `400`
+- `GET /api/konten?person=Alex` → Liste mit aktuellem `saldo` (= Startsaldo + Summe der zugeordneten Einträge); ohne Filter alle Konten
+- Gesamtsaldo einer Person = Summe der `saldo` ihrer Konten (Frontend rechnet, kein eigener Endpoint)
+- `POST /api/eintraege` akzeptiert optional `konto` (Name eines existierenden Kontos) → verändert den Kontosaldo um den Betrag; unbekanntes Konto → `400`
+
 ## Betrieb
 
 - Backend: Port 8080, `docker compose up -d` startet PostgreSQL (db/user/pass: `lunefi`), dann Backend starten

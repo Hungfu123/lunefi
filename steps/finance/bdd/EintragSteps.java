@@ -41,6 +41,9 @@ public class EintragSteps {
     private finance.KategorieRepository kategorieRepository;
 
     @Autowired
+    private finance.KontoRepository kontoRepository;
+
+    @Autowired
     private finance.SparzielRepository sparzielRepository;
 
     @Autowired
@@ -53,6 +56,7 @@ public class EintragSteps {
         kategorieRepository.deleteAll();
         sparzielRepository.deleteAll();
         budgetRepository.deleteAll();
+        kontoRepository.deleteAll();
     }
 
     @ParameterType("\\d{2}\\.\\d{2}\\.\\d{4}")
@@ -68,6 +72,21 @@ public class EintragSteps {
 
     @Angenommen("noch kein Eintrag erfasst wurde")
     public void nochKeinEintragErfasst() {
+    }
+
+    @Wenn("ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} von {string} auf dem Konto {string} erfasst wird")
+    public void eintragAufKontoErfassen(LocalDate datum, BigDecimal betrag, String kategorie, String person, String konto) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        Map<String, Object> body = Map.of(
+                "datum", datum.toString(),
+                "betrag", betrag,
+                "kategorie", kategorie,
+                "person", person,
+                "gemeinsam", false,
+                "konto", konto);
+        ResponseEntity<String> antwort = rest.postForEntity("/api/eintraege", new HttpEntity<>(body, headers), String.class);
+        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Wenn("ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} von {string} erfasst wird")

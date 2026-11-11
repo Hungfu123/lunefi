@@ -1,7 +1,32 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { lese, type Ausgleich, type BudgetInfo, type Monatsuebersicht } from './types'
+import { lese, type Ausgleich, type BudgetInfo, type Konto, type Monatsuebersicht } from './types'
 import { datumKurz, euro, monatAlsString, monatLabel, monatVerschieben } from './format'
+import { useApp } from './AppKontext'
+
+function Gesamtsaldo({ konten }: { konten: Konto[] }) {
+  const gesamt = konten.reduce((summe, konto) => summe + konto.saldo, 0)
+  return (
+    <div className="mb-5 rounded-2xl bg-karte2 p-5">
+      <p className="text-xs text-textschwach">Dein Gesamtsaldo</p>
+      <p className={`mt-1 text-3xl font-semibold ${gesamt < 0 ? 'text-schlecht' : ''}`}>{euro(gesamt)}</p>
+      {konten.length === 0 ? (
+        <Link to="/einstellungen" className="mt-2 block text-sm text-akzent">
+          Erstes Konto anlegen
+        </Link>
+      ) : (
+        <ul className="mt-3 space-y-1">
+          {konten.map((konto) => (
+            <li key={konto.id} className="flex items-center justify-between text-sm">
+              <span className="truncate text-textschwach">{konto.name}</span>
+              <span className="font-medium">{euro(konto.saldo)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 function Karten({ ausgaben, einnahmen }: { ausgaben: number; einnahmen: number }) {
   return (
@@ -53,26 +78,31 @@ function KategorieBalken({
 }
 
 export function Uebersicht() {
+  const { aktivePerson } = useApp()
   const [monat, setMonat] = useState(() => monatAlsString(new Date()))
   const [daten, setDaten] = useState<Monatsuebersicht | null>(null)
   const [ausgleich, setAusgleich] = useState<Ausgleich | null>(null)
+  const [konten, setKonten] = useState<Konto[]>([])
   const [laedt, setLaedt] = useState(true)
   const [fehler, setFehler] = useState(false)
 
   const laden = useCallback(() => {
     setLaedt(true)
+    const kontenPfad = aktivePerson ? `/api/konten?person=${encodeURIComponent(aktivePerson)}` : '/api/konten'
     Promise.all([
       lese<Monatsuebersicht>(`/api/monatsuebersicht/${monat}`),
       lese<Ausgleich>(`/api/ausgleich/${monat}`),
+      lese<Konto[]>(kontenPfad),
     ])
-      .then(([uebersicht, ausgleichsDaten]) => {
+      .then(([uebersicht, ausgleichsDaten, kontoListe]) => {
         setDaten(uebersicht)
         setAusgleich(ausgleichsDaten)
+        setKonten(kontoListe)
         setFehler(false)
       })
       .catch(() => setFehler(true))
       .finally(() => setLaedt(false))
-  }, [monat])
+  }, [monat, aktivePerson])
 
   useEffect(laden, [laden])
 
@@ -111,6 +141,7 @@ export function Uebersicht() {
 
       {daten && !laedt && (
         <>
+          <Gesamtsaldo konten={konten} />
           <Karten ausgaben={ausgaben} einnahmen={einnahmen} />
 
           {ausgleich && (

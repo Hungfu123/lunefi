@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ApiFehler, lese, schreibe, type Eintrag, type EintragNeu, type KategorieInfo } from './types'
+import { ApiFehler, lese, schreibe, type Eintrag, type EintragNeu, type KategorieInfo, type Konto } from './types'
 import { betragAusEingabe, heuteIso } from './format'
 import { useApp } from './AppKontext'
 
@@ -16,6 +16,8 @@ export function EintragSheet({
   const [betrag, setBetrag] = useState('')
   const [kategorie, setKategorie] = useState('')
   const [kategorien, setKategorien] = useState<string[]>([])
+  const [konten, setKonten] = useState<Konto[]>([])
+  const [konto, setKonto] = useState<string | null>(null)
   const [datum, setDatum] = useState(heuteIso())
   const [gemeinsam, setGemeinsam] = useState(false)
   const [person, setPerson] = useState<string | null>(null)
@@ -28,16 +30,23 @@ export function EintragSheet({
     lese<KategorieInfo[]>('/api/kategorien')
       .then((liste) => setKategorien(liste.map((k) => k.name)))
       .catch(() => setKategorien([]))
+    lese<Konto[]>('/api/konten')
+      .then(setKonten)
+      .catch(() => setKonten([]))
     setBetrag('')
     setKategorie('')
     setDatum(heuteIso())
     setGemeinsam(false)
     setPerson(aktivePerson)
     setZahler(aktivePerson)
+    setKonto(null)
     setFehler(null)
   }, [offen, aktivePerson])
 
   if (!offen) return null
+
+  const zustaendigePerson = gemeinsam ? zahler : person
+  const eigeneKonten = konten.filter((k) => k.person === zustaendigePerson)
 
   const absenden = async (e: FormEvent) => {
     e.preventDefault()
@@ -60,6 +69,9 @@ export function EintragSheet({
       body.zahler = zahler ?? undefined
     } else {
       body.person = person ?? undefined
+    }
+    if (konto) {
+      body.konto = konto
     }
     setLaeuft(true)
     try {
@@ -157,6 +169,26 @@ export function EintragSheet({
             )
           })}
         </div>
+
+        {eigeneKonten.length > 0 && (
+          <div className="mb-4">
+            <label className="mb-1 block text-xs text-textschwach">Konto (optional)</label>
+            <div className="flex flex-wrap gap-2">
+              {eigeneKonten.map((k) => (
+                <button
+                  type="button"
+                  key={k.id}
+                  onClick={() => setKonto(konto === k.name ? null : k.name)}
+                  className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
+                    konto === k.name ? 'bg-akzentstark text-white' : 'bg-karte2 text-textschwach'
+                  }`}
+                >
+                  {k.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {fehler && <p className="mb-3 text-sm text-schlecht">{fehler}</p>}
 

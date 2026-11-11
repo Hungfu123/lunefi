@@ -11,14 +11,17 @@
             "id": "4b7568e33a1a9acd",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "canvas",
               "state": {
-                "file": "specs/eintraege.md",
-                "mode": "source",
-                "source": false
+                "file": "specs/example-mapping.canvas",
+                "viewState": {
+                  "x": 566.3614808428279,
+                  "y": 574.8996826072627,
+                  "zoom": -1.4
+                }
               },
-              "icon": "lucide-file",
-              "title": "eintraege"
+              "icon": "lucide-layout-dashboard",
+              "title": "example-mapping"
             }
           }
         ]
@@ -99,7 +102,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "specs/eintraege.md",
+                "file": "specs/example-mapping.canvas",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +121,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "specs/eintraege.md",
+                "file": "specs/example-mapping.canvas",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +164,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "specs/eintraege.md",
+                "file": "specs/example-mapping.canvas",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,19 +193,21 @@
   },
   "active": "4b7568e33a1a9acd",
   "lastOpenFiles": [
-    "frontend/e2e/lunefi.spec.ts",
-    "frontend/e2e",
-    "frontend/playwright.config.ts",
+    "lunefi-07-gesamtsaldo.png",
+    "specs/eintraege.md",
+    "frontend/dist/index.html",
+    "frontend/dist/assets/index-Cqv9Z9x9.css",
+    "frontend/dist/assets/index-BwDrLRjv.js",
+    "frontend/dist/assets",
+    "frontend/src/sedpcAUkF",
+    "target/surefire/surefirebooter-20261111092853830_3.jar",
+    "target/surefire/surefire_0-20261111092853830_2tmp",
+    "target/surefire/surefire-20261111092853830_1tmp",
+    "target/surefire",
+    "target/surefire/surefirebooter-20261111092843528_3.jar",
+    "specs/konten.md",
     "lunefi-06-uebersicht-fix-desktop.png",
     "lunefi-05-uebersicht-fix-mobil.png",
-    "frontend/dist/index.html",
-    "frontend/dist/assets/index-CNR_TVXD.js",
-    "frontend/dist/assets/index-B-SbDXfe.css",
-    "frontend/dist/assets",
-    "target/surefire/surefirebooter-20261111005722047_3.jar",
-    "target/surefire/surefire_0-20261111005722047_2tmp",
-    "target/surefire/surefire-20261111005722047_1tmp",
-    "target/surefire",
     "lunefi-04-uebersicht-desktop.png",
     "lunefi-03-ausgleich-mobil.png",
     "lunefi-02-uebersicht-mobil.png",
@@ -231,8 +236,6 @@
     "frontend/node_modules/react-router/docs/start/framework/installation.md",
     "frontend/node_modules/react-router/docs/start/framework/deploying.md",
     "frontend/node_modules/react-router/docs/start/framework/index.md",
-    "frontend/node_modules/react-router/docs/start/framework/data-loading.md",
-    "frontend/node_modules/react-router/docs/start/framework/actions.md",
     "frontend/public/lune.svg",
     "specs/example-mapping.canvas"
   ]

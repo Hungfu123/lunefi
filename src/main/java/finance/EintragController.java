@@ -19,10 +19,12 @@ public class EintragController {
 
     private final EintragRepository repository;
     private final PersonRepository personen;
+    private final KontoRepository konten;
 
-    public EintragController(EintragRepository repository, PersonRepository personen) {
+    public EintragController(EintragRepository repository, PersonRepository personen, KontoRepository konten) {
         this.repository = repository;
         this.personen = personen;
+        this.konten = konten;
     }
 
     @PostMapping
@@ -31,12 +33,14 @@ public class EintragController {
                 || eintrag.datum() == null
                 || eintrag.betrag() == null
                 || !genauEineZuordnung(eintrag)
-                || !zahlerBeiGemeinsam(eintrag)) {
+                || !zahlerBeiGemeinsam(eintrag)
+                || (eintrag.konto() != null && !konten.existsByName(eintrag.konto()))) {
             return ResponseEntity.badRequest().build();
         }
         EintragEntity gespeichert = repository.save(new EintragEntity(
                 eintrag.datum(), eintrag.betrag(), eintrag.kategorie(),
-                eintrag.person(), Boolean.TRUE.equals(eintrag.gemeinsam()), eintrag.zahler()));
+                eintrag.person(), Boolean.TRUE.equals(eintrag.gemeinsam()), eintrag.zahler(),
+                eintrag.konto()));
         return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.alsEintrag());
     }
 

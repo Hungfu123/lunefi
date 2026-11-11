@@ -3,6 +3,14 @@ export interface Person {
   name: string
 }
 
+export interface Konto {
+  id: number
+  name: string
+  person: string
+  startSaldo: number
+  saldo: number
+}
+
 export interface Eintrag {
   id: number
   datum: string
@@ -11,6 +19,7 @@ export interface Eintrag {
   person: string | null
   gemeinsam: boolean
   zahler: string | null
+  konto: string | null
 }
 
 export interface BudgetInfo {
@@ -83,6 +92,7 @@ export interface EintragNeu {
   person?: string
   gemeinsam?: boolean
   zahler?: string
+  konto?: string
 }
 
 export class ApiFehler extends Error {

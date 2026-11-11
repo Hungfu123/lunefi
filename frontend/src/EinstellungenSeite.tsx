@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { ApiFehler, lese, schreibe, type KategorieInfo } from './types'
-import { betragAusEingabe, monatAlsString } from './format'
+import { ApiFehler, lese, schreibe, type KategorieInfo, type Konto } from './types'
+import { betragAusEingabe, euro, monatAlsString } from './format'
 import { useApp } from './AppKontext'
 
 export function EinstellungenSeite() {
   const { personen, aktivePerson, setAktivePerson } = useApp()
   const [kategorien, setKategorien] = useState<KategorieInfo[]>([])
+  const [konten, setKonten] = useState<Konto[]>([])
+  const [kontoName, setKontoName] = useState('')
+  const [kontoSaldo, setKontoSaldo] = useState('')
   const [budgets, setBudgets] = useState<Record<string, string>>({})
   const [meldung, setMeldung] = useState<string | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
@@ -19,6 +22,9 @@ export function EinstellungenSeite() {
         setBudgets(verzeichnis)
       })
       .catch(() => setKategorien([]))
+    lese<Konto[]>('/api/konten')
+      .then(setKonten)
+      .catch(() => setKonten([]))
   }, [])
 
   useEffect(laden, [laden])
@@ -58,9 +64,64 @@ export function EinstellungenSeite() {
     }
   }
 
+  const kontoAnlegen = async (e: FormEvent) => {
+    e.preventDefault()
+    const saldo = betragAusEingabe(kontoSaldo)
+    if (!kontoName.trim() || saldo === null || !aktivePerson) {
+      setFehler('Name und Startsaldo eintragen.')
+      return
+    }
+    try {
+      await schreibe('/api/konten', { name: kontoName.trim(), startSaldo: saldo, person: aktivePerson })
+      setMeldung(`Konto „${kontoName.trim()}" angelegt.`)
+      setKontoName('')
+      setKontoSaldo('')
+      laden()
+    } catch (err) {
+      setFehler(err instanceof ApiFehler ? err.message : 'Konto anlegen fehlgeschlagen.')
+    }
+  }
+
   return (
     <div>
       <h2 className="mb-4 text-lg font-semibold">Einstellungen</h2>
+
+      <section className="mb-6">
+        <h3 className="mb-2 text-sm font-medium text-textschwach">Konten</h3>
+        {konten.length > 0 && (
+          <ul className="mb-3 space-y-2">
+            {konten.map((k) => (
+              <li key={k.id} className="flex items-center justify-between rounded-xl bg-karte px-4 py-3">
+                <span className="truncate text-sm">
+                  {k.name} <span className="text-textschwach">· {k.person}</span>
+                </span>
+                <span className="text-sm font-semibold">{euro(k.saldo)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form onSubmit={kontoAnlegen} className="flex items-center gap-2">
+          <input
+            value={kontoName}
+            onChange={(e) => setKontoName(e.target.value)}
+            placeholder="z. B. Girokonto"
+            className="min-w-0 flex-1 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
+          />
+          <input
+            value={kontoSaldo}
+            onChange={(e) => setKontoSaldo(e.target.value)}
+            inputMode="decimal"
+            placeholder="Startsaldo"
+            className="w-28 shrink-0 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
+          />
+          <button type="submit" className="shrink-0 rounded-xl bg-akzentstark px-3 py-2.5 text-sm font-semibold text-white">
+            Anlegen
+          </button>
+        </form>
+        <p className="mt-2 text-xs text-textschwach">
+          Später ersetzt der FinTS-Import die manuellen Konten — der Startsaldo wird dann durch echte Kontostände abgelöst.
+        </p>
+      </section>
 
       <section className="mb-6">
         <h3 className="mb-2 text-sm font-medium text-textschwach">Wer bin ich?</h3>

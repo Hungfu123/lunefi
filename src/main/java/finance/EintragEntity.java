@@ -34,17 +34,20 @@ public class EintragEntity {
 
     private String zahler;
 
+    private String konto;
+
     protected EintragEntity() {
     }
 
     public EintragEntity(LocalDate datum, BigDecimal betrag, String kategorie,
-            String person, Boolean gemeinsam, String zahler) {
+            String person, Boolean gemeinsam, String zahler, String konto) {
         this.datum = datum;
         this.betrag = betrag;
         this.kategorie = kategorie;
         this.person = person;
         this.gemeinsam = gemeinsam;
         this.zahler = zahler;
+        this.konto = konto;
     }
 
     public Long getId() {
@@ -75,7 +78,11 @@ public class EintragEntity {
         return zahler;
     }
 
+    public String getKonto() {
+        return konto;
+    }
+
     public Eintrag alsEintrag() {
-        return new Eintrag(id, datum, betrag, kategorie, person, gemeinsam, zahler);
+        return new Eintrag(id, datum, betrag, kategorie, person, gemeinsam, zahler, konto);
     }
 }
