@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Moon, Sun } from '@phosphor-icons/react'
 import { ApiFehler, lese, schreibe, type KategorieInfo, type Konto } from './types'
 import { TYP_LABEL, VORDEFINIERTE_KATEGORIEN } from './kategorien'
-import { KategorieIcon } from './kategorieIcon'
+import { KategorieIconTile } from './kategorieIcon'
 import { betragAusEingabe, euro, monatAlsString } from './format'
 import { useApp } from './AppKontext'
 
@@ -188,9 +188,9 @@ export function EinstellungenSeite() {
             )?.typ
             return (
               <li key={k.name} className="flex items-center gap-3 rounded-xl bg-karte px-3.5 py-1.5">
-                <KategorieIcon name={k.name} size={17} />
+                <KategorieIconTile name={k.name} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium leading-tight">{k.name}</p>
+                  <p className="truncate text-[15px] font-semibold leading-tight text-text">{k.name}</p>
                   <p className="truncate text-[11px] leading-tight text-textschwach">
                     {typ ? `${TYP_LABEL[typ]} · ` : ''}
                     {k.split.art === 'ANTEILE' && k.split.anteile

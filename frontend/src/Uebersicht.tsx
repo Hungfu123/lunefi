@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { CaretDown, CaretRight, Wallet } from '@phosphor-icons/react'
-import { lese, type Ausgleich, type Konto, type Monatsuebersicht } from './types'
-import { datumKurz, betragKompakt, euro, monatAlsString, monatLabel, monatVerschieben } from './format'
-import { KategorieIcon } from './kategorieIcon'
+import { ArrowsLeftRight, CaretDown, CaretRight, Wallet } from '@phosphor-icons/react'
+import { lese, type Ausgleich, type Konto, type Monatsuebersicht, type VerlaufMonat } from './types'
+import {
+  datumKurz,
+  betragKompakt,
+  euro,
+  monatAlsString,
+  monatKurz,
+  monatLabel,
+  monatVerschieben,
+} from './format'
+import { KategorieIconTile } from './kategorieIcon'
 import { useApp } from './AppKontext'
 
 const KATEGORIEN_SICHTBAR = 3
@@ -12,14 +20,32 @@ const EINTRAEGE_SICHTBAR = 3
 
 const BALKEN_STAERKE = ['bg-schlecht', 'bg-schlecht/70', 'bg-schlecht/55', 'bg-schlecht/45', 'bg-schlecht/35']
 
+type Sicht = 'meine' | 'zusammen'
+
+function sichtLaden(): Sicht {
+  return localStorage.getItem('lunefi:sicht') === 'zusammen' ? 'zusammen' : 'meine'
+}
+
+function GeteiltPill() {
+  return (
+    <span
+      title="geteilt"
+      className="inline-flex h-5 shrink-0 items-center rounded-full px-1 text-textschwach"
+      style={{ background: 'color-mix(in srgb, var(--color-text) 8%, transparent)' }}
+    >
+      <ArrowsLeftRight size={12} aria-hidden="true" />
+    </span>
+  )
+}
+
 function MiniBalken({ name, summe, skala, rang }: { name: string; summe: number; skala: number; rang: number }) {
   const breite = Math.min(100, (summe / Math.max(skala, 1)) * 100)
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <KategorieIcon name={name} size={16} />
-          <span className="truncate text-[13px] font-medium">{name}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-3">
+          <KategorieIconTile name={name} />
+          <span className="truncate text-[15px] font-semibold text-text">{name}</span>
         </span>
         <span className="betragszahl shrink-0 text-[13px] font-semibold">{euro(summe)}</span>
       </div>
@@ -33,23 +59,50 @@ function MiniBalken({ name, summe, skala, rang }: { name: string; summe: number;
   )
 }
 
+function TrendBalken({ eintrag, skala }: { eintrag: VerlaufMonat; skala: number }) {
+  const positiv = eintrag.differenz >= 0
+  const hoehe = Math.max(2, Math.round((Math.abs(eintrag.differenz) / Math.max(skala, 1)) * 12))
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      <span className="relative block h-6 w-2">
+        <span className="absolute inset-x-0 top-1/2 h-px bg-strich" />
+        <span
+          className={`absolute inset-x-0 rounded-[2px] ${positiv ? 'bottom-1/2 bg-gut' : 'top-1/2 bg-schlecht'}`}
+          style={{ height: hoehe }}
+        />
+      </span>
+      <span className="text-[10px] leading-none text-textschwach">{monatKurz(eintrag.monat)}</span>
+    </span>
+  )
+}
+
 export function Uebersicht() {
   const { aktivePerson } = useApp()
   const reduziert = useReducedMotion()
   const [monat, setMonat] = useState(() => monatAlsString(new Date()))
+  const [sicht, setSicht] = useState<Sicht>(sichtLaden)
   const [daten, setDaten] = useState<Monatsuebersicht | null>(null)
   const [ausgleich, setAusgleich] = useState<Ausgleich | null>(null)
   const [konten, setKonten] = useState<Konto[]>([])
+  const [verlauf, setVerlauf] = useState<VerlaufMonat[] | null>(null)
   const [laedt, setLaedt] = useState(true)
   const [fehler, setFehler] = useState(false)
   const [kategorienOffen, setKategorienOffen] = useState(false)
   const [eintraegeOffen, setEintraegeOffen] = useState(false)
 
+  const sichtSetzen = (neu: Sicht) => {
+    setSicht(neu)
+    localStorage.setItem('lunefi:sicht', neu)
+  }
+
+  const gefiltert = sicht === 'meine' && aktivePerson !== null
+
   const laden = useCallback(() => {
     setLaedt(true)
-    const kontenPfad = aktivePerson ? `/api/konten?person=${encodeURIComponent(aktivePerson)}` : '/api/konten'
+    const personParam = gefiltert ? `?person=${encodeURIComponent(aktivePerson ?? '')}` : ''
+    const kontenPfad = gefiltert ? `/api/konten${personParam}` : '/api/konten'
     Promise.all([
-      lese<Monatsuebersicht>(`/api/monatsuebersicht/${monat}`),
+      lese<Monatsuebersicht>(`/api/monatsuebersicht/${monat}${personParam}`),
       lese<Ausgleich>(`/api/ausgleich/${monat}`),
       lese<Konto[]>(kontenPfad),
     ])
@@ -61,9 +114,18 @@ export function Uebersicht() {
       })
       .catch(() => setFehler(true))
       .finally(() => setLaedt(false))
-  }, [monat, aktivePerson])
+  }, [monat, gefiltert, aktivePerson])
 
   useEffect(laden, [laden])
+
+  useEffect(() => {
+    const pfad = gefiltert
+      ? `/api/verlauf?monate=3&person=${encodeURIComponent(aktivePerson ?? '')}`
+      : '/api/verlauf?monate=3'
+    lese<VerlaufMonat[]>(pfad)
+      .then((liste) => setVerlauf(Array.isArray(liste) && liste.length > 0 ? liste : null))
+      .catch(() => setVerlauf(null))
+  }, [gefiltert, aktivePerson])
 
   const gesamt = konten.reduce((summe, konto) => summe + konto.saldo, 0)
   const ausgaben = Object.values(daten?.ausgabenJeKategorie ?? {}).reduce((a, b) => a + b, 0)
@@ -78,6 +140,13 @@ export function Uebersicht() {
   const eintraege = [...(daten?.eintraege ?? [])].sort((a, b) =>
     a.datum === b.datum ? b.id - a.id : a.datum < b.datum ? 1 : -1,
   )
+  const verlaufSkala = verlauf
+    ? verlauf.reduce((max, v) => Math.max(max, Math.abs(v.differenz)), 1)
+    : 1
+  const verlaufSchnitt =
+    verlauf && verlauf.length > 0
+      ? verlauf.reduce((summe, v) => summe + v.differenz, 0) / verlauf.length
+      : null
 
   return (
     <div>
@@ -85,7 +154,7 @@ export function Uebersicht() {
         <button
           aria-label="Vormonat"
           onClick={() => setMonat(monatVerschieben(monat, -1))}
-          className="-ml-3 flex h-11 w-11 items-center justify-center text-xl text-textschwach"
+          className="-ml-3 flex h-9 w-9 items-center justify-center text-xl text-textschwach"
         >
           ‹
         </button>
@@ -93,7 +162,7 @@ export function Uebersicht() {
         <button
           aria-label="Folgemonat"
           onClick={() => setMonat(monatVerschieben(monat, 1))}
-          className="-mr-3 flex h-11 w-11 items-center justify-center text-xl text-textschwach"
+          className="-mr-3 flex h-9 w-9 items-center justify-center text-xl text-textschwach"
         >
           ›
         </button>
@@ -110,17 +179,39 @@ export function Uebersicht() {
 
       {daten && !laedt && (
         <>
-          <section className="mb-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">Gesamtsaldo</p>
+          <section className="mb-2">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+              {gefiltert ? 'Mein Saldo' : 'Gesamtsaldo'}
+            </p>
             <p
-              className={`betragszahl mt-1.5 text-[44px] font-semibold leading-none tracking-tight ${
+              className={`betragszahl mt-1 text-[44px] font-semibold leading-none tracking-tight ${
                 gesamt < 0 ? 'text-schlecht' : 'text-text'
               }`}
             >
               {betragKompakt(gesamt, 1000000)}
             </p>
+            <div className="mt-1.5 flex h-8 w-fit items-center gap-0.5 rounded-full bg-karte2 p-0.5">
+              <button
+                onClick={() => sichtSetzen('meine')}
+                aria-pressed={gefiltert}
+                className={`flex h-7 items-center rounded-full px-3 text-xs font-medium transition-colors ${
+                  gefiltert ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
+                }`}
+              >
+                {aktivePerson ?? 'Meine'}
+              </button>
+              <button
+                onClick={() => sichtSetzen('zusammen')}
+                aria-pressed={!gefiltert}
+                className={`flex h-7 items-center rounded-full px-3 text-xs font-medium transition-colors ${
+                  !gefiltert ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
+                }`}
+              >
+                Zusammen
+              </button>
+            </div>
             {ausgleich && (
-              <Link to="/ausgleich" className="-my-1 flex min-h-8 items-center gap-2 py-1">
+              <Link to="/ausgleich" className="-my-1 flex min-h-7 items-center gap-2 py-1">
                 <span className="shrink-0 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
                   Ausgleich
                 </span>
@@ -139,7 +230,7 @@ export function Uebersicht() {
           </section>
 
           {konten.length > 0 && (
-            <div className="mb-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mb-2 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {konten.map((konto) => (
                 <Link
                   key={konto.id}
@@ -160,8 +251,8 @@ export function Uebersicht() {
             </div>
           )}
 
-          <div className={`mb-3 grid gap-3 ${budgetListe.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            <div className="rounded-2xl bg-karte p-3.5">
+          <div className={`mb-2 grid gap-2.5 ${budgetListe.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className="rounded-2xl bg-karte p-3">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">Ausgaben</p>
                 <p className="betragszahl text-[17px] font-semibold text-schlecht">{betragKompakt(ausgaben)}</p>
@@ -172,7 +263,7 @@ export function Uebersicht() {
               </div>
             </div>
             {budgetListe.length > 0 && (
-              <div className="flex flex-col justify-center rounded-2xl bg-karte p-3.5">
+              <div className="flex flex-col justify-center rounded-2xl bg-karte p-3">
                 <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">Budget</p>
                 <div className="relative mt-2 h-2 rounded-full bg-karte2">
                   <div
@@ -196,8 +287,25 @@ export function Uebersicht() {
             )}
           </div>
 
+          {verlauf !== null && verlaufSchnitt !== null && (
+            <section className="mb-1.5 flex h-6 items-center gap-3">
+              <p className="shrink-0 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                Verlauf
+              </p>
+              <div className="flex items-center gap-2.5">
+                {verlauf.map((v) => (
+                  <TrendBalken key={v.monat} eintrag={v} skala={verlaufSkala} />
+                ))}
+              </div>
+              <p className="betragszahl ml-auto shrink-0 text-[13px] font-medium text-textschwach">
+                Ø {verlaufSchnitt >= 0 ? '+' : ''}
+                {betragKompakt(verlaufSchnitt)}
+              </p>
+            </section>
+          )}
+
           {kategorien.length > 0 && (
-            <section className="mb-3">
+          <section className="mb-2">
               <div className="mb-1 flex items-baseline justify-between">
                 <h3 className="text-[13px] font-semibold">Kategorien</h3>
                 {kategorien.length > KATEGORIEN_SICHTBAR && (
@@ -210,7 +318,7 @@ export function Uebersicht() {
                   </button>
                 )}
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {kategorien.slice(0, KATEGORIEN_SICHTBAR).map(([name, summe], rang) => (
                   <MiniBalken key={name} name={name} summe={summe} skala={kategorieSkala} rang={rang} />
                 ))}
@@ -261,19 +369,34 @@ export function Uebersicht() {
                 {(eintraegeOffen ? eintraege : eintraege.slice(0, EINTRAEGE_SICHTBAR)).map((eintrag, i, liste) => (
                   <li
                     key={eintrag.id}
-                    className={`flex items-center justify-between gap-3 py-2 ${
+                    className={`flex items-center justify-between gap-3 py-1.5 ${
                       i < liste.length - 1 ? 'border-b border-strich' : ''
                     }`}
                   >
-                    <div className="min-w-0">
-                      <p className="flex items-center gap-1.5 leading-tight">
-                        <KategorieIcon name={eintrag.kategorie} size={16} />
-                        <span className="truncate text-[15px] font-semibold">{eintrag.kategorie}</span>
-                      </p>
-                      <p className="text-xs leading-tight text-textschwach">
-                        {datumKurz(eintrag.datum)} ·{' '}
-                        {eintrag.gemeinsam ? `gemeinsam · ${eintrag.zahler}` : eintrag.person}
-                      </p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <KategorieIconTile name={eintrag.kategorie} />
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-semibold leading-tight text-text">
+                          {eintrag.kategorie}
+                        </p>
+                        <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs leading-tight text-textschwach">
+                          <span>{datumKurz(eintrag.datum)}</span>
+                          <span aria-hidden="true">·</span>
+                          {eintrag.gemeinsam ? (
+                            <>
+                              <GeteiltPill />
+                              {eintrag.zahler && (
+                                <>
+                                  <span aria-hidden="true">·</span>
+                                  <span>{eintrag.zahler}</span>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <span>{eintrag.person}</span>
+                          )}
+                        </p>
+                      </div>
                     </div>
                     <span
                       className={`betragszahl shrink-0 text-[15px] font-semibold ${

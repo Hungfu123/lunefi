@@ -37,6 +37,11 @@ export function monatLabel(monat: string): string {
   return name
 }
 
+export function monatKurz(monat: string): string {
+  const [jahr, m] = monat.split('-').map(Number)
+  return new Date(jahr, m - 1, 1).toLocaleDateString('de-DE', { month: 'short' })
+}
+
 export function datumKurz(iso: string): string {
   const datum = new Date(iso + 'T00:00:00')
   return datum.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })

@@ -22,6 +22,13 @@ export interface Eintrag {
   konto: string | null
 }
 
+export interface VerlaufMonat {
+  monat: string
+  einnahmen: number
+  ausgaben: number
+  differenz: number
+}
+
 export interface BudgetInfo {
   limit: number
   ist: number

@@ -150,3 +150,29 @@ export function KategorieIcon({ name, size = 17, className }: { name: string; si
     />
   )
 }
+
+export function KategorieIconTile({
+  name,
+  groesse = 28,
+  iconGroesse = 16,
+  iconKlasse,
+}: {
+  name: string
+  groesse?: number
+  iconGroesse?: number
+  iconKlasse?: string
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className="flex shrink-0 items-center justify-center rounded-lg"
+      style={{
+        width: groesse,
+        height: groesse,
+        background: 'color-mix(in srgb, var(--color-text) 8%, transparent)',
+      }}
+    >
+      <KategorieIcon name={name} size={iconGroesse} className={iconKlasse} />
+    </span>
+  )
+}

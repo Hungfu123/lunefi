@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ApiFehler, lese, schreibe, type Eintrag, type EintragNeu, type KategorieInfo, type Konto } from './types'
 import { betragAusEingabe, euro, heuteIso } from './format'
 import {
-  KategorieIcon,
+  KategorieIconTile,
   PICKER_ICONS,
   iconNameVon,
   kategorieIconName,
@@ -195,14 +195,15 @@ export function EintragSheet({
                     type="button"
                     key={k.name}
                     onClick={() => setKategorie(k.name)}
-                    className={`flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors ${
+                    className={`flex min-h-11 items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm transition-colors ${
                       kategorie === k.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
                     }`}
                   >
-                    <KategorieIcon
+                    <KategorieIconTile
                       name={k.name}
-                      size={16}
-                      className={kategorie === k.name ? 'text-akzenttext' : undefined}
+                      groesse={24}
+                      iconGroesse={14}
+                      iconKlasse={kategorie === k.name ? 'text-akzenttext' : undefined}
                     />
                     {k.name}
                   </button>

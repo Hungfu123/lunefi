@@ -54,7 +54,7 @@ export function Layout({ onEintragNeu }: { onEintragNeu: () => void }) {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[560px] flex-col">
-      <header className="sticky top-0 z-10 flex items-center justify-between bg-base/90 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 flex items-center justify-between bg-base/90 px-4 py-2.5 backdrop-blur">
         <div className="flex items-center gap-2">
           <span className="text-akzent">
             <Mond />
@@ -66,7 +66,7 @@ export function Layout({ onEintragNeu }: { onEintragNeu: () => void }) {
         )}
       </header>
 
-      <main className="flex-1 px-4 pb-40 pt-2">
+      <main className="flex-1 px-4 pb-24 pt-0.5">
         <div key={ort.pathname} className="seite">
           <Outlet />
         </div>
