@@ -1,9 +1,57 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { lese, type BudgetInfo, type CoachingEmpfehlung, type Eintrag, type Haltung, type KategorieInfo } from './types'
-import { datumKurz, euro, istDieseWoche } from './format'
+import { datumKurz, euro, istDieseWoche, monatKurz } from './format'
 import { KategorieIconTile } from './kategorieIcon'
 import { HALTUNG_LABEL, HaltungsSelector } from './HaltungsSelector'
+import { useApp } from './AppKontext'
+
+interface TrendMonat {
+  monat: string
+  betrag: number
+}
+
+interface KategorieStatistik {
+  kategorie: string
+  monate: TrendMonat[]
+  median: number
+  durchschnitt: number
+}
+
+function TrendReihe({ statistik }: { statistik: KategorieStatistik }) {
+  const [balkenAktiv, setBalkenAktiv] = useState<number | null>(null)
+  const max = statistik.monate.reduce((hoechster, m) => Math.max(hoechster, m.betrag), 0)
+  return (
+    <div className="mt-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">Verlauf</p>
+        <p className="betragszahl text-[13px] font-medium text-textschwach">Ø {euro(statistik.durchschnitt)}</p>
+      </div>
+      <div className="mt-1.5 flex items-end justify-between gap-2">
+        {statistik.monate.map((m, i) => (
+          <button
+            type="button"
+            key={m.monat}
+            onClick={() => setBalkenAktiv(i)}
+            aria-label={`${monatKurz(m.monat)}: ${euro(m.betrag)}`}
+            className="flex flex-1 flex-col items-center gap-1"
+          >
+            <span className="betragszahl h-4 text-[10px] font-medium leading-none text-text">
+              {balkenAktiv === i ? euro(m.betrag) : ''}
+            </span>
+            <span className="relative block h-11 w-full rounded-[3px] bg-karte2">
+              <span
+                className="absolute inset-x-0 bottom-0 rounded-t-[3px] bg-akzent"
+                style={{ height: Math.max(3, (m.betrag / Math.max(max, 1)) * 44) }}
+              />
+            </span>
+            <span className="text-[10px] leading-none text-textschwach">{monatKurz(m.monat)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function GeteiltPill() {
   return <span className="text-textschwach">geteilt</span>
@@ -23,9 +71,11 @@ export function KategorieSheet({
   zu: () => void
 }) {
   const reduziert = useReducedMotion()
+  const { aktivePerson } = useApp()
   const offen = name !== null
   const [haltung, setHaltung] = useState<Haltung | null>(null)
   const [selectorOffen, setSelectorOffen] = useState(false)
+  const [trend, setTrend] = useState<KategorieStatistik | null>(null)
   const hatBudget = budget !== null
 
   useEffect(() => {
@@ -38,6 +88,24 @@ export function KategorieSheet({
       .then((liste) => setHaltung(liste.find((k) => k.name === name)?.haltung ?? 'FLEXIBEL'))
       .catch(() => setHaltung('FLEXIBEL'))
   }, [name, hatBudget])
+
+  useEffect(() => {
+    setTrend(null)
+    if (!offen || name === null) return
+    let aktiv = true
+    const zusammen = localStorage.getItem('lunefi:sicht') === 'zusammen'
+    const sichtParam = zusammen ? 'gemeinsam=true' : aktivePerson ? `person=${encodeURIComponent(aktivePerson)}` : ''
+    lese<KategorieStatistik>(
+      `/api/statistik/kategorie/${encodeURIComponent(name)}?monate=6${sichtParam ? `&${sichtParam}` : ''}`,
+    )
+      .then((ergebnis) => {
+        if (aktiv) setTrend(ergebnis)
+      })
+      .catch(() => {})
+    return () => {
+      aktiv = false
+    }
+  }, [offen, name, aktivePerson])
 
   const liste = [...eintraege].sort((a, b) =>
     a.datum === b.datum ? b.id - a.id : a.datum < b.datum ? 1 : -1,
@@ -113,6 +181,7 @@ export function KategorieSheet({
               </div>
             )}
             {tipp && <p className="mt-2 text-sm text-gut">{tipp}</p>}
+            {trend !== null && trend.monate.length > 0 && <TrendReihe statistik={trend} />}
             {liste.length === 0 ? (
               <p className="mt-4 text-sm text-textschwach">Keine Einträge in diesem Monat.</p>
             ) : (

@@ -145,7 +145,7 @@ public class PrognoseService {
         return werte;
     }
 
-    private BigDecimal median(List<BigDecimal> werte) {
+    static BigDecimal median(List<BigDecimal> werte) {
         List<BigDecimal> sortiert = new ArrayList<>(werte);
         sortiert.sort(Comparator.naturalOrder());
         int mitte = sortiert.size() / 2;

@@ -199,6 +199,14 @@ public class AuthSteps {
                 "/api/eintraege?person=" + person, String.class).getStatusCode();
     }
 
+    @Wenn("{string} den Kategorie-Verlauf der letzten {int} Monate für {string} für Person {string} abfragt")
+    public void callerQueriesCategoryHistoryOfOther(String aufrufer, int monate, String kategorie,
+            String person) {
+        zugriffStatus = sitzungen.fuer(aufrufer).getForEntity(
+                "/api/statistik/kategorie/" + kategorie + "?monate=" + monate + "&person=" + person,
+                String.class).getStatusCode();
+    }
+
     @Wenn("{string} die Monatsprognose von {string} abruft")
     public void callerFetchesForecastOfOther(String aufrufer, String person) {
         zugriffStatus = sitzungen.fuer(aufrufer).getForEntity(

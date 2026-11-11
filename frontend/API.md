@@ -9,7 +9,7 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 - **Ungemeldet:** jeder API-Aufruf (außer `POST /api/login` und die offene Ersteinrichtung, s. u.) → `401` (kein Redirect).
 - **CSRF:** `XSRF-TOKEN`-Cookie (nicht HttpOnly) wird mit jeder Antwort gesetzt/erneuert. Das Frontend liest den Cookie-Wert und schickt ihn bei allen mutating Requests (POST/PUT/DELETE) als Header `X-XSRF-TOKEN` mit — fehlt/ist ungültig → `403`. Wichtig: nach dem Login löscht der Server das alte Token-Cookie; das Frontend sollte nach Login/Logout das Token einmal per GET neu holen.
 - **Autorisierung (server-seitig erzwungen):**
-  - `person`-Parameter nur mit dem eigenen Namen: `GET /api/eintraege?person=…`, `GET /api/monatsuebersicht/…?person=…`, `GET /api/verlauf?person=…`, `GET /api/prognose?person=…`, `GET /api/konten?person=…` — fremder Name → `403`. Ohne Parameter: unverändertes Verhalten.
+  - `person`-Parameter nur mit dem eigenen Namen: `GET /api/eintraege?person=…`, `GET /api/monatsuebersicht/…?person=…`, `GET /api/verlauf?person=…`, `GET /api/prognose?person=…`, `GET /api/konten?person=…`, `GET /api/statistik/kategorie/…?person=…`, `GET /api/statistik/sparpotenzial?…person=…` — fremder Name → `403`. Ohne Parameter: unverändertes Verhalten.
   - `POST /api/eintraege` mit `person`: nur der eigene Name → fremder → `403`. `PUT/DELETE /api/eintraege/{id}`: persönliche Einträge nur vom Eigentümer (fremd → `403`), gemeinsame Einträge dürfen beide bearbeiten.
   - `POST /api/konten`: nur `person` = eigener Name (fremd → `403`).
   - Paar-Raum offen für beide: `gemeinsam=true`-Sichten, Ausgleich (alle Endpunkte), Budgets, Sparziele, Kategorien, Coaching.
@@ -187,3 +187,29 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
   - Legt für jede genannte Person einen App-User mit bcrypt-Hash an; danach ist die App „eingerichtet" (AU6 schließt die offene Ersteinrichtung, AU7 selbst bleibt danach ebenfalls zu)
 - **Wer bin ich:** `GET /api/wer` → `200 {"name": "Alex"}` — der Name des ANGEMELDETEN Nutzers; ungemeldet → `401`
   - Das Frontend leitet die Person hiervon ab (ersetzt die bisherige localStorage-Auswahl: der Angemeldete IST die Person)
+
+## Statistik (ST1–ST3, `specs/statistik.md`)
+
+### Kategorie-Verlauf (ST1)
+
+- `GET /api/statistik/kategorie/{kategorie}?monate=6[&person=Alex | gemeinsam=true]` →
+  ```json
+  {"kategorie": "Freizeit", "monate": [{"monat": "2026-09", "betrag": 30.00}, {"monat": "2026-10", "betrag": 30.00}, {"monat": "2026-11", "betrag": 0.00}], "median": 30.00, "durchschnitt": 20.00}
+  ```
+  - `betrag` je Monat = Summe der AUSGABEN der Kategorie im Monat (nur negative Beträge, als positiver Wert; Einnahmen werden ignoriert).
+  - Monate = die letzten N Monate rückwärts vom AKTUELLEN Monat (Server-Uhr, wie Verlauf R8, inkl. aktuellem Monat), ältester zuerst; Monate ohne Eintrag zählen als 0,00.
+  - `median`/`durchschnitt` über die N Monatswerte (Monate ohne Eintrag zählen als 0,00 — wie Prognose PR2).
+  - `monate`: default 6; unter 1 → `400`; über 24 → auf 24 gecappt (wie Verlauf).
+  - Sicht wie R7/R9: `person` nur persönliche Einträge dieser Person, `gemeinsam=true` nur gemeinsame; beide zusammen → `400`; `person` fremd → `403`.
+
+### Sparpotenzial (ST2/ST3)
+
+- `GET /api/statistik/sparpotenzial?monat=2026-10[&person=Alex | gemeinsam=true]` →
+  ```json
+  {"hinweise": [{"kategorie": "Freizeit", "ist": 90.00, "ueblich": 25.00, "text": "Freizeit: 90 € — sonst meist 25 €."}], "basis": "OK"}
+  ```
+  - Je NICHT-FIXER Kategorie (fixe Kategorien — Miete, Strom, Internet, Telefon, Versicherung, Abo — werden NIE vorgeschlagen, gleiche Konstante wie Prognose PR1): `ist` = Ausgaben im angefragten Monat, `ueblich` = Median der Ausgaben der letzten 3 Monate VOR dem angefragten Monat (gleiche Sicht-Filter; Monate ohne Eintrag zählen als 0,00).
+  - Hinweis nur wenn `ist` > `ueblich` UND (`ist` − `ueblich`) ≥ 10,00 UND `ueblich` > 0 — neue Kategorien ohne üblichen Wert erzeugen keinen Hinweis (kein Rauschen).
+  - `text`: paarweise einfache Sätze mit ganzen Euro: `"{kategorie}: {ist} € — sonst meist {ueblich} €."`.
+  - Weniger als 2 Monate mit Einträgen VOR dem angefragten Monat (in der gewählten Sicht) → `{"hinweise": [], "basis": "WENIG_DATEN"}` — ehrlich wie Prognose PR4; sonst `"basis": "OK"`.
+  - `monat` Pflicht, ungültig (z. B. `2026-13`) → `400`; Sicht-Parameter wie oben (`person`+`gemeinsam` → `400`, fremd → `403`).

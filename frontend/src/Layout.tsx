@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
-import { ArrowsLeftRight, ChartPie, GearSix, SignOut, Target, UserCircle, type Icon as PhosphorIcon } from '@phosphor-icons/react'
+import { ArrowsLeftRight, ChartLineUp, ChartPie, GearSix, SignOut, Target, UserCircle, type Icon as PhosphorIcon } from '@phosphor-icons/react'
 import { useApp } from './AppKontext'
 
 const tabs = [
   { zu: '/', label: 'Übersicht', Icon: ChartPie },
   { zu: '/ausgleich', label: 'Ausgleich', Icon: ArrowsLeftRight },
   { zu: '/sparziele', label: 'Ziele', Icon: Target },
+  { zu: '/statistik', label: 'Statistik', Icon: ChartLineUp },
   { zu: '/einstellungen', label: 'Mehr', Icon: GearSix },
 ]
 

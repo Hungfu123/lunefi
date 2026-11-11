@@ -10,6 +10,7 @@ import { Uebersicht } from './Uebersicht'
 import { EintragSheet } from './EintragSheet'
 import { AusgleichSeite } from './AusgleichSeite'
 import { SparzieleSeite } from './SparzieleSeite'
+import { StatistikSeite } from './StatistikSeite'
 import { EinstellungenSeite } from './EinstellungenSeite'
 
 type Status = 'pruefen' | 'offen' | 'ohneNutzer' | 'login' | 'angemeldet'
@@ -126,6 +127,7 @@ function Inhalt() {
           <Route index element={<Uebersicht key={neuGeladen} onEintragBearbeiten={setBearbeitet} />} />
           <Route path="/ausgleich" element={<AusgleichSeite key={neuGeladen} />} />
           <Route path="/sparziele" element={<SparzieleSeite />} />
+          <Route path="/statistik" element={<StatistikSeite key={neuGeladen} />} />
           <Route path="/einstellungen" element={<EinstellungenSeite />} />
         </Route>
       </Routes>

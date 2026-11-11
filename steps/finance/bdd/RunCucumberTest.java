@@ -13,5 +13,6 @@ import org.junit.platform.suite.api.Suite;
 @SelectClasspathResource("konten")
 @SelectClasspathResource("quellen")
 @SelectClasspathResource("auth")
+@SelectClasspathResource("statistik")
 public class RunCucumberTest {
 }
