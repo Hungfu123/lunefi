@@ -19,6 +19,13 @@ Erstmal lokal. Wenn LuneFi online geht: **dasselbe Muster wie lune-journal** auf
 5. `deploy.sh` nach lune-journal-Vorlage
 6. Tägliche Sicherung der Postgres-DB
 
+## Demo-Seed: NUR lokal (Produktionssicher!)
+
+- `DemoSeed` läuft NUR wenn BEIDE Bedingungen erfüllt sind: Profil ≠ prod (`@Profile("!prod")`) UND `LUNEFI_DEMO_SEED=true` (Env/Property).
+- Lokal: `./start-dev.sh` setzt das Flag (Passwörter überschreibbar: `LUNEFI_DEMO_PASSWORT_ALEX`/`_KIM`, Standard `lunefi-dev`).
+- **Produktion: NIEMALS `LUNEFI_DEMO_SEED` setzen + mit Profil `prod` starten** (`SPRING_PROFILES_ACTIVE=prod` im Compose/deploy) — doppelt abgesichert.
+- Seed-Verhalten: nur wenn KEIN App-User existiert und Personen schon angelegt sind; bestehende Passwörter werden nie überschrieben.
+
 ## Harte Voraussetzungen VOR dem Online-Gang
 
 - **Login (Google OAuth)** zwingend — sonst liegen die Finanzen offen im Netz. Redirect-URIs gleich mit anlegen: `http://localhost:8080/login/oauth2/code/google` (Entwicklung) + `https://lunefi.duckdns.org/login/oauth2/code/google`
