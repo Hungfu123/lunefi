@@ -42,6 +42,9 @@ export function Onboarding() {
         <p className="max-w-xs text-textschwach">
           Erfasst Ausgaben gemeinsam — LuneFi zeigt sofort, wer wem wie viel schuldet.
         </p>
+        <p className="max-w-xs text-sm text-textschwach">
+          Eure Saldi und Einnahmen bleiben privat — geteilt wird nur, was ihr gemeinsam macht.
+        </p>
       </div>
       <form onSubmit={absenden} className="flex w-full max-w-xs flex-col gap-4">
         <div>

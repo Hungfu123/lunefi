@@ -54,6 +54,7 @@ export interface AusgleichPosition {
 export interface Ausgleich {
   monat: string
   laeuftNoch: boolean
+  ausgeglichen: boolean
   saldi: Record<string, number>
   vorschlag: string | null
   positionen: AusgleichPosition[]
@@ -62,6 +63,7 @@ export interface Ausgleich {
 export interface AusgleichMonat {
   monat: string
   laeuftNoch: boolean
+  ausgeglichen: boolean
   saldi: Record<string, number>
   vorschlag: string | null
 }
@@ -129,3 +131,18 @@ export const lese = <T>(pfad: string) => api<T>(pfad)
 
 export const schreibe = <T>(pfad: string, body: unknown, methode: 'POST' | 'PUT' = 'POST') =>
   api<T>(pfad, { method: methode, body: JSON.stringify(body) })
+
+export const sende = async (pfad: string, methode: 'POST' | 'PUT' = 'POST'): Promise<void> => {
+  let antwort: Response
+  try {
+    antwort = await fetch(pfad, {
+      method: methode,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  } catch {
+    throw new ApiFehler(0)
+  }
+  if (!antwort.ok) {
+    throw new ApiFehler(antwort.status)
+  }
+}

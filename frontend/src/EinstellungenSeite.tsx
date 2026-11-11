@@ -174,6 +174,9 @@ export function EinstellungenSeite() {
         <p className="mt-1.5 text-xs text-textschwach">
           Sagt der App, wer von euch beiden gerade tippt — neue Einträge schlagen dich vor.
         </p>
+        <p className="mt-1 text-xs text-textschwach">
+          Jeder sieht nur seine eigenen Konten und Einnahmen — gemeinsam geteilt werden Ausgaben, Budgets und Ziele.
+        </p>
       </section>
 
       <section className="mb-6">

@@ -1,13 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
-import { lese, type Ausgleich, type AusgleichMonat } from './types'
+import { motion, useReducedMotion } from 'motion/react'
+import { CheckCircle } from '@phosphor-icons/react'
+import { lese, sende, type Ausgleich, type AusgleichMonat } from './types'
 import { betragKompakt, euro, monatAlsString, monatLabel, monatVerschieben } from './format'
 
+function AusgeglichenPill() {
+  return (
+    <span className="flex items-center gap-1 rounded-full bg-gut/15 px-2 py-0.5 text-xs font-medium text-gut">
+      <CheckCircle size={14} weight="fill" aria-hidden="true" />
+      ausgeglichen
+    </span>
+  )
+}
+
 export function AusgleichSeite() {
+  const reduziert = useReducedMotion()
   const [monat, setMonat] = useState(() => monatAlsString(new Date()))
   const [daten, setDaten] = useState<Ausgleich | null>(null)
   const [verlauf, setVerlauf] = useState<AusgleichMonat[]>([])
   const [laedt, setLaedt] = useState(true)
   const [fehler, setFehler] = useState(false)
+  const [markiert, setMarkiert] = useState(false)
+  const [markiertNeu, setMarkiertNeu] = useState(false)
 
   const laden = useCallback(() => {
     setLaedt(true)
@@ -29,6 +43,24 @@ export function AusgleichSeite() {
 
   useEffect(laden, [laden])
 
+  const markieren = async () => {
+    setMarkiert(true)
+    try {
+      await sende(`/api/ausgleich/${monat}/ausgeglichen`)
+      setMarkiertNeu(true)
+      laden()
+    } catch {
+      setFehler(true)
+    } finally {
+      setMarkiert(false)
+    }
+  }
+
+  const monatWechseln = (delta: number) => {
+    setMarkiertNeu(false)
+    setMonat(monatVerschieben(monat, delta))
+  }
+
   const personen = Object.keys(daten?.saldi ?? {})
 
   return (
@@ -36,20 +68,24 @@ export function AusgleichSeite() {
       <div className="mb-4 flex items-center justify-between">
         <button
           aria-label="Vormonat"
-          onClick={() => setMonat(monatVerschieben(monat, -1))}
+          onClick={() => monatWechseln(-1)}
           className="h-11 w-11 rounded-xl bg-karte text-lg"
         >
           ‹
         </button>
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">{monatLabel(monat)}</h2>
-          {daten?.laeuftNoch && (
-            <span className="rounded-full bg-akzent/20 px-2 py-0.5 text-xs text-akzent">läuft noch</span>
+          {daten?.ausgeglichen ? (
+            <AusgeglichenPill />
+          ) : (
+            daten?.laeuftNoch && (
+              <span className="rounded-full bg-akzent/20 px-2 py-0.5 text-xs text-akzent">läuft noch</span>
+            )
           )}
         </div>
         <button
           aria-label="Folgemonat"
-          onClick={() => setMonat(monatVerschieben(monat, 1))}
+          onClick={() => monatWechseln(1)}
           className="h-11 w-11 rounded-xl bg-karte text-lg"
         >
           ›
@@ -119,6 +155,26 @@ export function AusgleichSeite() {
             })}
           </ul>
 
+          {!daten.ausgeglichen && daten.vorschlag && (
+            <button
+              onClick={markieren}
+              disabled={markiert}
+              className="mb-5 min-h-11 w-full rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
+            >
+              Als ausgeglichen markieren
+            </button>
+          )}
+          {markiertNeu && (
+            <motion.p
+              initial={{ opacity: 0, scale: reduziert ? 1 : 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={reduziert ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="mb-5 text-center text-sm font-medium text-gut"
+            >
+              Ausgeglichen — fair bleibt fair.
+            </motion.p>
+          )}
+
           {verlauf.length > 1 && (
             <>
               <h3 className="mb-2 text-sm font-medium text-textschwach">Verlauf</h3>
@@ -126,7 +182,12 @@ export function AusgleichSeite() {
                 {verlauf.map((m) => (
                   <li key={m.monat} className="flex items-center justify-between rounded-xl bg-karte px-4 py-2.5">
                     <span className="text-sm">{monatLabel(m.monat)}</span>
-                    <span className="text-sm text-textschwach">{m.vorschlag ?? 'ausgeglichen'}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-sm text-textschwach">{m.vorschlag ?? 'ausgeglichen'}</span>
+                      {m.ausgeglichen && (
+                        <CheckCircle size={14} weight="fill" className="shrink-0 text-gut" aria-label="ausgeglichen" />
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>

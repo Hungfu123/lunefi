@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowsLeftRight, CaretDown, CaretRight, Wallet } from '@phosphor-icons/react'
+import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Wallet } from '@phosphor-icons/react'
 import { lese, type Ausgleich, type Konto, type Monatsuebersicht, type VerlaufMonat } from './types'
 import {
   datumKurz,
@@ -233,8 +233,15 @@ export function Uebersicht() {
               </>
             ) : (
               <>
-                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
-                  {gefiltert ? 'Mein Saldo' : 'Gesamtsaldo'}
+                <p className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                  {gefiltert ? (
+                    <>
+                      Mein Saldo
+                      <LockSimple size={12} aria-label="privat" className="normal-case" />
+                    </>
+                  ) : (
+                    'Gesamtsaldo'
+                  )}
                 </p>
                 <p
                   className={`betragszahl mt-1 text-[44px] font-semibold leading-none tracking-tight ${
