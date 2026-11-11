@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { CheckCircle } from '@phosphor-icons/react'
 import { lese, sende, type Ausgleich, type AusgleichMonat } from './types'
-import { betragKompakt, euro, monatAlsString, monatLabel, monatVerschieben } from './format'
+import { euro, monatAlsString, monatLabel, monatVerschieben } from './format'
 
 function AusgeglichenPill() {
   return (
@@ -121,7 +121,7 @@ export function AusgleichSeite() {
                 <div key={person} className="rounded-2xl bg-karte p-4">
                   <p className="truncate text-xs text-textschwach">{person}</p>
                   <p className={`betragszahl mt-1 text-lg font-semibold ${saldo > 0 ? 'text-gut' : saldo < 0 ? 'text-schlecht' : ''}`}>
-                    {betragKompakt(saldo)}
+                    {euro(saldo)}
                   </p>
                   <p className="mt-0.5 text-xs text-textschwach">
                     {saldo > 0 ? 'bekommt' : saldo < 0 ? 'schuldet' : 'ausgeglichen'}

@@ -198,7 +198,8 @@ export function Uebersicht() {
         <button
           aria-label="Folgemonat"
           onClick={() => setMonat(monatVerschieben(monat, 1))}
-          className="-mr-3 flex h-9 w-9 items-center justify-center text-xl text-textschwach"
+          disabled={monat >= monatAlsString(new Date())}
+          className="-mr-3 flex h-9 w-9 items-center justify-center text-xl text-textschwach disabled:opacity-40"
         >
           ›
         </button>

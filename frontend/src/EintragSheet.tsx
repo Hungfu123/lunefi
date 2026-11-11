@@ -77,7 +77,7 @@ export function EintragSheet({
       : 0.5
   const schuldBetrag =
     gemeinsam && betragWert !== null && betragWert !== 0 && zahler && schuldner
-      ? Math.round(betragWert * schuldnerAnteil * 100) / 100
+      ? Math.floor(betragWert * schuldnerAnteil * 100) / 100
       : null
 
   const absenden = async (e: FormEvent) => {
