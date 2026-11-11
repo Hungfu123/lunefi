@@ -22,9 +22,9 @@ public class XsrfHeaderInterceptor implements ClientHttpRequestInterceptor {
         if (response.getHeaders().get(HttpHeaders.SET_COOKIE) != null) {
             for (String cookie : response.getHeaders().get(HttpHeaders.SET_COOKIE)) {
                 if (cookie.startsWith("XSRF-TOKEN=")) {
-                    String wert = cookie.substring("XSRF-TOKEN=".length()).split(";", 2)[0];
-                    if (!wert.isEmpty()) {
-                        token = wert;
+                    String value = cookie.substring("XSRF-TOKEN=".length()).split(";", 2)[0];
+                    if (!value.isEmpty()) {
+                        token = value;
                     }
                 }
             }

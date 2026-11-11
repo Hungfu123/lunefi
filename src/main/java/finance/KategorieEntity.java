@@ -62,15 +62,15 @@ public class KategorieEntity {
         return haltung;
     }
 
-    public void setHaltung(String haltung) {
+    public void setAttitude(String haltung) {
         this.haltung = haltung;
     }
 
-    public String asHaltung() {
+    public String asAttitude() {
         return haltung == null ? "FLEXIBEL" : haltung;
     }
 
-    public SplitKonfiguration asSplitConfiguration() {
-        return new SplitKonfiguration(art, anteile.isEmpty() ? null : Map.copyOf(anteile));
+    public SplitConfiguration asSplitConfiguration() {
+        return new SplitConfiguration(art, anteile.isEmpty() ? null : Map.copyOf(anteile));
     }
 }

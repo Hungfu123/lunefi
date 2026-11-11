@@ -3,7 +3,7 @@ export interface Person {
   name: string
 }
 
-export interface Konto {
+export interface Account {
   id: number
   name: string
   person: string
@@ -11,7 +11,7 @@ export interface Konto {
   saldo: number
 }
 
-export interface Eintrag {
+export interface Entry {
   id: number
   datum: string
   betrag: number
@@ -22,7 +22,7 @@ export interface Eintrag {
   konto: string | null
 }
 
-export interface VerlaufMonat {
+export interface HistoryMonth {
   monat: string
   einnahmen: number
   ausgaben: number
@@ -35,15 +35,15 @@ export interface BudgetInfo {
   warnung: boolean
 }
 
-export interface Monatsuebersicht {
+export interface MonthlyOverview {
   monat: string
   ausgabenJeKategorie: Record<string, number>
   einnahmenJeKategorie: Record<string, number>
-  eintraege: Eintrag[]
+  eintraege: Entry[]
   budgets: Record<string, BudgetInfo>
 }
 
-export interface AusgleichPosition {
+export interface SettlementPosition {
   id: number
   kategorie: string
   betrag: number
@@ -51,16 +51,16 @@ export interface AusgleichPosition {
   anteile: Record<string, number>
 }
 
-export interface Ausgleich {
+export interface Settlement {
   monat: string
   laeuftNoch: boolean
   ausgeglichen: boolean
   saldi: Record<string, number>
   vorschlag: string | null
-  positionen: AusgleichPosition[]
+  positionen: SettlementPosition[]
 }
 
-export interface AusgleichMonat {
+export interface SettlementMonth {
   monat: string
   laeuftNoch: boolean
   ausgeglichen: boolean
@@ -68,38 +68,38 @@ export interface AusgleichMonat {
   vorschlag: string | null
 }
 
-export interface Einzahlung {
+export interface Deposit {
   id: number
   betrag: number
   person: string
   datum: string
 }
 
-export interface Sparziel {
+export interface SavingsGoal {
   id: number
   name: string
   zielbetrag: number
   eingezahlt: number
   erreicht: boolean
-  einzahlungen: Einzahlung[]
+  einzahlungen: Deposit[]
 }
 
-export interface SplitKonfiguration {
+export interface SplitConfiguration {
   art: 'HALBHALB' | 'ANTEILE'
   anteile: Record<string, number> | null
 }
 
-export type Haltung = 'SPAREN' | 'FLEXIBEL' | 'BEWUSST_MEHR'
+export type Attitude = 'SPAREN' | 'FLEXIBEL' | 'BEWUSST_MEHR'
 
-export interface KategorieInfo {
+export interface CategoryInfo {
   name: string
-  split: SplitKonfiguration
-  haltung: Haltung
+  split: SplitConfiguration
+  haltung: Attitude
 }
 
-export interface CoachingEmpfehlung {
+export interface CoachingRecommendation {
   kategorie: string
-  haltung: Haltung
+  haltung: Attitude
   ist: number
   limit: number
   spielraum: number
@@ -109,11 +109,11 @@ export interface CoachingEmpfehlung {
 export interface Coaching {
   monat: string
   budgetsUebrig: Record<string, number>
-  empfehlungen: CoachingEmpfehlung[]
-  gutGespart: { kategorie: string; haltung: Haltung; ist: number; limit: number; spielraum: number }[]
+  empfehlungen: CoachingRecommendation[]
+  gutGespart: { kategorie: string; haltung: Attitude; ist: number; limit: number; spielraum: number }[]
 }
 
-export interface EintragNeu {
+export interface NewEntry {
   datum: string
   betrag: number
   kategorie: string
@@ -123,22 +123,22 @@ export interface EintragNeu {
   konto?: string
 }
 
-export class ApiFehler extends Error {
+export class ApiError extends Error {
   constructor(readonly status: number) {
     super(status === 400 ? 'Das hat die App nicht akzeptiert. Bitte prüfen.' : 'Die App antwortet gerade nicht.')
     this.name = 'ApiFehler'
   }
 }
 
-export const SITZUNG_ABGELAUFEN = 'lunefi:sitzung-abgelaufen'
+export const SESSION_EXPIRED = 'lunefi:sitzung-abgelaufen'
 
 function xsrfToken(): string | null {
-  const eintrag = document.cookie.split('; ').find((c) => c.startsWith('XSRF-TOKEN='))
-  if (!eintrag) return null
-  return decodeURIComponent(eintrag.slice('XSRF-TOKEN='.length))
+  const entry = document.cookie.split('; ').find((c) => c.startsWith('XSRF-TOKEN='))
+  if (!entry) return null
+  return decodeURIComponent(entry.slice('XSRF-TOKEN='.length))
 }
 
-export async function xsrfTokenFrisch(): Promise<string | null> {
+export async function freshXsrfToken(): Promise<string | null> {
   try {
     await fetch('/api/personen', { credentials: 'same-origin' })
   } catch {
@@ -147,58 +147,58 @@ export async function xsrfTokenFrisch(): Promise<string | null> {
   return xsrfToken()
 }
 
-function schreibend(methode?: string): boolean {
-  return methode === 'POST' || methode === 'PUT' || methode === 'DELETE'
+function isMutating(method?: string): boolean {
+  return method === 'POST' || method === 'PUT' || method === 'DELETE'
 }
 
-async function api<T>(pfad: string, init?: RequestInit): Promise<T> {
-  const kopf: Record<string, string> = {
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((init?.headers as Record<string, string>) ?? {}),
   }
-  if (schreibend(init?.method)) {
+  if (isMutating(init?.method)) {
     const token = xsrfToken()
-    if (token) kopf['X-XSRF-TOKEN'] = token
+    if (token) headers['X-XSRF-TOKEN'] = token
   }
-  let antwort: Response
+  let response: Response
   try {
-    antwort = await fetch(pfad, { ...init, credentials: 'same-origin', headers: kopf })
+    response = await fetch(path, { ...init, credentials: 'same-origin', headers })
   } catch {
-    throw new ApiFehler(0)
+    throw new ApiError(0)
   }
-  if (antwort.status === 401) {
-    window.dispatchEvent(new Event(SITZUNG_ABGELAUFEN))
+  if (response.status === 401) {
+    window.dispatchEvent(new Event(SESSION_EXPIRED))
   }
-  if (!antwort.ok) {
-    throw new ApiFehler(antwort.status)
+  if (!response.ok) {
+    throw new ApiError(response.status)
   }
-  if (antwort.status === 204) {
+  if (response.status === 204) {
     return undefined as T
   }
-  return antwort.json() as Promise<T>
+  return response.json() as Promise<T>
 }
 
-export const lese = <T>(pfad: string) => api<T>(pfad)
+export const read = <T>(path: string) => api<T>(path)
 
-export const schreibe = <T>(pfad: string, body: unknown, methode: 'POST' | 'PUT' = 'POST') =>
-  api<T>(pfad, { method: methode, body: JSON.stringify(body) })
+export const write = <T>(path: string, body: unknown, method: 'POST' | 'PUT' = 'POST') =>
+  api<T>(path, { method, body: JSON.stringify(body) })
 
-export const sende = async (pfad: string, methode: 'POST' | 'PUT' | 'DELETE' = 'POST'): Promise<void> => {
-  const kopf: Record<string, string> = { 'Content-Type': 'application/json' }
+export const send = async (path: string, method: 'POST' | 'PUT' | 'DELETE' = 'POST'): Promise<void> => {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   const token = xsrfToken()
-  if (token) kopf['X-XSRF-TOKEN'] = token
-  let antwort: Response
+  if (token) headers['X-XSRF-TOKEN'] = token
+  let response: Response
   try {
-    antwort = await fetch(pfad, { method: methode, credentials: 'same-origin', headers: kopf })
+    response = await fetch(path, { method, credentials: 'same-origin', headers })
   } catch {
-    throw new ApiFehler(0)
+    throw new ApiError(0)
   }
-  if (antwort.status === 401) {
-    window.dispatchEvent(new Event(SITZUNG_ABGELAUFEN))
+  if (response.status === 401) {
+    window.dispatchEvent(new Event(SESSION_EXPIRED))
   }
-  if (!antwort.ok) {
-    throw new ApiFehler(antwort.status)
+  if (!response.ok) {
+    throw new ApiError(response.status)
   }
 }
 
-export const loesche = (pfad: string) => sende(pfad, 'DELETE')
+export const remove = (path: string) => send(path, 'DELETE')

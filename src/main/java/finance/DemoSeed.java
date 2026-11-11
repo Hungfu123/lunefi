@@ -13,30 +13,30 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "lunefi.demo-seed", havingValue = "true")
 public class DemoSeed implements CommandLineRunner {
 
-    private final PersonRepository personen;
-    private final AppUserRepository nutzer;
+    private final PersonRepository personRepository;
+    private final AppUserRepository appUserRepository;
     private final PasswordEncoder encoder;
 
-    public DemoSeed(PersonRepository personen, AppUserRepository nutzer, PasswordEncoder encoder) {
-        this.personen = personen;
-        this.nutzer = nutzer;
+    public DemoSeed(PersonRepository personRepository, AppUserRepository appUserRepository, PasswordEncoder encoder) {
+        this.personRepository = personRepository;
+        this.appUserRepository = appUserRepository;
         this.encoder = encoder;
     }
 
     @Override
     public void run(String... args) {
-        if (nutzer.count() > 0) {
+        if (appUserRepository.count() > 0) {
             return;
         }
-        List<PersonEntity> alle = personen.findAll();
-        if (alle.isEmpty()) {
+        List<PersonEntity> allPersons = personRepository.findAll();
+        if (allPersons.isEmpty()) {
             return;
         }
-        for (PersonEntity person : alle) {
-            String passwort = System.getenv().getOrDefault(
+        for (PersonEntity person : allPersons) {
+            String password = System.getenv().getOrDefault(
                     "LUNEFI_DEMO_PASSWORT_" + person.getName().toUpperCase(),
                     "lunefi-dev");
-            nutzer.save(new AppUserEntity(person.getName(), encoder.encode(passwort)));
+            appUserRepository.save(new AppUserEntity(person.getName(), encoder.encode(password)));
         }
     }
 }

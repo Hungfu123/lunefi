@@ -26,15 +26,15 @@ public class BudgetController {
         }
         try {
             YearMonth.parse(budget.monat());
-        } catch (DateTimeParseException ausnahme) {
+        } catch (DateTimeParseException exception) {
             return ResponseEntity.badRequest().build();
         }
-        BudgetEntity gespeichert = repository.findByMonatAndKategorie(budget.monat(), budget.kategorie())
-                .map(vorhandenes -> {
-                    vorhandenes.setLimit(budget.limit());
-                    return vorhandenes;
+        BudgetEntity saved = repository.findByMonatAndKategorie(budget.monat(), budget.kategorie())
+                .map(existing -> {
+                    existing.setLimit(budget.limit());
+                    return existing;
                 })
                 .orElseGet(() -> new BudgetEntity(budget.monat(), budget.kategorie(), budget.limit()));
-        return ResponseEntity.ok(repository.save(gespeichert).asBudget());
+        return ResponseEntity.ok(repository.save(saved).asBudget());
     }
 }

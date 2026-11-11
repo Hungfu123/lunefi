@@ -2,59 +2,59 @@ export function euro(betrag: number): string {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(betrag)
 }
 
-export function betragKompakt(betrag: number, abKompakt = 100000): string {
+export function amountCompact(betrag: number, abKompakt = 100000): string {
   const abs = Math.abs(betrag)
-  if (abs >= abKompakt) return kompaktZahl(betrag) + ' €'
+  if (abs >= abKompakt) return compactNumber(betrag) + ' €'
   return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 }).format(betrag) + ' €'
 }
 
-function kompaktZahl(betrag: number): string {
-  const vorzeichen = betrag < 0 ? '-' : ''
+function compactNumber(betrag: number): string {
+  const sign = betrag < 0 ? '-' : ''
   const abs = Math.abs(betrag)
   if (abs < 1000000) {
-    return vorzeichen + new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(abs / 1000) + 'k'
+    return sign + new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(abs / 1000) + 'k'
   }
   return (
-    vorzeichen +
+    sign +
     new Intl.NumberFormat('de-DE', { notation: 'compact', maximumFractionDigits: 2 }).format(abs)
   )
 }
 
-export function monatAlsString(datum: Date): string {
+export function monthAsString(datum: Date): string {
   const monat = String(datum.getMonth() + 1).padStart(2, '0')
   return `${datum.getFullYear()}-${monat}`
 }
 
-export function monatVerschieben(monat: string, delta: number): string {
+export function shiftMonth(monat: string, delta: number): string {
   const [jahr, m] = monat.split('-').map(Number)
   const neu = new Date(jahr, m - 1 + delta, 1)
-  return monatAlsString(neu)
+  return monthAsString(neu)
 }
 
-export function monatLabel(monat: string): string {
+export function monthLabel(monat: string): string {
   const [jahr, m] = monat.split('-').map(Number)
   const name = new Date(jahr, m - 1, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
   return name
 }
 
-export function monatKurz(monat: string): string {
+export function shortMonth(monat: string): string {
   const [jahr, m] = monat.split('-').map(Number)
   return new Date(jahr, m - 1, 1).toLocaleDateString('de-DE', { month: 'short' })
 }
 
-export function datumKurz(iso: string): string {
+export function shortDate(iso: string): string {
   const datum = new Date(iso + 'T00:00:00')
   return datum.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
 }
 
-export function heuteIso(): string {
+export function todayIso(): string {
   const jetzt = new Date()
   const monat = String(jetzt.getMonth() + 1).padStart(2, '0')
   const tag = String(jetzt.getDate()).padStart(2, '0')
   return `${jetzt.getFullYear()}-${monat}-${tag}`
 }
 
-export function istDieseWoche(iso: string): boolean {
+export function isThisWeek(iso: string): boolean {
   const jetzt = new Date()
   const start = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate())
   start.setDate(start.getDate() - ((start.getDay() + 6) % 7))
@@ -64,7 +64,7 @@ export function istDieseWoche(iso: string): boolean {
   return datum >= start && datum < ende
 }
 
-export function betragAusEingabe(text: string): number | null {
+export function amountFromInput(text: string): number | null {
   const bereinigt = text.trim().replace(/\s/g, '')
   if (bereinigt === '') return null
   if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(bereinigt)) {

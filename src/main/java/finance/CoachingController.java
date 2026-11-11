@@ -22,75 +22,75 @@ import org.springframework.web.bind.annotation.RestController;
 public class CoachingController {
 
     private final BudgetRepository budgetRepository;
-    private final EintragRepository eintragRepository;
-    private final KategorieRepository kategorieRepository;
+    private final EntryRepository entryRepository;
+    private final CategoryRepository categoryRepository;
 
-    public CoachingController(BudgetRepository budgetRepository, EintragRepository eintragRepository,
-            KategorieRepository kategorieRepository) {
+    public CoachingController(BudgetRepository budgetRepository, EntryRepository entryRepository,
+            CategoryRepository categoryRepository) {
         this.budgetRepository = budgetRepository;
-        this.eintragRepository = eintragRepository;
-        this.kategorieRepository = kategorieRepository;
+        this.entryRepository = entryRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @GetMapping
-    public ResponseEntity<CoachingAntwort> coaching(@RequestParam String monat) {
-        YearMonth zeitraum;
+    public ResponseEntity<CoachingResponse> coaching(@RequestParam String monat) {
+        YearMonth period;
         try {
-            zeitraum = YearMonth.parse(monat);
-        } catch (DateTimeParseException ausnahme) {
+            period = YearMonth.parse(monat);
+        } catch (DateTimeParseException exception) {
             return ResponseEntity.badRequest().build();
         }
 
-        Map<String, BigDecimal> ausgaben = new HashMap<>();
-        for (EintragEntity eintrag : eintragRepository.findAll()) {
-            if (!YearMonth.from(eintrag.getDatum()).equals(zeitraum)) {
+        Map<String, BigDecimal> expenses = new HashMap<>();
+        for (EntryEntity entry : entryRepository.findAll()) {
+            if (!YearMonth.from(entry.getDatum()).equals(period)) {
                 continue;
             }
-            BigDecimal betrag = eintrag.getBetrag();
-            if (betrag.signum() < 0) {
-                ausgaben.merge(eintrag.getKategorie(), betrag.abs(), BigDecimal::add);
+            BigDecimal amount = entry.getBetrag();
+            if (amount.signum() < 0) {
+                expenses.merge(entry.getKategorie(), amount.abs(), BigDecimal::add);
             }
         }
 
-        Map<String, BigDecimal> budgetsUebrig = new TreeMap<>();
-        List<CoachingEmpfehlung> empfehlungen = new ArrayList<>();
-        List<CoachingErspart> gutGespart = new ArrayList<>();
+        Map<String, BigDecimal> remainingBudgets = new TreeMap<>();
+        List<CoachingRecommendation> recommendations = new ArrayList<>();
+        List<CoachingSaved> wellSaved = new ArrayList<>();
 
         budgetRepository.findAll().stream()
-                .filter(budget -> budget.getMonat().equals(zeitraum.toString()))
+                .filter(budget -> budget.getMonat().equals(period.toString()))
                 .sorted(Comparator.comparing(BudgetEntity::getKategorie))
-                .forEach(budget -> bewerte(budget, ausgaben, budgetsUebrig, empfehlungen, gutGespart));
+                .forEach(budget -> evaluate(budget, expenses, remainingBudgets, recommendations, wellSaved));
 
         return ResponseEntity.ok(
-                new CoachingAntwort(zeitraum.toString(), budgetsUebrig, empfehlungen, gutGespart));
+                new CoachingResponse(period.toString(), remainingBudgets, recommendations, wellSaved));
     }
 
-    private void bewerte(BudgetEntity budget, Map<String, BigDecimal> ausgaben,
-            Map<String, BigDecimal> budgetsUebrig, List<CoachingEmpfehlung> empfehlungen,
-            List<CoachingErspart> gutGespart) {
-        String kategorie = budget.getKategorie();
-        BigDecimal ist = ausgaben.getOrDefault(kategorie, BigDecimal.ZERO);
-        BigDecimal spielraum = budget.getLimit().subtract(ist);
-        if (spielraum.signum() < 0) {
+    private void evaluate(BudgetEntity budget, Map<String, BigDecimal> expenses,
+            Map<String, BigDecimal> remainingBudgets, List<CoachingRecommendation> recommendations,
+            List<CoachingSaved> wellSaved) {
+        String category = budget.getKategorie();
+        BigDecimal actual = expenses.getOrDefault(category, BigDecimal.ZERO);
+        BigDecimal headroom = budget.getLimit().subtract(actual);
+        if (headroom.signum() < 0) {
             return;
         }
-        String haltung = kategorieRepository.findById(kategorie)
-                .map(KategorieEntity::asHaltung)
-                .orElse(Haltung.FLEXIBEL);
-        if (Haltung.BEWUSST_MEHR.equals(haltung)) {
-            if (spielraum.signum() > 0) {
-                empfehlungen.add(new CoachingEmpfehlung(kategorie, haltung, ist, budget.getLimit(),
-                        spielraum, tipp(kategorie, spielraum)));
+        String attitude = categoryRepository.findById(category)
+                .map(KategorieEntity::asAttitude)
+                .orElse(Attitude.FLEXIBEL);
+        if (Attitude.BEWUSST_MEHR.equals(attitude)) {
+            if (headroom.signum() > 0) {
+                recommendations.add(new CoachingRecommendation(category, attitude, actual, budget.getLimit(),
+                        headroom, tipText(category, headroom)));
             }
-        } else if (Haltung.SPAREN.equals(haltung)) {
-            gutGespart.add(new CoachingErspart(kategorie, haltung, ist, budget.getLimit(), spielraum));
+        } else if (Attitude.SPAREN.equals(attitude)) {
+            wellSaved.add(new CoachingSaved(category, attitude, actual, budget.getLimit(), headroom));
         } else {
-            budgetsUebrig.put(kategorie, spielraum);
+            remainingBudgets.put(category, headroom);
         }
     }
 
-    private String tipp(String kategorie, BigDecimal spielraum) {
-        return kategorie + " verträgt " + String.format(Locale.GERMANY, "%.2f", spielraum)
+    private String tipText(String category, BigDecimal headroom) {
+        return category + " verträgt " + String.format(Locale.GERMANY, "%.2f", headroom)
                 + " € mehr — bewusst genießen";
     }
 }

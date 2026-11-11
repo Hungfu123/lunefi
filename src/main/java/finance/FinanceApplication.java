@@ -14,7 +14,7 @@ public class FinanceApplication {
     }
 
     @Bean
-    Clock uhr() {
+    Clock clock() {
         return Clock.systemDefaultZone();
     }
 }

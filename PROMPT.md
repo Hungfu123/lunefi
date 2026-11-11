@@ -39,7 +39,9 @@ Struktur-Folge: zwei gleichwertige Sichten („Meine" und „Zusammen" = Paar-Ra
 
 ## Sprache (beschlossen 11.11.2026, aktualisiert)
 
-- Gherkin-Text (Feature-Dateien) und die Annotations-Strings in den Steps: **deutsch** (binden an die Szenarien).
+- **Nur die .feature-Dateien (Gherkin-Szenarien) sind deutsch** — sie sind die lesbare Produktspezifikation.
+- Alle Test-CODE-Klassen sind englisch: Step-Klassen, Step-Methoden, Unit-Tests, Helper (Sitzungen→Sessions etc.).
+- Die Annotations-Strings IN den Steps bleiben deutsch (sie binden an die deutschen Gherkin-Schritte — technisch zwingend).
 - **Code-Identifikatoren — Methoden, Variablen, lokale Namen — komplett englisch** (beschlossen 11.11.2026, verschärft). Auch neue Klassen englisch benennen.
 - **NICHT umbenennen** (Verträge, nicht Code-Stil): JSON-API-Felder (`saldo`, `zahler`, `verwendungszweck`… — dokumentiert in `frontend/API.md`), `@Table`-Namen (Datenbank!), CSS/Tailwind-Tokens (`bg-karte`, `text-schlecht`), UI-Texte (deutsches Produkt), Gherkin-/Annotations-Texte.
 - Git-Commits: **englisch**.

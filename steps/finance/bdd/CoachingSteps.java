@@ -29,23 +29,23 @@ public class CoachingSteps {
     @Autowired
     private TestRestTemplate rest;
 
-    private HttpStatusCode haltungStatus;
+    private HttpStatusCode attitudeStatus;
     private JsonNode coaching;
 
     @Angenommen("die Haltung für Kategorie {string} auf {string} gestellt wird")
     public void setAttitude(String kategorie, String haltung) {
-        ResponseEntity<String> antwort = putAttitude(kategorie, haltung);
-        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ResponseEntity<String> response = putAttitude(kategorie, haltung);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Wenn("die Haltung für Kategorie {string} auf {string} gestellt werden soll")
     public void trySetAttitude(String kategorie, String haltung) {
-        haltungStatus = putAttitude(kategorie, haltung).getStatusCode();
+        attitudeStatus = putAttitude(kategorie, haltung).getStatusCode();
     }
 
     @Dann("wird das Einstellen der Haltung abgelehnt")
     public void setAttitudeRejected() {
-        assertThat(haltungStatus).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(attitudeStatus).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Dann("zeigt die Kategorien-Liste für {string} die Haltung {string}")
@@ -61,47 +61,47 @@ public class CoachingSteps {
 
     @Wenn("das Spar-Coaching für {monat} aufgerufen wird")
     public void callCoaching(YearMonth monat) {
-        ResponseEntity<String> antwort = rest.getForEntity("/api/coaching?monat=" + monat, String.class);
-        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
-        coaching = mapper.readTree(antwort.getBody());
+        ResponseEntity<String> response = rest.getForEntity("/api/coaching?monat=" + monat, String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        coaching = mapper.readTree(response.getBody());
     }
 
     @Dann("empfiehlt das Coaching bei {string} {betrag} Euro mehr auszugeben")
     public void coachingRecommendsMore(String kategorie, BigDecimal spielraum) {
-        JsonNode empfehlung = findByKategorie(coaching.path("empfehlungen"), kategorie);
-        assertThat(empfehlung).isNotNull();
-        assertThat(empfehlung.path("haltung").asText()).isEqualTo("BEWUSST_MEHR");
-        BigDecimal limit = empfehlung.path("limit").decimalValue();
-        BigDecimal ist = empfehlung.path("ist").decimalValue();
-        assertThat(empfehlung.path("spielraum").decimalValue()).isEqualByComparingTo(spielraum);
+        JsonNode recommendation = findByCategory(coaching.path("empfehlungen"), kategorie);
+        assertThat(recommendation).isNotNull();
+        assertThat(recommendation.path("haltung").asText()).isEqualTo("BEWUSST_MEHR");
+        BigDecimal limit = recommendation.path("limit").decimalValue();
+        BigDecimal ist = recommendation.path("ist").decimalValue();
+        assertThat(recommendation.path("spielraum").decimalValue()).isEqualByComparingTo(spielraum);
         assertThat(limit.subtract(ist)).isEqualByComparingTo(spielraum);
-        assertThat(empfehlung.path("tipp").asString()).isNotBlank();
+        assertThat(recommendation.path("tipp").asString()).isNotBlank();
     }
 
     @Dann("lobt das Coaching das Sparen bei {string}")
     public void coachingPraisesSaving(String kategorie) {
-        JsonNode erspart = findByKategorie(coaching.path("gutGespart"), kategorie);
-        assertThat(erspart).isNotNull();
-        assertThat(erspart.path("haltung").asText()).isEqualTo("SPAREN");
-        BigDecimal limit = erspart.path("limit").decimalValue();
-        BigDecimal ist = erspart.path("ist").decimalValue();
+        JsonNode saved = findByCategory(coaching.path("gutGespart"), kategorie);
+        assertThat(saved).isNotNull();
+        assertThat(saved.path("haltung").asText()).isEqualTo("SPAREN");
+        BigDecimal limit = saved.path("limit").decimalValue();
+        BigDecimal ist = saved.path("ist").decimalValue();
         assertThat(ist).isLessThanOrEqualTo(limit);
-        assertThat(erspart.path("spielraum").decimalValue()).isEqualByComparingTo(limit.subtract(ist).max(BigDecimal.ZERO));
+        assertThat(saved.path("spielraum").decimalValue()).isEqualByComparingTo(limit.subtract(ist).max(BigDecimal.ZERO));
     }
 
     @Dann("zeigt das Coaching bei {string} nur den verbleibenden Rahmen von {betrag} Euro")
-    public void coachingShowsOnlyRemainingBudget(String kategorie, BigDecimal verbleibend) {
+    public void coachingShowsOnlyRemainingBudget(String kategorie, BigDecimal remaining) {
         assertThat(coaching.path("budgetsUebrig").path(kategorie).decimalValue())
-                .isEqualByComparingTo(verbleibend);
-        assertThat(findByKategorie(coaching.path("empfehlungen"), kategorie)).isNull();
-        assertThat(findByKategorie(coaching.path("gutGespart"), kategorie)).isNull();
+                .isEqualByComparingTo(remaining);
+        assertThat(findByCategory(coaching.path("empfehlungen"), kategorie)).isNull();
+        assertThat(findByCategory(coaching.path("gutGespart"), kategorie)).isNull();
     }
 
     @Dann("erwähnt das Coaching die Kategorie {string} nirgends")
     public void coachingDoesNotMentionCategory(String kategorie) {
         assertThat(coaching.path("budgetsUebrig").has(kategorie)).isFalse();
-        assertThat(findByKategorie(coaching.path("empfehlungen"), kategorie)).isNull();
-        assertThat(findByKategorie(coaching.path("gutGespart"), kategorie)).isNull();
+        assertThat(findByCategory(coaching.path("empfehlungen"), kategorie)).isNull();
+        assertThat(findByCategory(coaching.path("gutGespart"), kategorie)).isNull();
     }
 
     private ResponseEntity<String> putAttitude(String kategorie, String haltung) {
@@ -111,21 +111,21 @@ public class CoachingSteps {
                 new HttpEntity<>(Map.of("haltung", haltung), headers), String.class);
     }
 
-    private JsonNode findByKategorie(JsonNode liste, String kategorie) {
-        for (JsonNode eintrag : liste) {
-            if (kategorie.equals(eintrag.path("kategorie").asText())) {
-                return eintrag;
+    private JsonNode findByCategory(JsonNode list, String kategorie) {
+        for (JsonNode entry : list) {
+            if (kategorie.equals(entry.path("kategorie").asText())) {
+                return entry;
             }
         }
         return null;
     }
 
     private JsonNode findCategory(String kategorie) {
-        ResponseEntity<String> antwort = rest.getForEntity("/api/kategorien", String.class);
-        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
-        for (JsonNode eintrag : mapper.readTree(antwort.getBody())) {
-            if (kategorie.equals(eintrag.path("name").asText())) {
-                return eintrag;
+        ResponseEntity<String> response = rest.getForEntity("/api/kategorien", String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        for (JsonNode entry : mapper.readTree(response.getBody())) {
+            if (kategorie.equals(entry.path("name").asText())) {
+                return entry;
             }
         }
         return null;

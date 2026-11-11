@@ -37,27 +37,27 @@ public class PersonSteps {
 
     @Wenn("die Person {string} angelegt wird")
     public void createPerson(String name) {
-        ResponseEntity<String> antwort = post(name);
-        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        ResponseEntity<String> response = post(name);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Wenn("die Person {string} noch einmal angelegt wird")
     public void createPersonAgain(String name) {
-        ResponseEntity<String> antwort = post(name);
-        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ResponseEntity<String> response = post(name);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Wenn("die Person ohne Name angelegt werden soll")
     public void createPersonWithoutName() {
-        ResponseEntity<String> antwort = post("");
-        assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        ResponseEntity<String> response = post("");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Dann("existiert genau die Person {string}")
     public void exactlyThisPerson(String name) {
-        JsonNode personen = queryAll();
-        assertThat(personen.size()).isEqualTo(1);
-        assertThat(personen.get(0).path("name").asText()).isEqualTo(name);
+        JsonNode persons = queryAll();
+        assertThat(persons.size()).isEqualTo(1);
+        assertThat(persons.get(0).path("name").asText()).isEqualTo(name);
     }
 
     @Dann("existiert keine Person")
@@ -70,13 +70,13 @@ public class PersonSteps {
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = new java.util.HashMap<>();
         body.put("name", name);
-        body.put("passwort", AuthSteps.TEST_PASSWORT);
+        body.put("passwort", AuthSteps.TEST_PASSWORD);
         return rest.postForEntity("/api/personen", new HttpEntity<>(body, headers), String.class);
     }
 
     private JsonNode queryAll() {
-        ResponseEntity<String> liste = rest.getForEntity("/api/personen", String.class);
-        assertThat(liste.getStatusCode()).isEqualTo(HttpStatus.OK);
-        return mapper.readTree(liste.getBody());
+        ResponseEntity<String> list = rest.getForEntity("/api/personen", String.class);
+        assertThat(list.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return mapper.readTree(list.getBody());
     }
 }

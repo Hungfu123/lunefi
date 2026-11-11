@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
-import { AppProvider, useApp } from './AppKontext'
-import { lese, sende, SITZUNG_ABGELAUFEN, type Eintrag, type Person } from './types'
+import { AppProvider, useApp } from './AppContext'
+import { read, send, SESSION_EXPIRED, type Entry, type Person } from './types'
 import { Layout } from './Layout'
 import { Onboarding } from './Onboarding'
-import { LoginSeite } from './LoginSeite'
-import { ErsteinrichtungSeite } from './ErsteinrichtungSeite'
-import { Uebersicht } from './Uebersicht'
-import { EintragSheet } from './EintragSheet'
-import { AusgleichSeite } from './AusgleichSeite'
-import { SparzieleSeite } from './SparzieleSeite'
-import { StatistikSeite } from './StatistikSeite'
-import { EinstellungenSeite } from './EinstellungenSeite'
+import { LoginPage } from './LoginPage'
+import { InitialSetupPage } from './InitialSetupPage'
+import { Overview } from './Overview'
+import { EntrySheet } from './EntrySheet'
+import { SettlementPage } from './SettlementPage'
+import { SavingsGoalsPage } from './SavingsGoalsPage'
+import { StatisticsPage } from './StatisticsPage'
+import { SettingsPage } from './SettingsPage'
 
 type Status = 'pruefen' | 'offen' | 'ohneNutzer' | 'login' | 'angemeldet'
 
@@ -24,7 +24,7 @@ function useTheme() {
   }, [])
 }
 
-function Ladepunkt() {
+function LoadingDot() {
   return (
     <div className="flex min-h-dvh items-center justify-center">
       <div className="h-10 w-10 animate-pulse rounded-full bg-akzent/40" />
@@ -32,31 +32,31 @@ function Ladepunkt() {
   )
 }
 
-function Inhalt() {
-  const { personen, werLaden, personenNeuLaden } = useApp()
+function Content() {
+  const { persons, loadWho, reloadPersons } = useApp()
   const [status, setStatus] = useState<Status>('pruefen')
   const [legacy, setLegacy] = useState(false)
   const [startName, setStartName] = useState<string | undefined>(undefined)
-  const [sheetOffen, setSheetOffen] = useState(false)
-  const [neuGeladen, setNeuGeladen] = useState(0)
-  const [bearbeitet, setBearbeitet] = useState<Eintrag | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [reloadCount, setReloadCount] = useState(0)
+  const [editing, setEditing] = useState<Entry | null>(null)
 
-  const pruefen = useCallback(
+  const check = useCallback(
     async (name?: string) => {
       if (name) setStartName(name)
-      const ergebnis = await werLaden()
-      if (ergebnis === 'server') {
+      const result = await loadWho()
+      if (result === 'server') {
         setStatus('angemeldet')
-        personenNeuLaden()
+        reloadPersons()
         return
       }
-      if (ergebnis === 'legacy') {
+      if (result === 'legacy') {
         setLegacy(true)
         try {
-          const p = await lese<Person[]>('/api/personen')
+          const p = await read<Person[]>('/api/personen')
           if (p.length > 0) {
             setStatus('angemeldet')
-            personenNeuLaden()
+            reloadPersons()
           } else {
             setStatus('offen')
           }
@@ -66,54 +66,54 @@ function Inhalt() {
         return
       }
       try {
-        const p = await lese<Person[]>('/api/personen')
+        const p = await read<Person[]>('/api/personen')
         setStatus(p.length === 0 ? 'offen' : 'ohneNutzer')
       } catch {
         setStatus('login')
       }
     },
-    [werLaden, personenNeuLaden],
+    [loadWho, reloadPersons],
   )
 
   useEffect(() => {
-    pruefen()
-  }, [pruefen])
+    check()
+  }, [check])
 
   useEffect(() => {
     if (status !== 'angemeldet') return
-    const hoerzu = () => setStatus('login')
-    window.addEventListener(SITZUNG_ABGELAUFEN, hoerzu)
-    return () => window.removeEventListener(SITZUNG_ABGELAUFEN, hoerzu)
+    const listener = () => setStatus('login')
+    window.addEventListener(SESSION_EXPIRED, listener)
+    return () => window.removeEventListener(SESSION_EXPIRED, listener)
   }, [status])
 
-  const abmelden = useCallback(async () => {
+  const logout = useCallback(async () => {
     try {
-      await sende('/api/logout')
+      await send('/api/logout')
     } catch {
       return
     }
-    pruefen()
-  }, [pruefen])
+    check()
+  }, [check])
 
   if (status === 'pruefen') {
-    return <Ladepunkt />
+    return <LoadingDot />
   }
 
   if (status === 'offen') {
-    return <Onboarding onFertig={pruefen} />
+    return <Onboarding onDone={check} />
   }
 
   if (status === 'ohneNutzer') {
-    if (personen.length === 0) return <Ladepunkt />
-    return <ErsteinrichtungSeite personen={personen} onFertig={pruefen} />
+    if (persons.length === 0) return <LoadingDot />
+    return <InitialSetupPage persons={persons} onDone={check} />
   }
 
   if (status === 'login') {
-    return <LoginSeite startName={startName} onErfolg={() => pruefen()} />
+    return <LoginPage startName={startName} onSuccess={() => check()} />
   }
 
-  if (personen.length === 0) {
-    return <Ladepunkt />
+  if (persons.length === 0) {
+    return <LoadingDot />
   }
 
   return (
@@ -121,31 +121,31 @@ function Inhalt() {
       <Routes>
         <Route
           element={
-            <Layout onEintragNeu={() => setSheetOffen(true)} kannAbmelden={!legacy} onAbgemeldet={abmelden} />
+            <Layout onNewEntry={() => setSheetOpen(true)} canLogOut={!legacy} onLoggedOut={logout} />
           }
         >
-          <Route index element={<Uebersicht key={neuGeladen} onEintragBearbeiten={setBearbeitet} />} />
-          <Route path="/ausgleich" element={<AusgleichSeite key={neuGeladen} />} />
-          <Route path="/sparziele" element={<SparzieleSeite />} />
-          <Route path="/statistik" element={<StatistikSeite key={neuGeladen} />} />
-          <Route path="/einstellungen" element={<EinstellungenSeite />} />
+          <Route index element={<Overview key={reloadCount} onEditEntry={setEditing} />} />
+          <Route path="/ausgleich" element={<SettlementPage key={reloadCount} />} />
+          <Route path="/sparziele" element={<SavingsGoalsPage />} />
+          <Route path="/statistik" element={<StatisticsPage key={reloadCount} />} />
+          <Route path="/einstellungen" element={<SettingsPage />} />
         </Route>
       </Routes>
-      <EintragSheet
-        offen={sheetOffen}
-        zu={() => setSheetOffen(false)}
-        onErfasst={() => {
-          setSheetOffen(false)
-          setNeuGeladen((n) => n + 1)
+      <EntrySheet
+        open={sheetOpen}
+        close={() => setSheetOpen(false)}
+        onCaptured={() => {
+          setSheetOpen(false)
+          setReloadCount((n) => n + 1)
         }}
       />
-      <EintragSheet
-        eintrag={bearbeitet ?? undefined}
-        offen={bearbeitet !== null}
-        zu={() => setBearbeitet(null)}
-        onErfasst={() => {
-          setBearbeitet(null)
-          setNeuGeladen((n) => n + 1)
+      <EntrySheet
+        entry={editing ?? undefined}
+        open={editing !== null}
+        close={() => setEditing(null)}
+        onCaptured={() => {
+          setEditing(null)
+          setReloadCount((n) => n + 1)
         }}
       />
     </BrowserRouter>
@@ -156,7 +156,7 @@ export default function App() {
   useTheme()
   return (
     <AppProvider>
-      <Inhalt />
+      <Content />
     </AppProvider>
   )
 }

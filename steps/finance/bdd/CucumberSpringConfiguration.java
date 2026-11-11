@@ -25,34 +25,34 @@ public class CucumberSpringConfiguration {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
 
     @TestConfiguration
-    static class UhrKonfiguration {
+    static class ClockConfiguration {
 
         @Bean
         @Primary
-        SetzbareUhr setzbareUhr() {
-            return new SetzbareUhr();
+        AdjustableClock adjustableClock() {
+            return new AdjustableClock();
         }
 
         @Bean
-        Sitzungen sitzungen(ApplicationContext context,
+        Sessions sessions(ApplicationContext context,
                 org.springframework.boot.restclient.RestTemplateBuilder builder) {
-            return new Sitzungen(context, builder);
+            return new Sessions(context, builder);
         }
 
         @Bean
         @Primary
-        TestRestTemplate alexRest(Sitzungen sitzungen) {
-            return sitzungen.fuer("Alex");
+        TestRestTemplate alexRest(Sessions sessions) {
+            return sessions.forPerson("Alex");
         }
 
         @Bean
-        TestRestTemplate kimRest(Sitzungen sitzungen) {
-            return sitzungen.fuer("Kim");
+        TestRestTemplate kimRest(Sessions sessions) {
+            return sessions.forPerson("Kim");
         }
 
         @Bean
-        TestRestTemplate unangemeldetRest(Sitzungen sitzungen) {
-            return sitzungen.vorlage();
+        TestRestTemplate unauthenticatedRest(Sessions sessions) {
+            return sessions.template();
         }
     }
 }

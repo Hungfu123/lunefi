@@ -16,40 +16,40 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/personen")
 public class PersonController {
 
-    private static final int MIN_PASSWORT_LAENGE = 6;
+    private static final int MIN_PASSWORD_LENGTH = 6;
 
     private final PersonRepository repository;
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AngemeldetePerson angemeldetePerson;
+    private final AuthenticatedUser authenticatedUser;
 
     public PersonController(PersonRepository repository, AppUserRepository appUserRepository,
-            PasswordEncoder passwordEncoder, AngemeldetePerson angemeldetePerson) {
+            PasswordEncoder passwordEncoder, AuthenticatedUser authenticatedUser) {
         this.repository = repository;
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
-        this.angemeldetePerson = angemeldetePerson;
+        this.authenticatedUser = authenticatedUser;
     }
 
     @PostMapping
-    public ResponseEntity<Person> create(@RequestBody PersonEingabe eingabe) {
-        if (appUserRepository.count() > 0 && !angemeldetePerson.istAngemeldet()) {
+    public ResponseEntity<Person> create(@RequestBody PersonInput input) {
+        if (appUserRepository.count() > 0 && !authenticatedUser.isAuthenticated()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
-        if (eingabe.name() == null || eingabe.name().isBlank()
-                || eingabe.passwort() == null || eingabe.passwort().isBlank()
-                || eingabe.passwort().length() < MIN_PASSWORT_LAENGE) {
+        if (input.name() == null || input.name().isBlank()
+                || input.passwort() == null || input.passwort().isBlank()
+                || input.passwort().length() < MIN_PASSWORD_LENGTH) {
             return ResponseEntity.badRequest().build();
         }
-        AppUserEntity nutzer = appUserRepository.findByUsername(eingabe.name())
-                .orElseGet(() -> new AppUserEntity(eingabe.name(), null));
-        nutzer.setPasswordHash(passwordEncoder.encode(eingabe.passwort()));
-        appUserRepository.save(nutzer);
-        return repository.findByName(eingabe.name())
-                .<ResponseEntity<Person>>map(besteht -> ResponseEntity.ok(besteht.asPerson()))
+        AppUserEntity user = appUserRepository.findByUsername(input.name())
+                .orElseGet(() -> new AppUserEntity(input.name(), null));
+        user.setPasswordHash(passwordEncoder.encode(input.passwort()));
+        appUserRepository.save(user);
+        return repository.findByName(input.name())
+                .<ResponseEntity<Person>>map(existing -> ResponseEntity.ok(existing.asPerson()))
                 .orElseGet(() -> {
-                    PersonEntity gespeichert = repository.save(new PersonEntity(eingabe.name()));
-                    return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.asPerson());
+                    PersonEntity saved = repository.save(new PersonEntity(input.name()));
+                    return ResponseEntity.status(HttpStatus.CREATED).body(saved.asPerson());
                 });
     }
 
