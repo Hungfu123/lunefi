@@ -18,7 +18,7 @@ public class LernregelController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> speichern(@RequestBody LernregelAnlegen daten) {
+    public ResponseEntity<Void> save(@RequestBody LernregelAnlegen daten) {
         if (daten.kennung() == null || daten.kennung().isBlank()
                 || daten.kategorie() == null || daten.kategorie().isBlank()) {
             return ResponseEntity.badRequest().build();

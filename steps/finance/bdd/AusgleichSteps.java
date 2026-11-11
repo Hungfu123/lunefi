@@ -40,45 +40,45 @@ public class AusgleichSteps {
     private JsonNode verlauf;
 
     @Before
-    public void uhrZuruecksetzen() {
-        uhr.zuruecksetzen();
+    public void resetClock() {
+        uhr.reset();
     }
 
     @Angenommen("die Personen {string} und {string} existieren")
-    public void personenExistieren(String erste, String zweite) {
-        personAnlegen(erste);
-        personAnlegen(zweite);
+    public void personsExist(String erste, String zweite) {
+        createPerson(erste);
+        createPerson(zweite);
     }
 
     @Angenommen("der aktuelle Monat {monat} ist")
-    public void aktuellerMonat(YearMonth monat) {
-        uhr.auf(monat);
+    public void currentMonth(YearMonth monat) {
+        uhr.setTo(monat);
     }
 
     @Wenn("der Ausgleich {monat} aufgerufen wird")
-    public void ausgleichAufrufen(YearMonth monat) {
+    public void callSettlement(YearMonth monat) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/ausgleich/" + monat, String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         ausgleich = mapper.readTree(antwort.getBody());
     }
 
     @Wenn("der Ausgleichsverlauf der letzten {int} Monate abgefragt wird")
-    public void verlaufAbfragen(int monate) {
+    public void queryHistory(int monate) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/ausgleich/verlauf?monate=" + monate, String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         verlauf = mapper.readTree(antwort.getBody());
     }
 
     @Dann("schuldet {word} {word} {betrag} Euro")
-    public void schuldet(String schuldner, String glaubiger, BigDecimal betrag) {
+    public void owes(String schuldner, String glaubiger, BigDecimal betrag) {
         assertThat(ausgleich.path("vorschlag").asText())
-                .isEqualTo(schuldner + " schuldet " + glaubiger + " " + alsText(betrag) + " €");
+                .isEqualTo(schuldner + " schuldet " + glaubiger + " " + asText(betrag) + " €");
         assertThat(ausgleich.path("saldi").path(glaubiger).decimalValue()).isEqualByComparingTo(betrag);
         assertThat(ausgleich.path("saldi").path(schuldner).decimalValue()).isEqualByComparingTo(betrag.negate());
     }
 
     @Dann("trägt {word} {betrag} Euro und {word} {betrag} Euro davon")
-    public void traegtDavon(String erstePerson, BigDecimal ersterAnteil,
+    public void carriesShare(String erstePerson, BigDecimal ersterAnteil,
             String zweitePerson, BigDecimal zweiterAnteil) {
         JsonNode anteile = ausgleich.path("positionen").get(0).path("anteile");
         assertThat(anteile.path(erstePerson).decimalValue()).isEqualByComparingTo(ersterAnteil);
@@ -91,7 +91,7 @@ public class AusgleichSteps {
     }
 
     @Dann("enthält der Verlauf die Monate")
-    public void verlaufEnthaelt(DataTable erwartet) {
+    public void historyContains(DataTable erwartet) {
         List<Map<String, String>> zeilen = erwartet.asMaps();
         assertThat(verlauf.size()).isEqualTo(zeilen.size());
         for (int i = 0; i < zeilen.size(); i++) {
@@ -106,13 +106,13 @@ public class AusgleichSteps {
     }
 
     @Dann("zeigt der Verlauf keine einzelnen Ausgaben")
-    public void verlaufOhnePositionen() {
+    public void historyWithoutPositions() {
         for (JsonNode eintrag : verlauf) {
             assertThat(eintrag.has("positionen")).isFalse();
         }
     }
 
-    private void personAnlegen(String name) {
+    private void createPerson(String name) {
         ResponseEntity<String> antwort = rest.postForEntity("/api/personen",
                 new HttpEntity<>(Map.of("name", name), jsonHeader()), String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -124,7 +124,7 @@ public class AusgleichSteps {
         return headers;
     }
 
-    private String alsText(BigDecimal betrag) {
+    private String asText(BigDecimal betrag) {
         DecimalFormat format = new DecimalFormat("#,##0.00",
                 DecimalFormatSymbols.getInstance(Locale.GERMANY));
         return format.format(betrag);

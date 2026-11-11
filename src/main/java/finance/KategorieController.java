@@ -30,7 +30,7 @@ public class KategorieController {
     }
 
     @GetMapping
-    public List<KategorieInfo> alle() {
+    public List<KategorieInfo> list() {
         TreeSet<String> namen = new TreeSet<>();
         eintragRepository.findAll().forEach(eintrag -> namen.add(eintrag.getKategorie()));
         kategorieRepository.findAll().forEach(kategorie -> namen.add(kategorie.getName()));
@@ -40,25 +40,25 @@ public class KategorieController {
             KategorieEntity konfiguriert = kategorieRepository.findById(name).orElse(null);
             SplitKonfiguration split = konfiguriert == null
                     ? new SplitKonfiguration("HALBHALB", null)
-                    : konfiguriert.alsSplitKonfiguration();
+                    : konfiguriert.asSplitConfiguration();
             kategorien.add(new KategorieInfo(name, split));
         }
         return kategorien;
     }
 
     @PutMapping("/{kategorie}/split")
-    public ResponseEntity<SplitKonfiguration> splitSetzen(@PathVariable String kategorie,
+    public ResponseEntity<SplitKonfiguration> setSplit(@PathVariable String kategorie,
             @RequestBody SplitKonfiguration split) {
-        if (!gueltig(split)) {
+        if (!isValid(split)) {
             return ResponseEntity.badRequest().build();
         }
         Map<String, Integer> anteile = "ANTEILE".equals(split.art()) ? split.anteile() : Map.of();
         KategorieEntity gespeichert = kategorieRepository.save(
                 new KategorieEntity(kategorie, split.art(), anteile));
-        return ResponseEntity.ok(gespeichert.alsSplitKonfiguration());
+        return ResponseEntity.ok(gespeichert.asSplitConfiguration());
     }
 
-    private boolean gueltig(SplitKonfiguration split) {
+    private boolean isValid(SplitKonfiguration split) {
         if (split == null || !("HALBHALB".equals(split.art()) || "ANTEILE".equals(split.art()))) {
             return false;
         }

@@ -55,7 +55,7 @@ public class BudgetEntity {
         this.limit = limit;
     }
 
-    public Budget alsBudget() {
+    public Budget asBudget() {
         return new Budget(monat, kategorie, limit);
     }
 }

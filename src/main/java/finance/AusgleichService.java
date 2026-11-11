@@ -27,7 +27,7 @@ public class AusgleichService {
         this.uhr = uhr;
     }
 
-    public AusgleichMitPositionen ausgleich(YearMonth monat) {
+    public AusgleichMitPositionen settlement(YearMonth monat) {
         List<String> personen = personRepository.findAll().stream()
                 .map(PersonEntity::getName)
                 .sorted()
@@ -47,7 +47,7 @@ public class AusgleichService {
 
         List<AusgleichPosition> positionen = new ArrayList<>();
         for (EintragEntity eintrag : gemeinsame) {
-            Map<String, BigDecimal> anteile = anteileFuer(eintrag, personen);
+            Map<String, BigDecimal> anteile = sharesFor(eintrag, personen);
             positionen.add(new AusgleichPosition(eintrag.getId(), eintrag.getKategorie(),
                     eintrag.getBetrag(), eintrag.getZahler(), anteile));
 
@@ -67,24 +67,24 @@ public class AusgleichService {
                 vorschlag(saldi), positionen);
     }
 
-    public List<AusgleichMonat> verlauf(int monate) {
+    public List<AusgleichMonat> history(int monate) {
         YearMonth aktuellerMonat = YearMonth.now(uhr);
         List<AusgleichMonat> verlauf = new ArrayList<>();
         for (int zurueck = monate - 1; zurueck >= 0; zurueck--) {
-            AusgleichMitPositionen ausgleich = ausgleich(aktuellerMonat.minusMonths(zurueck));
+            AusgleichMitPositionen ausgleich = settlement(aktuellerMonat.minusMonths(zurueck));
             verlauf.add(new AusgleichMonat(ausgleich.monat(), ausgleich.laeuftNoch(),
                     ausgleich.saldi(), ausgleich.vorschlag()));
         }
         return verlauf;
     }
 
-    private Map<String, BigDecimal> anteileFuer(EintragEntity eintrag, List<String> personen) {
+    private Map<String, BigDecimal> sharesFor(EintragEntity eintrag, List<String> personen) {
         BigDecimal summe = eintrag.getBetrag().abs().setScale(2, RoundingMode.HALF_UP);
-        Map<String, Integer> prozente = prozenteFuer(eintrag.getKategorie(), personen);
-        return anteileBerechnen(summe, prozente);
+        Map<String, Integer> prozente = percentagesFor(eintrag.getKategorie(), personen);
+        return computeShares(summe, prozente);
     }
 
-    private Map<String, Integer> prozenteFuer(String kategorie, List<String> personen) {
+    private Map<String, Integer> percentagesFor(String kategorie, List<String> personen) {
         KategorieEntity konfiguriert = kategorieRepository.findById(kategorie).orElse(null);
         if (konfiguriert != null && "ANTEILE".equals(konfiguriert.getArt())
                 && !konfiguriert.getAnteile().isEmpty()) {
@@ -98,7 +98,7 @@ public class AusgleichService {
         return halbhalb;
     }
 
-    private Map<String, BigDecimal> anteileBerechnen(BigDecimal summe, Map<String, Integer> prozente) {
+    private Map<String, BigDecimal> computeShares(BigDecimal summe, Map<String, Integer> prozente) {
         Map<String, BigDecimal> anteile = new LinkedHashMap<>();
         BigDecimal verteilt = BigDecimal.ZERO.setScale(2);
         Map.Entry<String, Integer> groesster = null;
@@ -133,10 +133,10 @@ public class AusgleichService {
             return null;
         }
         return kleinster.getKey() + " schuldet " + groesster.getKey() + " "
-                + alsText(groesster.getValue()) + " €";
+                + asText(groesster.getValue()) + " €";
     }
 
-    private String alsText(BigDecimal betrag) {
+    private String asText(BigDecimal betrag) {
         return new java.text.DecimalFormat("#,##0.00",
                 java.text.DecimalFormatSymbols.getInstance(java.util.Locale.GERMANY))
                 .format(betrag);

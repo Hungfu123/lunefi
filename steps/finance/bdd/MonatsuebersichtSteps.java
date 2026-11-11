@@ -31,52 +31,52 @@ public class MonatsuebersichtSteps {
 
     private JsonNode uebersicht;
 
-    @ParameterType("[A-Za-zÄÖÜäöüß]+ \\d{4}")
-    public YearMonth monat(String rohwert) {
+    @ParameterType(value = "[A-Za-zÄÖÜäöüß]+ \\d{4}", name = "monat")
+    public YearMonth parseMonth(String rohwert) {
         return YearMonth.parse(rohwert,
                 DateTimeFormatter.ofPattern("MMMM uuuu", Locale.GERMANY).withResolverStyle(ResolverStyle.STRICT));
     }
 
     @Wenn("die Monatsübersicht {monat} aufgerufen wird")
-    public void monatsuebersichtAufrufen(YearMonth monat) {
+    public void callMonthlyOverview(YearMonth monat) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/monatsuebersicht/" + monat, String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         uebersicht = mapper.readTree(antwort.getBody());
     }
 
     @Wenn("die Monatsübersicht Monat {int} im Jahr {int} aufgerufen wird")
-    public void ungueltigenMonatAufrufen(int monat, int jahr) {
+    public void callInvalidMonth(int monat, int jahr) {
         ResponseEntity<String> antwort = rest.getForEntity(
                 "/api/monatsuebersicht/" + jahr + "-" + monat, String.class);
         antwortStatus = antwort.getStatusCode();
     }
 
     @Dann("wird der Monat abgelehnt")
-    public void monatAbgelehnt() {
+    public void monthRejected() {
         assertThat(antwortStatus).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     private org.springframework.http.HttpStatusCode antwortStatus;
 
     @Dann("zeigt die Monatsübersicht die Ausgaben je Kategorie")
-    public void ausgabenJeKategorie(DataTable erwartet) {
-        kategorieSummenAbgleichen(erwartet, "Kategorie", "Ausgaben", "ausgabenJeKategorie");
+    public void expensesPerCategory(DataTable erwartet) {
+        verifyCategorySums(erwartet, "Kategorie", "Ausgaben", "ausgabenJeKategorie");
     }
 
     @Dann("zeigt die Monatsübersicht die Einnahmen je Kategorie")
-    public void einnahmenJeKategorie(DataTable erwartet) {
-        kategorieSummenAbgleichen(erwartet, "Kategorie", "Einnahmen", "einnahmenJeKategorie");
+    public void incomePerCategory(DataTable erwartet) {
+        verifyCategorySums(erwartet, "Kategorie", "Einnahmen", "einnahmenJeKategorie");
     }
 
     @Dann("zählt der Eintrag zu den Einnahmen und nicht zu den Ausgaben")
-    public void einnahmeZaehltNichtZuAusgaben() {
+    public void incomeNotCountedInExpenses() {
         assertThat(uebersicht.path("einnahmenJeKategorie").path("Gehalt").decimalValue())
                 .isEqualByComparingTo(new BigDecimal("2000.00"));
         assertThat(uebersicht.path("ausgabenJeKategorie").size()).isZero();
     }
 
     @Dann("listet die Monatsübersicht {int} Einträge mit Datum und Betrag")
-    public void eintraegeGelistet(int anzahl) {
+    public void entriesListed(int anzahl) {
         JsonNode eintraege = uebersicht.path("eintraege");
         assertThat(eintraege.size()).isEqualTo(anzahl);
         for (JsonNode eintrag : eintraege) {
@@ -86,7 +86,7 @@ public class MonatsuebersichtSteps {
     }
 
     @Angenommen("das Budget für Kategorie {string} im {monat} auf {betrag} Euro gesetzt wird")
-    public void budgetSetzen(String kategorie, YearMonth monat, BigDecimal limit) {
+    public void setBudget(String kategorie, YearMonth monat, BigDecimal limit) {
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
         headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
         org.springframework.http.ResponseEntity<String> antwort = rest.exchange(
@@ -101,17 +101,17 @@ public class MonatsuebersichtSteps {
     }
 
     @Dann("warnt die Monatsübersicht bei Kategorie {string}")
-    public void budgetWarnung(String kategorie) {
+    public void budgetWarning(String kategorie) {
         JsonNode budget = uebersicht.path("budgets").path(kategorie);
         assertThat(budget.path("limit").decimalValue()).isEqualByComparingTo(new BigDecimal("200.00"));
         assertThat(budget.path("ist").decimalValue()).isEqualByComparingTo(new BigDecimal("250.00"));
         assertThat(budget.path("warnung").asBoolean()).isTrue();
     }
 
-    private void kategorieSummenAbgleichen(DataTable erwartet, String kategorieSpalte, String summenSpalte, String feld) {
+    private void verifyCategorySums(DataTable erwartet, String kategorieSpalte, String summenSpalte, String feld) {
         Map<String, BigDecimal> erwartete = new HashMap<>();
         for (Map<String, String> zeile : erwartet.asMaps()) {
-            erwartete.put(zeile.get(kategorieSpalte), parseBetrag(zeile.get(summenSpalte)));
+            erwartete.put(zeile.get(kategorieSpalte), parseAmount(zeile.get(summenSpalte)));
         }
 
         JsonNode summen = uebersicht.path(feld);
@@ -124,7 +124,7 @@ public class MonatsuebersichtSteps {
         }
     }
 
-    private BigDecimal parseBetrag(String rohwert) {
+    private BigDecimal parseAmount(String rohwert) {
         return new BigDecimal(rohwert.replace(" Euro", "").replace(".", "").replace(',', '.'));
     }
 }

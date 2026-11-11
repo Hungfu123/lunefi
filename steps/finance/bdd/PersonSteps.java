@@ -27,52 +27,52 @@ public class PersonSteps {
     private TestRestTemplate rest;
 
     @Angenommen("noch keine Person angelegt wurde")
-    public void nochKeinePersonAngelegt() {
+    public void noPersonCreatedYet() {
     }
 
     @Angenommen("die Person {string} existiert")
-    public void personExistiert(String name) {
-        personAnlegen(name);
+    public void personExists(String name) {
+        createPerson(name);
     }
 
     @Wenn("die Person {string} angelegt wird")
-    public void personAnlegen(String name) {
-        ResponseEntity<String> antwort = posten(name);
+    public void createPerson(String name) {
+        ResponseEntity<String> antwort = post(name);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Wenn("die Person {string} noch einmal angelegt wird")
-    public void personNochmalAnlegen(String name) {
-        ResponseEntity<String> antwort = posten(name);
+    public void createPersonAgain(String name) {
+        ResponseEntity<String> antwort = post(name);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Wenn("die Person ohne Name angelegt werden soll")
-    public void personOhneNameAnlegen() {
-        ResponseEntity<String> antwort = posten("");
+    public void createPersonWithoutName() {
+        ResponseEntity<String> antwort = post("");
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Dann("existiert genau die Person {string}")
-    public void genauDiesePerson(String name) {
-        JsonNode personen = alleAbfragen();
+    public void exactlyThisPerson(String name) {
+        JsonNode personen = queryAll();
         assertThat(personen.size()).isEqualTo(1);
         assertThat(personen.get(0).path("name").asText()).isEqualTo(name);
     }
 
     @Dann("existiert keine Person")
-    public void keinePerson() {
-        assertThat(alleAbfragen().size()).isZero();
+    public void noPerson() {
+        assertThat(queryAll().size()).isZero();
     }
 
-    private ResponseEntity<String> posten(String name) {
+    private ResponseEntity<String> post(String name) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of("name", name);
         return rest.postForEntity("/api/personen", new HttpEntity<>(body, headers), String.class);
     }
 
-    private JsonNode alleAbfragen() {
+    private JsonNode queryAll() {
         ResponseEntity<String> liste = rest.getForEntity("/api/personen", String.class);
         assertThat(liste.getStatusCode()).isEqualTo(HttpStatus.OK);
         return mapper.readTree(liste.getBody());

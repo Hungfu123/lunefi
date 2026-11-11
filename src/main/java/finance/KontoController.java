@@ -28,7 +28,7 @@ public class KontoController {
     }
 
     @PostMapping
-    public ResponseEntity<Konto> anlegen(@RequestBody Konto konto) {
+    public ResponseEntity<Konto> create(@RequestBody Konto konto) {
         if (konto.name() == null || konto.name().isBlank()
                 || konto.person() == null || konto.person().isBlank()
                 || konto.startSaldo() == null
@@ -43,19 +43,19 @@ public class KontoController {
     }
 
     @GetMapping
-    public List<Konto> alle(@RequestParam(required = false) String person) {
+    public List<Konto> list(@RequestParam(required = false) String person) {
         List<Konto> ergebnis = new ArrayList<>();
         for (KontoEntity konto : konten.findAll()) {
             if (person != null && !person.equals(konto.getPerson())) {
                 continue;
             }
             ergebnis.add(new Konto(konto.getId(), konto.getName(), konto.getPerson(),
-                    konto.getStartSaldo(), saldo(konto)));
+                    konto.getStartSaldo(), currentBalance(konto)));
         }
         return ergebnis;
     }
 
-    private BigDecimal saldo(KontoEntity konto) {
+    private BigDecimal currentBalance(KontoEntity konto) {
         BigDecimal summe = konto.getStartSaldo();
         for (EintragEntity eintrag : eintraege.findAll()) {
             if (konto.getName().equals(eintrag.getKonto())) {

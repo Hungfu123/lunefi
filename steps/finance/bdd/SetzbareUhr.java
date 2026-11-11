@@ -10,11 +10,11 @@ public class SetzbareUhr extends java.time.Clock {
     private volatile Instant jetzt = Instant.now();
     private final ZoneId zone = ZoneId.systemDefault();
 
-    public void auf(YearMonth monat) {
+    public void setTo(YearMonth monat) {
         jetzt = ZonedDateTime.of(monat.atDay(1).atTime(12, 0), zone).toInstant();
     }
 
-    public void zuruecksetzen() {
+    public void reset() {
         jetzt = Instant.now();
     }
 

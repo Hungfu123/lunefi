@@ -19,7 +19,7 @@ public class BudgetController {
     }
 
     @PutMapping("/api/budgets")
-    public ResponseEntity<Budget> setzen(@RequestBody Budget budget) {
+    public ResponseEntity<Budget> set(@RequestBody Budget budget) {
         if (budget.monat() == null || budget.kategorie() == null || budget.kategorie().isBlank()
                 || budget.limit() == null || budget.limit().signum() <= 0) {
             return ResponseEntity.badRequest().build();
@@ -35,6 +35,6 @@ public class BudgetController {
                     return vorhandenes;
                 })
                 .orElseGet(() -> new BudgetEntity(budget.monat(), budget.kategorie(), budget.limit()));
-        return ResponseEntity.ok(repository.save(gespeichert).alsBudget());
+        return ResponseEntity.ok(repository.save(gespeichert).asBudget());
     }
 }

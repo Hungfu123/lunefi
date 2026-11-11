@@ -28,12 +28,12 @@ public class EintragController {
     }
 
     @PostMapping
-    public ResponseEntity<Eintrag> erfassen(@RequestBody Eintrag eintrag) {
+    public ResponseEntity<Eintrag> capture(@RequestBody Eintrag eintrag) {
         if (eintrag.kategorie() == null || eintrag.kategorie().isBlank()
                 || eintrag.datum() == null
                 || eintrag.betrag() == null
-                || !genauEineZuordnung(eintrag)
-                || !zahlerBeiGemeinsam(eintrag)
+                || !exactlyOneAssignment(eintrag)
+                || !payerIfShared(eintrag)
                 || (eintrag.konto() != null && !konten.existsByName(eintrag.konto()))) {
             return ResponseEntity.badRequest().build();
         }
@@ -41,16 +41,16 @@ public class EintragController {
                 eintrag.datum(), eintrag.betrag(), eintrag.kategorie(),
                 eintrag.person(), Boolean.TRUE.equals(eintrag.gemeinsam()), eintrag.zahler(),
                 eintrag.konto()));
-        return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.alsEintrag());
+        return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.asEntry());
     }
 
     @GetMapping
-    public List<Eintrag> alle(@RequestParam(required = false) String monat,
+    public List<Eintrag> list(@RequestParam(required = false) String monat,
             @RequestParam(required = false) String person,
             @RequestParam(required = false) Boolean gemeinsam) {
-        YearMonth zeitraum = monat == null ? null : monatAlsJahrMonat(monat);
+        YearMonth zeitraum = monat == null ? null : monthAsYearMonth(monat);
         return repository.findAll().stream()
-                .map(EintragEntity::alsEintrag)
+                .map(EintragEntity::asEntry)
                 .filter(eintrag -> zeitraum == null || YearMonth.from(eintrag.datum()).equals(zeitraum))
                 .filter(eintrag -> person == null || person.equals(eintrag.person()))
                 .filter(eintrag -> gemeinsam == null
@@ -58,12 +58,12 @@ public class EintragController {
                 .toList();
     }
 
-    private boolean genauEineZuordnung(Eintrag eintrag) {
+    private boolean exactlyOneAssignment(Eintrag eintrag) {
         boolean personGesetzt = eintrag.person() != null && !eintrag.person().isBlank();
         return personGesetzt ^ Boolean.TRUE.equals(eintrag.gemeinsam());
     }
 
-    private boolean zahlerBeiGemeinsam(Eintrag eintrag) {
+    private boolean payerIfShared(Eintrag eintrag) {
         if (!Boolean.TRUE.equals(eintrag.gemeinsam())) {
             return true;
         }
@@ -71,7 +71,7 @@ public class EintragController {
                 && personen.existsByName(eintrag.zahler());
     }
 
-    private YearMonth monatAlsJahrMonat(String monat) {
+    private YearMonth monthAsYearMonth(String monat) {
         try {
             return YearMonth.parse(monat);
         } catch (java.time.format.DateTimeParseException ausnahme) {

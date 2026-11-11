@@ -21,19 +21,19 @@ public class AusgleichController {
     }
 
     @GetMapping("/{jahr}-{monat}")
-    public AusgleichMitPositionen ausgleich(@PathVariable int jahr, @PathVariable int monat) {
+    public AusgleichMitPositionen settlement(@PathVariable int jahr, @PathVariable int monat) {
         try {
-            return service.ausgleich(YearMonth.of(jahr, monat));
+            return service.settlement(YearMonth.of(jahr, monat));
         } catch (java.time.DateTimeException ausnahme) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);
         }
     }
 
     @GetMapping("/verlauf")
-    public List<AusgleichMonat> verlauf(@RequestParam(defaultValue = "6") int monate) {
+    public List<AusgleichMonat> history(@RequestParam(defaultValue = "6") int monate) {
         if (monate < 1) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);
         }
-        return service.verlauf(monate);
+        return service.history(monate);
     }
 }

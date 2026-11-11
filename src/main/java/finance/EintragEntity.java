@@ -112,7 +112,7 @@ public class EintragEntity {
         this.verwendungszweck = verwendungszweck;
     }
 
-    public Eintrag alsEintrag() {
+    public Eintrag asEntry() {
         return new Eintrag(id, datum, betrag, kategorie, person, gemeinsam, zahler, konto);
     }
 }

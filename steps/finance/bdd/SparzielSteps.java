@@ -30,12 +30,12 @@ public class SparzielSteps {
     private Long sparzielId;
 
     @Angenommen("noch kein Sparziel existiert")
-    public void nochKeinSparziel() {
+    public void noSavingsGoalYet() {
     }
 
     @Angenommen("das Sparziel {string} mit {betrag} Euro existiert")
-    public void sparzielExistiert(String name, BigDecimal zielbetrag) {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void savingsGoalExists(String name, BigDecimal zielbetrag) {
+        ResponseEntity<String> antwort = post(Map.of(
                 "name", name,
                 "zielbetrag", zielbetrag));
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -43,26 +43,26 @@ public class SparzielSteps {
     }
 
     @Angenommen("{betrag} Euro eingezahlt wurden")
-    public void eingezahlt(BigDecimal betrag) {
-        einzahlen(betrag, "Alex", LocalDate.of(2026, 11, 10));
+    public void deposited(BigDecimal betrag) {
+        deposit(betrag, "Alex", LocalDate.of(2026, 11, 10));
     }
 
     @Wenn("eine Einzahlung von {betrag} Euro durch {string} erfolgt")
-    public void einzahlungDurch(BigDecimal betrag, String person) {
-        einzahlen(betrag, person, LocalDate.of(2026, 11, 12));
+    public void depositBy(BigDecimal betrag, String person) {
+        deposit(betrag, person, LocalDate.of(2026, 11, 12));
     }
 
     @Wenn("das Sparziel {string} mit {betrag} Euro erstellt werden soll")
-    public void sparzielOhneZielbetragErstellen(String name, BigDecimal zielbetrag) {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void createSavingsGoalWithoutTargetAmount(String name, BigDecimal zielbetrag) {
+        ResponseEntity<String> antwort = post(Map.of(
                 "name", name,
                 "zielbetrag", zielbetrag));
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Dann("ist das Sparziel erreicht")
-    public void sparzielErreicht() {
-        JsonNode sparziele = alleAbfragen();
+    public void savingsGoalReached() {
+        JsonNode sparziele = queryAll();
         assertThat(sparziele.size()).isEqualTo(1);
         JsonNode sparziel = sparziele.get(0);
         assertThat(sparziel.path("eingezahlt").decimalValue()).isEqualByComparingTo(new BigDecimal("2000.00"));
@@ -71,11 +71,11 @@ public class SparzielSteps {
     }
 
     @Dann("existiert kein Sparziel")
-    public void keinSparziel() {
-        assertThat(alleAbfragen().size()).isZero();
+    public void noSavingsGoal() {
+        assertThat(queryAll().size()).isZero();
     }
 
-    private void einzahlen(BigDecimal betrag, String person, LocalDate datum) {
+    private void deposit(BigDecimal betrag, String person, LocalDate datum) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         ResponseEntity<String> antwort = rest.postForEntity(
@@ -88,13 +88,13 @@ public class SparzielSteps {
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
-    private ResponseEntity<String> posten(Map<String, Object> body) {
+    private ResponseEntity<String> post(Map<String, Object> body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return rest.postForEntity("/api/sparziele", new HttpEntity<>(body, headers), String.class);
     }
 
-    private JsonNode alleAbfragen() {
+    private JsonNode queryAll() {
         ResponseEntity<String> liste = rest.getForEntity("/api/sparziele", String.class);
         assertThat(liste.getStatusCode()).isEqualTo(HttpStatus.OK);
         return mapper.readTree(liste.getBody());

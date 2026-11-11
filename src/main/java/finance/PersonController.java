@@ -21,20 +21,20 @@ public class PersonController {
     }
 
     @PostMapping
-    public ResponseEntity<Person> anlegen(@RequestBody Person person) {
+    public ResponseEntity<Person> create(@RequestBody Person person) {
         if (person.name() == null || person.name().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
         return repository.findByName(person.name())
-                .<ResponseEntity<Person>>map(besteht -> ResponseEntity.ok(besteht.alsPerson()))
+                .<ResponseEntity<Person>>map(besteht -> ResponseEntity.ok(besteht.asPerson()))
                 .orElseGet(() -> {
                     PersonEntity gespeichert = repository.save(new PersonEntity(person.name()));
-                    return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.alsPerson());
+                    return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.asPerson());
                 });
     }
 
     @GetMapping
-    public List<Person> alle() {
-        return repository.findAll().stream().map(PersonEntity::alsPerson).toList();
+    public List<Person> list() {
+        return repository.findAll().stream().map(PersonEntity::asPerson).toList();
     }
 }

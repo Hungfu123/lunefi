@@ -57,12 +57,12 @@ public class SparzielEntity {
         return einzahlungen;
     }
 
-    public Sparziel alsSparziel() {
+    public Sparziel asSavingsGoal() {
         BigDecimal eingezahlt = einzahlungen.stream()
                 .map(EinzahlungEntity::getBetrag)
                 .reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add);
         boolean erreicht = eingezahlt.compareTo(zielbetrag) >= 0;
         return new Sparziel(id, name, zielbetrag, eingezahlt, erreicht,
-                einzahlungen.stream().map(EinzahlungEntity::alsEinzahlung).toList());
+                einzahlungen.stream().map(EinzahlungEntity::asDeposit).toList());
     }
 }

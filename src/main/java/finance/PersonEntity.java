@@ -31,7 +31,7 @@ public class PersonEntity {
         return name;
     }
 
-    public Person alsPerson() {
+    public Person asPerson() {
         return new Person(id, name);
     }
 }

@@ -28,19 +28,19 @@ public class KategorieSteps {
     private TestRestTemplate rest;
 
     @Angenommen("der Aufteilungsschlüssel für Kategorie {string} beträgt")
-    public void aufteilungSetzen(String kategorie, DataTable anteile) {
-        ResponseEntity<String> antwort = splitSetzen(kategorie, anteile);
+    public void setSplit(String kategorie, DataTable anteile) {
+        ResponseEntity<String> antwort = sendSplit(kategorie, anteile);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Wenn("der Aufteilungsschlüssel für Kategorie {string} auf ungültige Anteile gesetzt werden soll")
-    public void ungueltigeAufteilungSetzen(String kategorie, DataTable anteile) {
-        ResponseEntity<String> antwort = splitSetzen(kategorie, anteile);
+    public void setInvalidSplit(String kategorie, DataTable anteile) {
+        ResponseEntity<String> antwort = sendSplit(kategorie, anteile);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Wenn("der Aufteilungsschlüssel für Kategorie {string} auf Anteile mit einer unbekannten Person gesetzt werden soll")
-    public void anteileMitUnbekannterPerson(String kategorie) {
+    public void sharesWithUnknownPerson(String kategorie) {
         HttpHeaders kopf = new HttpHeaders();
         kopf.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of(
@@ -55,19 +55,19 @@ public class KategorieSteps {
     }
 
     @Dann("existiert keine Kategorie {string}")
-    public void keineKategorie(String kategorie) {
-        assertThat(kategorieSuchen(kategorie)).isNull();
+    public void noCategory(String kategorie) {
+        assertThat(findCategory(kategorie)).isNull();
     }
 
     @Dann("existiert die Kategorie {string} mit Aufteilung {string}")
-    public void kategorieMitAufteilung(String kategorie, String art) {
-        JsonNode gefunden = kategorieSuchen(kategorie);
+    public void categoryWithSplit(String kategorie, String art) {
+        JsonNode gefunden = findCategory(kategorie);
         assertThat(gefunden).isNotNull();
         assertThat(gefunden.path("split").path("art").asText()).isEqualTo(art);
         assertThat(gefunden.path("split").path("anteile").isNull()).isTrue();
     }
 
-    private ResponseEntity<String> splitSetzen(String kategorie, DataTable anteile) {
+    private ResponseEntity<String> sendSplit(String kategorie, DataTable anteile) {
         Map<String, Integer> anteileMap = new HashMap<>();
         for (Map<String, String> zeile : anteile.asMaps()) {
             anteileMap.put(zeile.get("Person"), Integer.parseInt(zeile.get("Anteil in Prozent")));
@@ -80,7 +80,7 @@ public class KategorieSteps {
                 String.class);
     }
 
-    private JsonNode kategorieSuchen(String kategorie) {
+    private JsonNode findCategory(String kategorie) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/kategorien", String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         for (JsonNode eintrag : mapper.readTree(antwort.getBody())) {

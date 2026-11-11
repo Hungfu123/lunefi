@@ -56,7 +56,7 @@ public class EintragSteps {
     private finance.LernregelRepository lernregelRepository;
 
     @Before
-    public void szenarioZuruecksetzen() {
+    public void resetScenario() {
         eintragRepository.deleteAll();
         personRepository.deleteAll();
         kategorieRepository.deleteAll();
@@ -67,23 +67,23 @@ public class EintragSteps {
         lernregelRepository.deleteAll();
     }
 
-    @ParameterType("\\d{2}\\.\\d{2}\\.\\d{4}")
-    public LocalDate datum(String rohwert) {
+    @ParameterType(value = "\\d{2}\\.\\d{2}\\.\\d{4}", name = "datum")
+    public LocalDate parseDate(String rohwert) {
         return LocalDate.parse(rohwert,
                 DateTimeFormatter.ofPattern("dd.MM.uuuu").withResolverStyle(ResolverStyle.STRICT));
     }
 
-    @ParameterType("[+-]?\\d{1,3}(?:\\.\\d{3})*,\\d{2}")
-    public BigDecimal betrag(String rohwert) {
+    @ParameterType(value = "[+-]?\\d{1,3}(?:\\.\\d{3})*,\\d{2}", name = "betrag")
+    public BigDecimal parseAmount(String rohwert) {
         return new BigDecimal(rohwert.replace(".", "").replace(',', '.'));
     }
 
     @Angenommen("noch kein Eintrag erfasst wurde")
-    public void nochKeinEintragErfasst() {
+    public void noEntryRecordedYet() {
     }
 
     @Wenn("ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} von {string} auf dem Konto {string} erfasst wird")
-    public void eintragAufKontoErfassen(LocalDate datum, BigDecimal betrag, String kategorie, String person, String konto) {
+    public void recordEntryOnAccount(LocalDate datum, BigDecimal betrag, String kategorie, String person, String konto) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of(
@@ -98,8 +98,8 @@ public class EintragSteps {
     }
 
     @Wenn("ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} von {string} erfasst wird")
-    public void eintragErfassen(LocalDate datum, BigDecimal betrag, String kategorie, String person) {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void recordEntry(LocalDate datum, BigDecimal betrag, String kategorie, String person) {
+        ResponseEntity<String> antwort = post(Map.of(
                 "datum", datum.toString(),
                 "betrag", betrag,
                 "kategorie", kategorie,
@@ -109,8 +109,8 @@ public class EintragSteps {
     }
 
     @Wenn("{string} eine gemeinsame Ausgabe mit {betrag} Euro und Kategorie {string} erfasst")
-    public void gemeinsameAusgabeErfassen(String zahler, BigDecimal betrag, String kategorie) {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void recordSharedExpense(String zahler, BigDecimal betrag, String kategorie) {
+        ResponseEntity<String> antwort = post(Map.of(
                 "datum", LocalDate.of(2026, 11, 15).toString(),
                 "betrag", betrag,
                 "kategorie", kategorie,
@@ -120,8 +120,8 @@ public class EintragSteps {
     }
 
     @Wenn("ein Eintrag ohne Kategorie erfasst werden soll")
-    public void eintragOhneKategorieErfassen() {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void recordEntryWithoutCategory() {
+        ResponseEntity<String> antwort = post(Map.of(
                 "datum", LocalDate.of(2026, 11, 16).toString(),
                 "betrag", new BigDecimal("-8.99"),
                 "person", "Alex",
@@ -130,8 +130,8 @@ public class EintragSteps {
     }
 
     @Wenn("ein Eintrag ohne Datum erfasst werden soll")
-    public void eintragOhneDatumErfassen() {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void recordEntryWithoutDate() {
+        ResponseEntity<String> antwort = post(Map.of(
                 "betrag", new BigDecimal("-8.99"),
                 "kategorie", "Essen",
                 "person", "Alex",
@@ -140,8 +140,8 @@ public class EintragSteps {
     }
 
     @Wenn("ein Eintrag ohne Betrag erfasst werden soll")
-    public void eintragOhneBetragErfassen() {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void recordEntryWithoutAmount() {
+        ResponseEntity<String> antwort = post(Map.of(
                 "datum", LocalDate.of(2026, 11, 16).toString(),
                 "kategorie", "Essen",
                 "person", "Alex",
@@ -150,8 +150,8 @@ public class EintragSteps {
     }
 
     @Wenn("ein Eintrag ohne Person und ohne \"gemeinsam\"-Markierung erfasst werden soll")
-    public void eintragOhnePersonUndOhneGemeinsamErfassen() {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void recordEntryWithoutPersonAndWithoutShared() {
+        ResponseEntity<String> antwort = post(Map.of(
                 "datum", LocalDate.of(2026, 11, 16).toString(),
                 "betrag", new BigDecimal("-8.99"),
                 "kategorie", "Essen"));
@@ -159,8 +159,8 @@ public class EintragSteps {
     }
 
     @Wenn("ein Eintrag von {string} mit \"gemeinsam\"-Markierung erfasst werden soll")
-    public void eintragMitPersonUndGemeinsamErfassen(String person) {
-        ResponseEntity<String> antwort = posten(Map.of(
+    public void recordEntryWithPersonAndShared(String person) {
+        ResponseEntity<String> antwort = post(Map.of(
                 "datum", LocalDate.of(2026, 11, 16).toString(),
                 "betrag", new BigDecimal("-8.99"),
                 "kategorie", "Essen",
@@ -170,19 +170,19 @@ public class EintragSteps {
     }
 
     @Wenn("nur die Einträge von {string} im {monat} abgefragt werden")
-    public void eintraegeEinerPersonAbfragen(String person, YearMonth monat) {
-        ergebnis = abfragen(Map.of(
+    public void queryEntriesOfPerson(String person, YearMonth monat) {
+        ergebnis = query(Map.of(
                 "person", person,
                 "monat", monat.toString()));
     }
 
     @Wenn("nur die gemeinsamen Einträge abgefragt werden")
-    public void gemeinsameEintraegeAbfragen() {
-        ergebnis = abfragen(Map.of("gemeinsam", "true"));
+    public void querySharedEntries() {
+        ergebnis = query(Map.of("gemeinsam", "true"));
     }
 
     @Wenn("ein gemeinsamer Eintrag von der Person {string} mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} erfasst werden soll")
-    public void gemeinsamerEintragVonPerson(String zahler, LocalDate datum, BigDecimal betrag, String kategorie) {
+    public void sharedEntryByPerson(String zahler, LocalDate datum, BigDecimal betrag, String kategorie) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of(
@@ -196,13 +196,13 @@ public class EintragSteps {
     }
 
     @Dann("existiert kein Eintrag")
-    public void keinEintragVorhanden() {
-        assertThat(abfragen(Map.of()).size()).isZero();
+    public void noEntryPresent() {
+        assertThat(query(Map.of()).size()).isZero();
     }
 
     @Dann("existiert genau ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string}")
-    public void genauEinEintragVorhanden(LocalDate datum, BigDecimal betrag, String kategorie) {
-        JsonNode eintraege = abfragen(Map.of());
+    public void exactlyOneEntryPresent(LocalDate datum, BigDecimal betrag, String kategorie) {
+        JsonNode eintraege = query(Map.of());
         assertThat(eintraege.size()).isEqualTo(1);
 
         JsonNode eintrag = eintraege.get(0);
@@ -212,15 +212,15 @@ public class EintragSteps {
     }
 
     @Dann("gehört der Eintrag {string} und ist nicht gemeinsam")
-    public void eintragGehoertPerson(String person) {
-        JsonNode eintraege = abfragen(Map.of());
+    public void entryBelongsToPerson(String person) {
+        JsonNode eintraege = query(Map.of());
         assertThat(eintraege.size()).isEqualTo(1);
         assertThat(eintraege.get(0).path("person").asText()).isEqualTo(person);
         assertThat(eintraege.get(0).path("gemeinsam").asBoolean()).isFalse();
     }
 
     @Dann("existiert im Ergebnis genau ein Eintrag mit Betrag {betrag} Euro und Kategorie {string}")
-    public void genauEinEintragImErgebnis(BigDecimal betrag, String kategorie) {
+    public void exactlyOneEntryInResult(BigDecimal betrag, String kategorie) {
         assertThat(ergebnis.size()).isEqualTo(1);
         assertThat(ergebnis.get(0).path("betrag").decimalValue()).isEqualByComparingTo(betrag);
         assertThat(ergebnis.get(0).path("kategorie").asText()).isEqualTo(kategorie);
@@ -228,7 +228,7 @@ public class EintragSteps {
 
     private JsonNode ergebnis;
 
-    private JsonNode abfragen(Map<String, String> filter) {
+    private JsonNode query(Map<String, String> filter) {
         StringBuilder url = new StringBuilder("/api/eintraege");
         if (!filter.isEmpty()) {
             url.append('?');
@@ -240,7 +240,7 @@ public class EintragSteps {
         return mapper.readTree(liste.getBody());
     }
 
-    private ResponseEntity<String> posten(Map<String, Object> body) {
+    private ResponseEntity<String> post(Map<String, Object> body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return rest.postForEntity("/api/eintraege", new HttpEntity<>(body, headers), String.class);

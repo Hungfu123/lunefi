@@ -47,7 +47,7 @@ public class KategorieEntity {
         return anteile;
     }
 
-    public SplitKonfiguration alsSplitKonfiguration() {
+    public SplitKonfiguration asSplitConfiguration() {
         return new SplitKonfiguration(art, anteile.isEmpty() ? null : Map.copyOf(anteile));
     }
 }

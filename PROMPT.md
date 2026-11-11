@@ -25,11 +25,12 @@ src/                           der Code
 - **Szenario**: ein Beispiel in Gherkin, mit genau einem `Wenn`.
 - **Step**: die Code-Bindung eines Satzes. Der Satz ist die Schnittstelle.
 
-## Sprache (beschlossen 11.11.2026)
+## Sprache (beschlossen 11.11.2026, aktualisiert)
 
 - Gherkin-Text (Feature-Dateien) und die Annotations-Strings in den Steps: **deutsch**.
-- Methodennamen im Java-Code: **deutsch** (Repo-Konvention, passend zu den Gherkin-Texten).
-- Technische Bezeichner, die API-Felder, JSON-Schlüssel und Git-Commits: **englisch**.
+- Methodennamen im Java-Code: **englisch** (umbenannt 11.11.2026; @ParameterType braucht seitdem explizite `name`-Angabe, weil der Name sonst vom Methodennamen abgeleitet wird).
+- Klassen-/Record-Namen, lokale Variablen und Domänen-Felder (z. B. `zahler`, `saldo`): deutsch/domänengeprägt.
+- API-Felder (JSON), URL-Pfade und Git-Commits: **englisch**, ausgenommen Domänenbegriffe der API (`saldo`, `zahler`, `gemeinsam`, `datum`, `betrag` — vertraglich dokumentiert in `frontend/API.md`).
 
 ## Protokoll
 

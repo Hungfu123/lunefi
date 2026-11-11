@@ -28,7 +28,7 @@ public class QuellenSteps {
     @Autowired
     private TestRestTemplate rest;
 
-    private long quelleId(String name) {
+    private long sourceId(String name) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/quellen", String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         for (JsonNode quelle : mapper.readTree(antwort.getBody())) {
@@ -40,16 +40,16 @@ public class QuellenSteps {
     }
 
     @Angenommen("noch keine Quelle angelegt wurde")
-    public void nochKeineQuelle() {
+    public void noSourceYet() {
     }
 
     @Angenommen("die Quelle {string} der Art {string} für das Konto {string} existiert")
-    public void quelleExistiert(String name, String art, String konto) {
-        quelleAnlegen(name, art, konto);
+    public void sourceExists(String name, String art, String konto) {
+        createSource(name, art, konto);
     }
 
     @Wenn("die Quelle {string} der Art {string} für das Konto {string} angelegt wird")
-    public void quelleAnlegen(String name, String art, String konto) {
+    public void createSource(String name, String art, String konto) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of("name", name, "art", art, "konto", konto);
@@ -58,7 +58,7 @@ public class QuellenSteps {
     }
 
     @Dann("zeigt die Quellenübersicht die Quelle {string} mit Zustand {string}")
-    public void quelleMitZustand(String name, String zustand) {
+    public void sourceWithState(String name, String zustand) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/quellen", String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         JsonNode gefunden = null;
@@ -72,7 +72,7 @@ public class QuellenSteps {
     }
 
     @Angenommen("die Lernregel für {string} auf Kategorie {string} gespeichert ist")
-    public void lernregelSpeichern(String kennung, String kategorie) {
+    public void saveLearningRule(String kennung, String kategorie) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of("kennung", kennung, "kategorie", kategorie);
@@ -81,29 +81,29 @@ public class QuellenSteps {
     }
 
     @Wenn("der Import der Quelle {string} mit den Umsätzen startet")
-    public void importStarten(String name, DataTable umsaetze) {
-        importieren(name, umsaetze.asMaps());
+    public void startImport(String name, DataTable umsaetze) {
+        importEntries(name, umsaetze.asMaps());
     }
 
     @Angenommen("der Import der Quelle {string} mit dem Umsatz {string} vom {datum} über {betrag} Euro bereits gelaufen ist")
-    public void importBereitsGelaufen(String name, String kennung, java.time.LocalDate datum, BigDecimal betrag) {
+    public void importAlreadyRan(String name, String kennung, java.time.LocalDate datum, BigDecimal betrag) {
         Map<String, String> umsatz = new HashMap<>();
         umsatz.put("externeKennung", kennung);
         umsatz.put("datum", datum.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.uuuu", java.util.Locale.GERMANY)));
         umsatz.put("betrag", betrag.toPlainString());
         umsatz.put("verwendungszweck", "Gehalt November");
-        importieren(name, java.util.List.of(umsatz));
+        importEntries(name, java.util.List.of(umsatz));
     }
 
     @Wenn("derselbe Import erneut startet")
-    public void importNochmal() {
-        importieren(stehtAusName, stehtAusZeilen);
+    public void importAgain() {
+        importEntries(stehtAusName, stehtAusZeilen);
     }
 
     private String stehtAusName;
     private java.util.List<Map<String, String>> stehtAusZeilen;
 
-    private void importieren(String name, java.util.List<Map<String, String>> zeilen) {
+    private void importEntries(String name, java.util.List<Map<String, String>> zeilen) {
         stehtAusName = name;
         stehtAusZeilen = zeilen;
 
@@ -120,29 +120,29 @@ public class QuellenSteps {
         }
         Map<String, Object> body = Map.of("umsaetze", umsatzListe);
         ResponseEntity<String> antwort = rest.postForEntity(
-                "/api/quellen/" + quelleId(name) + "/import",
+                "/api/quellen/" + sourceId(name) + "/import",
                 new HttpEntity<>(body, headers), String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Dann("existieren genau zwei Einträge im November 2026 von {string}")
-    public void genauZweiEintraege(String person) {
-        assertEintraege(2, person);
+    public void exactlyTwoEntries(String person) {
+        assertEntries(2, person);
     }
 
     @Dann("existiert genau ein Eintrag im November 2026 von {string}")
-    public void genauEinEintrag(String person) {
-        assertEintraege(1, person);
+    public void exactlyOneEntry(String person) {
+        assertEntries(1, person);
     }
 
-    private void assertEintraege(int anzahl, String person) {
+    private void assertEntries(int anzahl, String person) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/eintraege?monat=2026-11&person=" + person, String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(mapper.readTree(antwort.getBody()).size()).isEqualTo(anzahl);
     }
 
     @Dann("hat der Eintrag vom {datum} über {betrag} Euro die Kategorie {string}")
-    public void eintragHatKategorie(java.time.LocalDate datum, BigDecimal betrag, String kategorie) {
+    public void entryHasCategory(java.time.LocalDate datum, BigDecimal betrag, String kategorie) {
         ResponseEntity<String> antwort = rest.getForEntity("/api/eintraege?monat=2026-11", String.class);
         assertThat(antwort.getStatusCode()).isEqualTo(HttpStatus.OK);
         JsonNode eintraege = mapper.readTree(antwort.getBody());

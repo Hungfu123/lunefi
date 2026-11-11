@@ -22,7 +22,7 @@ public class SparzielController {
     }
 
     @PostMapping
-    public ResponseEntity<Sparziel> anlegen(@RequestBody Sparziel sparziel) {
+    public ResponseEntity<Sparziel> create(@RequestBody Sparziel sparziel) {
         if (sparziel.name() == null || sparziel.name().isBlank()
                 || sparziel.zielbetrag() == null
                 || sparziel.zielbetrag().signum() <= 0) {
@@ -30,16 +30,16 @@ public class SparzielController {
         }
         SparzielEntity gespeichert = repository.save(
                 new SparzielEntity(sparziel.name(), sparziel.zielbetrag()));
-        return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.alsSparziel());
+        return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.asSavingsGoal());
     }
 
     @GetMapping
-    public List<Sparziel> alle() {
-        return repository.findAll().stream().map(SparzielEntity::alsSparziel).toList();
+    public List<Sparziel> list() {
+        return repository.findAll().stream().map(SparzielEntity::asSavingsGoal).toList();
     }
 
     @PostMapping("/{id}/einzahlungen")
-    public ResponseEntity<Sparziel> einzahlen(@PathVariable Long id, @RequestBody Einzahlung einzahlung) {
+    public ResponseEntity<Sparziel> deposit(@PathVariable Long id, @RequestBody Einzahlung einzahlung) {
         SparzielEntity sparziel = repository.findById(id).orElse(null);
         if (sparziel == null) {
             return ResponseEntity.notFound().build();
@@ -52,6 +52,6 @@ public class SparzielController {
         sparziel.getEinzahlungen().add(new EinzahlungEntity(
                 einzahlung.betrag(), einzahlung.person(), einzahlung.datum()));
         SparzielEntity gespeichert = repository.save(sparziel);
-        return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.alsSparziel());
+        return ResponseEntity.status(HttpStatus.CREATED).body(gespeichert.asSavingsGoal());
     }
 }

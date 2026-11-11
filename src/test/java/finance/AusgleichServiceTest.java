@@ -44,9 +44,9 @@ class AusgleichServiceTest {
     @DisplayName("Halbhalb: Alex zahlt 60 gemeinsam, Kim schuldet Alex 30")
     void halbhalb() {
         when(eintragRepository.findAll()).thenReturn(List.of(
-                gemeinsame(LocalDate.of(2026, 11, 1), "-60.00", "Essen", "Alex")));
+                shared(LocalDate.of(2026, 11, 1), "-60.00", "Essen", "Alex")));
 
-        AusgleichMitPositionen ausgleich = service.ausgleich(NOVEMBER);
+        AusgleichMitPositionen ausgleich = service.settlement(NOVEMBER);
 
         assertThat(ausgleich.saldi())
                 .containsEntry("Alex", new BigDecimal("30.00"))
@@ -65,9 +65,9 @@ class AusgleichServiceTest {
         when(kategorieRepository.findById("Essen")).thenReturn(Optional.of(
                 new KategorieEntity("Essen", "ANTEILE", Map.of("Alex", 60, "Kim", 40))));
         when(eintragRepository.findAll()).thenReturn(List.of(
-                gemeinsame(LocalDate.of(2026, 11, 2), "-100.00", "Essen", "Alex")));
+                shared(LocalDate.of(2026, 11, 2), "-100.00", "Essen", "Alex")));
 
-        AusgleichMitPositionen ausgleich = service.ausgleich(NOVEMBER);
+        AusgleichMitPositionen ausgleich = service.settlement(NOVEMBER);
 
         assertThat(ausgleich.saldi())
                 .containsEntry("Alex", new BigDecimal("40.00"))
@@ -81,9 +81,9 @@ class AusgleichServiceTest {
     @DisplayName("Gemeinsame Einnahme kehrt den Saldo um: Kim erhaelt 30, Alex bekommt 15")
     void gemeinsameEinnahme() {
         when(eintragRepository.findAll()).thenReturn(List.of(
-                gemeinsame(LocalDate.of(2026, 11, 3), "30.00", "Erstattung", "Kim")));
+                shared(LocalDate.of(2026, 11, 3), "30.00", "Erstattung", "Kim")));
 
-        AusgleichMitPositionen ausgleich = service.ausgleich(NOVEMBER);
+        AusgleichMitPositionen ausgleich = service.settlement(NOVEMBER);
 
         assertThat(ausgleich.saldi())
                 .containsEntry("Alex", new BigDecimal("15.00"))
@@ -94,9 +94,9 @@ class AusgleichServiceTest {
     @DisplayName("Nur persoenliche Eintraege: kein Ausgleich, kein Vorschlag")
     void nurPersoenliche() {
         when(eintragRepository.findAll()).thenReturn(List.of(
-                persoenliche(LocalDate.of(2026, 11, 4), "-42.00", "Essen", "Alex")));
+                personal(LocalDate.of(2026, 11, 4), "-42.00", "Essen", "Alex")));
 
-        AusgleichMitPositionen ausgleich = service.ausgleich(NOVEMBER);
+        AusgleichMitPositionen ausgleich = service.settlement(NOVEMBER);
 
         assertThat(ausgleich.saldi())
                 .containsEntry("Alex", new BigDecimal("0.00"))
@@ -109,9 +109,9 @@ class AusgleichServiceTest {
     @DisplayName("Eintraege anderer Monate zaehlen nicht")
     void andererMonat() {
         when(eintragRepository.findAll()).thenReturn(List.of(
-                gemeinsame(LocalDate.of(2026, 10, 31), "-60.00", "Essen", "Alex")));
+                shared(LocalDate.of(2026, 10, 31), "-60.00", "Essen", "Alex")));
 
-        AusgleichMitPositionen ausgleich = service.ausgleich(NOVEMBER);
+        AusgleichMitPositionen ausgleich = service.settlement(NOVEMBER);
 
         assertThat(ausgleich.positionen()).isEmpty();
         assertThat(ausgleich.vorschlag()).isNull();
@@ -119,11 +119,11 @@ class AusgleichServiceTest {
 
     @Test
     @DisplayName("Verlauf: ein Eintrag aus Oktober landet im Vormonat mit korrektem Saldo")
-    void verlauf() {
+    void history() {
         when(eintragRepository.findAll()).thenReturn(List.of(
-                gemeinsame(LocalDate.of(2026, 10, 20), "-60.00", "Essen", "Alex")));
+                shared(LocalDate.of(2026, 10, 20), "-60.00", "Essen", "Alex")));
 
-        List<AusgleichMonat> verlauf = service.verlauf(2);
+        List<AusgleichMonat> verlauf = service.history(2);
 
         assertThat(verlauf).hasSize(2);
         assertThat(verlauf.get(0).monat()).isEqualTo("2026-10");
@@ -132,11 +132,11 @@ class AusgleichServiceTest {
         assertThat(verlauf.get(1).laeuftNoch()).isTrue();
     }
 
-    private EintragEntity gemeinsame(LocalDate datum, String betrag, String kategorie, String zahler) {
+    private EintragEntity shared(LocalDate datum, String betrag, String kategorie, String zahler) {
         return new EintragEntity(datum, new BigDecimal(betrag), kategorie, null, true, zahler, null);
     }
 
-    private EintragEntity persoenliche(LocalDate datum, String betrag, String kategorie, String person) {
+    private EintragEntity personal(LocalDate datum, String betrag, String kategorie, String person) {
         return new EintragEntity(datum, new BigDecimal(betrag), kategorie, person, false, null, null);
     }
 }

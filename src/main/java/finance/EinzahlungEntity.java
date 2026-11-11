@@ -52,7 +52,7 @@ public class EinzahlungEntity {
         return datum;
     }
 
-    public Einzahlung alsEinzahlung() {
+    public Einzahlung asDeposit() {
         return new Einzahlung(id, betrag, person, datum);
     }
 }

@@ -26,7 +26,7 @@ public class MonatsuebersichtController {
     }
 
     @GetMapping("/{jahr}-{monat}")
-    public Monatsuebersicht fuerMonat(@PathVariable int jahr, @PathVariable int monat) {
+    public Monatsuebersicht forMonth(@PathVariable int jahr, @PathVariable int monat) {
         YearMonth zeitraum;
         try {
             zeitraum = YearMonth.of(jahr, monat);
@@ -36,7 +36,7 @@ public class MonatsuebersichtController {
         }
 
         List<Eintrag> imMonat = eintragRepository.findAll().stream()
-                .map(EintragEntity::alsEintrag)
+                .map(EintragEntity::asEntry)
                 .filter(eintrag -> YearMonth.from(eintrag.datum()).equals(zeitraum))
                 .sorted(Comparator.comparing(Eintrag::datum))
                 .toList();

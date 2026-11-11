@@ -36,7 +36,7 @@ public class QuelleController {
     }
 
     @PostMapping
-    public ResponseEntity<Quelle> anlegen(@RequestBody QuelleAnlegen daten) {
+    public ResponseEntity<Quelle> create(@RequestBody QuelleAnlegen daten) {
         if (daten.name() == null || daten.name().isBlank()
                 || daten.art() == null || daten.art().isBlank()
                 || daten.konto() == null || daten.konto().isBlank()
@@ -51,7 +51,7 @@ public class QuelleController {
     }
 
     @GetMapping
-    public List<Quelle> alle() {
+    public List<Quelle> list() {
         List<Quelle> ergebnis = new ArrayList<>();
         for (QuelleEntity quelle : quellen.findAll()) {
             ergebnis.add(new Quelle(quelle.getId(), quelle.getName(), quelle.getArt(),
@@ -61,7 +61,7 @@ public class QuelleController {
     }
 
     @PostMapping("/{id}/import")
-    public ResponseEntity<ImportErgebnis> importieren(@PathVariable Long id, @RequestBody ImportAnfrage anfrage) {
+    public ResponseEntity<ImportErgebnis> importEntries(@PathVariable Long id, @RequestBody ImportAnfrage anfrage) {
         QuelleEntity quelle = quellen.findById(id).orElse(null);
         if (quelle == null) {
             return ResponseEntity.notFound().build();
@@ -80,8 +80,8 @@ public class QuelleController {
             }
             EintragEntity eintrag = new EintragEntity(
                     LocalDate.parse(umsatz.datum(), DATUM),
-                    betragAus(umsatz.betrag()),
-                    kategorieFuer(umsatz.verwendungszweck()),
+                    amountFrom(umsatz.betrag()),
+                    categoryFor(umsatz.verwendungszweck()),
                     konto.getPerson(),
                     false,
                     null,
@@ -95,7 +95,7 @@ public class QuelleController {
         return ResponseEntity.ok(new ImportErgebnis(neu, uebersprungen));
     }
 
-    private String kategorieFuer(String verwendungszweck) {
+    private String categoryFor(String verwendungszweck) {
         if (verwendungszweck != null) {
             String gross = verwendungszweck.toUpperCase(Locale.GERMANY);
             for (LernregelEntity regel : lernregeln.findAll()) {
@@ -107,7 +107,7 @@ public class QuelleController {
         return "Import";
     }
 
-    private BigDecimal betragAus(String text) {
+    private BigDecimal amountFrom(String text) {
         String normalisiert = text.replace(".", "").replace(',', '.');
         if (normalisiert.startsWith("+")) {
             normalisiert = normalisiert.substring(1);
