@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Moon, Sun } from '@phosphor-icons/react'
 import { ApiFehler, lese, schreibe, type KategorieInfo, type Konto } from './types'
+import { TYP_LABEL, VORDEFINIERTE_KATEGORIEN } from './kategorien'
+import { KategorieIcon } from './kategorieIcon'
 import { betragAusEingabe, euro, monatAlsString } from './format'
 import { useApp } from './AppKontext'
 
@@ -152,11 +154,10 @@ export function EinstellungenSeite() {
             Anlegen
           </button>
         </form>
-        <p className="mt-2 text-xs text-textschwach">Bald: Konten automatisch importieren</p>
       </section>
 
       <section className="mb-6">
-        <h3 className="mb-2 text-sm font-medium text-textschwach">Wer bin ich?</h3>
+        <h3 className="mb-2 text-sm font-medium text-textschwach">Wer ist gerade dran?</h3>
         <div className="flex gap-2">
           {personen.map((p) => (
             <button
@@ -170,6 +171,9 @@ export function EinstellungenSeite() {
             </button>
           ))}
         </div>
+        <p className="mt-1.5 text-xs text-textschwach">
+          Sagt der App, wer von euch beiden gerade tippt — neue Einträge schlagen dich vor.
+        </p>
       </section>
 
       <section className="mb-6">
@@ -177,13 +181,18 @@ export function EinstellungenSeite() {
         {kategorien.length === 0 && (
           <p className="text-sm text-textschwach">Noch keine Kategorien — leg den ersten Eintrag an.</p>
         )}
-        <ul className="space-y-2">
-          {kategorien.map((k) => (
-            <li key={k.name} className="rounded-xl bg-karte px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{k.name}</p>
-                  <p className="text-xs text-textschwach">
+        <ul className="space-y-1.5">
+          {kategorien.map((k) => {
+            const typ = VORDEFINIERTE_KATEGORIEN.find(
+              (v) => v.name.toLowerCase() === k.name.toLowerCase(),
+            )?.typ
+            return (
+              <li key={k.name} className="flex items-center gap-3 rounded-xl bg-karte px-3.5 py-1.5">
+                <KategorieIcon name={k.name} size={17} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium leading-tight">{k.name}</p>
+                  <p className="truncate text-[11px] leading-tight text-textschwach">
+                    {typ ? `${TYP_LABEL[typ]} · ` : ''}
                     {k.split.art === 'ANTEILE' && k.split.anteile
                       ? Object.entries(k.split.anteile)
                           .map(([n, a]) => `${n} ${a}%`)
@@ -191,23 +200,23 @@ export function EinstellungenSeite() {
                       : '50/50'}
                   </p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 gap-1.5">
                   <button
                     onClick={() => splitSetzen(k.name, 'HALBHALB')}
-                    className="flex min-h-11 items-center rounded-lg bg-karte2 px-3 text-xs"
+                    className="flex min-h-8 items-center rounded-lg bg-karte2 px-3 text-xs"
                   >
                     50/50
                   </button>
                   <button
                     onClick={() => splitSetzen(k.name, 'ANTEILE')}
-                    className="flex min-h-11 items-center rounded-lg bg-karte2 px-3 text-xs"
+                    className="flex min-h-8 items-center rounded-lg bg-karte2 px-3 text-xs"
                   >
                     Anteile
                   </button>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            )
+          })}
         </ul>
         <p className="mt-2 text-xs text-textschwach">
           Gemeinsam gekauft? Standard 50/50 — Prozente hier anpassen.

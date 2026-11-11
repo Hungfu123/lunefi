@@ -2,7 +2,14 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ApiFehler, lese, schreibe, type Eintrag, type EintragNeu, type KategorieInfo, type Konto } from './types'
 import { betragAusEingabe, euro, heuteIso } from './format'
-import { KategorieIcon } from './kategorieIcon'
+import {
+  KategorieIcon,
+  PICKER_ICONS,
+  iconNameVon,
+  kategorieIconName,
+  setzeKategorieIcon,
+} from './kategorieIcon'
+import { VORDEFINIERTE_KATEGORIEN } from './kategorien'
 import { useApp } from './AppKontext'
 
 export function EintragSheet({
@@ -19,6 +26,7 @@ export function EintragSheet({
   const [art, setArt] = useState<'ausgabe' | 'einnahme'>('ausgabe')
   const [betrag, setBetrag] = useState('')
   const [kategorie, setKategorie] = useState('')
+  const [iconWahl, setIconWahl] = useState<string | null>(null)
   const [kategorien, setKategorien] = useState<KategorieInfo[]>([])
   const [konten, setKonten] = useState<Konto[]>([])
   const [konto, setKonto] = useState<string | null>(null)
@@ -40,6 +48,7 @@ export function EintragSheet({
     setArt('ausgabe')
     setBetrag('')
     setKategorie('')
+    setIconWahl(null)
     setDatum(heuteIso())
     setGemeinsam(false)
     setPerson(aktivePerson)
@@ -50,6 +59,10 @@ export function EintragSheet({
 
   const zustaendigePerson = gemeinsam ? zahler : person
   const eigeneKonten = konten.filter((k) => k.person === zustaendigePerson)
+  const vorhandeneKategorien = new Set(kategorien.map((k) => k.name.toLowerCase()))
+  const vorschlaege = VORDEFINIERTE_KATEGORIEN.filter(
+    (v) => !vorhandeneKategorien.has(v.name.toLowerCase()),
+  )
 
   const betragWert = betragAusEingabe(betrag)
   const splitInfo = kategorien.find((k) => k.name === kategorie)?.split
@@ -78,6 +91,9 @@ export function EintragSheet({
     if (!kategorie.trim()) {
       setFehler('Bitte eine Kategorie wählen oder eingeben.')
       return
+    }
+    if (iconWahl) {
+      setzeKategorieIcon(kategorie.trim(), iconWahl)
     }
     const body: EintragNeu = {
       datum,
@@ -122,7 +138,7 @@ export function EintragSheet({
           />
           <motion.form
             onSubmit={absenden}
-            className="relative mx-auto w-full max-w-[560px] rounded-t-3xl border-t border-strich bg-karte px-5 pb-5 pt-4"
+            className="relative mx-auto max-h-[calc(100dvh-16px)] w-full max-w-[560px] overflow-y-auto overscroll-contain rounded-t-3xl border-t border-strich bg-karte px-5 pb-5 pt-4"
             initial={{ transform: 'translateY(100%)' }}
             animate={{ transform: 'translateY(0%)' }}
             exit={{ transform: 'translateY(100%)' }}
@@ -197,8 +213,72 @@ export function EintragSheet({
               value={kategorie}
               onChange={(e) => setKategorie(e.target.value)}
               placeholder="Neue Kategorie"
-              className="mb-2.5 w-full rounded-xl bg-karte2 px-4 py-2.5 outline-none ring-strich focus:ring-2"
+              className="mb-2 w-full rounded-xl bg-karte2 px-4 py-2.5 outline-none ring-strich focus:ring-2"
             />
+
+            <AnimatePresence initial={false}>
+              {kategorie.trim() !== '' ? (
+                <motion.div
+                  key="picker"
+                  className="mb-2.5"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={weiche}
+                >
+                  <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {PICKER_ICONS.map((Icon) => {
+                      const name = iconNameVon(Icon)
+                      const gewaehlt = name === (iconWahl ?? kategorieIconName(kategorie))
+                      return (
+                        <button
+                          type="button"
+                          key={name}
+                          aria-label={name}
+                          onClick={() => setIconWahl(iconWahl === name ? null : name)}
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            gewaehlt
+                              ? 'bg-akzentstark/20 text-akzent ring-2 ring-akzent'
+                              : 'bg-karte2 text-textschwach'
+                          }`}
+                        >
+                          <Icon size={17} weight={gewaehlt ? 'fill' : 'regular'} />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              ) : vorschlaege.length > 0 ? (
+                <motion.div
+                  key="vorschlaege"
+                  className="mb-2.5"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={weiche}
+                >
+                  <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                    Vorschläge
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {vorschlaege.map((v) => (
+                      <button
+                        type="button"
+                        key={v.name}
+                        onClick={() => {
+                          setKategorie(v.name)
+                          setIconWahl(iconNameVon(v.icon))
+                        }}
+                        className="flex min-h-8 items-center gap-1.5 rounded-full bg-karte2 px-3 text-xs text-textschwach transition-colors"
+                      >
+                        <v.icon size={14} className="shrink-0" />
+                        {v.name}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
             <input
               type="date"

@@ -35,6 +35,7 @@ Hinweis: Die Adapter (FinTS via hbci4java, PSD2 via GoCardless) füllen den Impo
 | QF1 | Umbuchungs-Erkennung (PayPal-Lastschrift von der Bank = keine Ausgabe): eigene Regel, sobald zwei Quellen gleichzeitig laufen — jetzt erst Backlog |
 | QF2 | Import-Einträge ohne gelernte Kategorie: Kategorie „Import" als Ablage, ja? (Vorschlag) |
 | QF3 | Nachträgliche Bearbeitung: Einträge umbenennen/kategorisieren/löschen — eigener Slice |
+| QF5 | Import-Inbox: unbekannte Umsätze (z. B. „Amazon 42,99 €") fragen den Nutzer „wo gehört das hin?"; Antwort wird Lernregel (Nutzer-Idee 12.11.2026). Bau, sobald echter Import läuft |
 
 ## Daraus entstanden
 
