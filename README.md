@@ -4,7 +4,7 @@ Finanzen für zwei. LuneFi ist eine private App für ein Paar. Jeder sieht sein 
 
 ## So sieht die App aus
 
-**1. Anmelden.** Nur ihr beide kommt rein.
+**1. Anmelden.** Mit Google, ein Tipp genügt. Nur ihr beide kommt rein.
 
 ![Anmelden](docs/screenshots/01-anmelden.png)
 
