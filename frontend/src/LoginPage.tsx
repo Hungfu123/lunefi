@@ -118,7 +118,9 @@ export function LoginPage({ startName, onSuccess }: { startName?: string; onSucc
       </div>
       {GOOGLE_CLIENT_ID && !showForm ? (
         <div className="flex w-full max-w-xs flex-col items-center gap-5">
-          <div ref={googleButton} className="flex justify-center" />
+          <div className="rounded-[28px] bg-karte2 p-1">
+            <div ref={googleButton} />
+          </div>
           {error && <p className="text-sm text-schlecht">{error}</p>}
           <button
             type="button"

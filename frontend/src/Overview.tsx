@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react'
 import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Sparkle, Target, Wallet, X } from '@phosphor-icons/react'
@@ -202,6 +203,9 @@ export function Overview({
   const [error, setError] = useState(false)
   const [categoriesExpanded, setCategoriesExpanded] = useState(false)
   const [entriesExpanded, setEntriesExpanded] = useState(false)
+  const [welcomeDismissed, setWelcomeDismissed] = useState(
+    () => localStorage.getItem('lunefi:konto-hinweis-weg') === '1',
+  )
   const [promptHidden, setPromptHidden] = useState(() => localStorage.getItem(`lunefi:einkauf:${todayIso()}`) === '1')
   const [categoryDetail, setCategoryDetail] = useState<string | null>(null)
   const [sharedLocal, setSharedLocal] = useState(false)
@@ -311,6 +315,12 @@ export function Overview({
     a.datum === b.datum ? b.id - a.id : a.datum < b.datum ? 1 : -1,
   )
   const isCurrentMonth = monat === monthAsString(new Date())
+  const showWelcome =
+    !loading && !error && data !== null && !together && accounts.length === 0 && !welcomeDismissed
+  const dismissWelcome = () => {
+    setWelcomeDismissed(true)
+    localStorage.setItem('lunefi:konto-hinweis-weg', '1')
+  }
   const today = todayIso()
   const hidePrompt = () => {
     setPromptHidden(true)
@@ -750,6 +760,56 @@ export function Overview({
         }
         close={() => setCategoryDetail(null)}
       />
+
+      {createPortal(
+        <AnimatePresence>
+          {showWelcome && (
+            <div className="fixed inset-0 z-30 flex flex-col justify-end">
+              <motion.button
+                aria-label="Schließen"
+                className="absolute inset-0 bg-black/60"
+                onClick={dismissWelcome}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+              />
+              <motion.div
+                className="relative mx-auto w-full max-w-[560px] rounded-t-3xl border-t border-strich bg-karte px-5 pb-6 pt-5 text-center"
+                initial={{ transform: 'translateY(100%)' }}
+                animate={{ transform: 'translateY(0%)' }}
+                exit={{ transform: 'translateY(100%)' }}
+                transition={reduced ? { duration: 0 } : { type: 'spring', duration: 0.5, bounce: 0.2 }}
+              >
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-akzentstark/15 text-akzent">
+                  <Wallet size={24} weight="fill" aria-hidden="true" />
+                </div>
+                <h3 className="mb-1 text-lg font-semibold">Willkommen bei LuneFi</h3>
+                <p className="mb-4 text-sm leading-snug text-textschwach">
+                  Verbinde dein Konto, damit Saldo und Einträge zusammenkommen. Geht auch später.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={dismissWelcome}
+                    className="min-h-11 flex-1 rounded-xl bg-karte2 py-3 text-sm font-medium text-textschwach"
+                  >
+                    Später
+                  </button>
+                  <Link
+                    to="/einstellungen"
+                    onClick={dismissWelcome}
+                    className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-akzentstark py-3 text-sm font-semibold text-akzenttext"
+                  >
+                    Konto anlegen
+                  </Link>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   )
 }
