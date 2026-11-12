@@ -14,9 +14,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import io.cucumber.spring.CucumberContextConfiguration;
 
+import finance.GoogleIdentity;
+import finance.GoogleTokenException;
+import finance.GoogleTokenVerifier;
+
 @Testcontainers
 @CucumberContextConfiguration
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "lunefi.google.zuordnung=alex@gmail.com=Alex,kim@googlemail.com=Kim")
 @AutoConfigureTestRestTemplate
 public class CucumberSpringConfiguration {
 
@@ -53,6 +58,23 @@ public class CucumberSpringConfiguration {
         @Bean
         TestRestTemplate unauthenticatedRest(Sessions sessions) {
             return sessions.template();
+        }
+
+        @Bean
+        @Primary
+        GoogleTokenVerifier fakeGoogleVerifier() {
+            return credential -> {
+                if (credential == null) {
+                    throw new GoogleTokenException("leer");
+                }
+                if (credential.startsWith("google-offen:")) {
+                    return new GoogleIdentity(credential.substring("google-offen:".length()), false);
+                }
+                if (credential.startsWith("google:")) {
+                    return new GoogleIdentity(credential.substring("google:".length()), true);
+                }
+                throw new GoogleTokenException("ungültiges Token");
+            };
         }
     }
 }

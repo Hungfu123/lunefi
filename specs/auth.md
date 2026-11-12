@@ -20,6 +20,7 @@ damit niemand fremde persönliche Finanzdaten einsehen oder ändern kann
 | AU6 | Die Ersteinrichtung (Personen anlegen ohne Login) bleibt offen, solange NOCH KEIN App-Nutzer existiert; sobald ein App-Nutzer existiert, ist sie für Unangemeldete geschlossen (die App ist eingerichtet) |
 | AU7 | Bestehende Personen OHNE App-Nutzer können ihre Passwörter nachrüsten: ungemeldete Übergabe von Name → Passwort je Person. Nur erlaubt, solange NOCH KEIN App-Nutzer existiert (Schloss-Semantik wie AU6) — existiert bereits einer, wird die Nachrüstung abgewiesen. Existiert eine übergebene Person nicht oder ist ein Passwort unter 6 Zeichen, wird die Nachrüstung komplett abgewiesen (nichts wird angelegt). Die Passwörter werden bcrypt-gehasht als App-User angelegt (Vorschlag 11.11.2026 für die Demo-DB mit bereits angelegten Personen) |
 | AU8 | Der Server teilt dem Angemeldeten mit, wer er ist (Identitäts-Auskunft): der Name des angemeldeten Nutzers; ungemeldet wird abgewiesen. Das Frontend leitet die Person davon ab und ersetzt damit die bisherige lokale Personen-Auswahl — der Angemeldete IST die Person |
+| AU9 | Anmeldung geht auch mit Google: das Frontend zeigt den Google-Button nur, wenn eine Client-ID konfiguriert ist. Der Server prüft das Google-ID-Token (Signatur gegen Googles Schlüssel, Aussteller, Zuhörer = Client-ID) und lässt NUR die zwei hinterlegten Mail-Adressen rein (Zuordnung Mail → Name, gmail-Schreibweisen normalisiert: googlemail.com gilt wie gmail.com, Punkte im Namen zählen nicht). Fremde oder nicht verifizierte Mail → freundliche Absage, KEINE Anmeldung; ungültiges Token → Abweisung. Die Zuordnung liegt in der Umgebung (`LUNEFI_GOOGLE_ZUORDNUNG`), nie im Repo. Passwort-Login bleibt parallel bestehen |
 
 Technische Entscheidungen (dokumentiert, kein fachlicher Inhalt):
 
@@ -61,6 +62,11 @@ Konkrete Werte, keine Prosa. Jede Regel braucht mindestens eins.
 | AU7 | die Person Alex ohne App-Nutzer existiert | jemand ohne Anmeldung das Passwort „kurz" für Alex übergibt | wird die Nachrüstung wegen ungültiger Angaben abgewiesen |
 | AU8 | Kim angemeldet ist | Kim abfragt, wer angemeldet ist | lautet der gemeldete Name „Kim" |
 | AU8 | — | jemand ohne Anmeldung abfragt, wer angemeldet ist | wird die Abfrage wegen fehlender Anmeldung abgewiesen |
+| AU9 | die App eingerichtet ist und die Google-Zuordnung „alex@gmail.com=Alex,kim@googlemail.com=Kim" hinterlegt ist | sich jemand mit dem Google-Token von „alex@gmail.com" anmeldet | ist die Anmeldung erfolgreich und der gemeldete Name lautet „Alex" |
+| AU9 | die Google-Zuordnung „alex@gmail.com=Alex" hinterlegt ist | meldet sich „a.l.e.x@googlemail.com" mit einem gültigen Google-Token an (gleiche Gmail-Schreibweise) | ist die Anmeldung erfolgreich (Normalisierung) |
+| AU9 | die App eingerichtet ist | meldet sich eine nicht hinterlegte Mail-Adresse mit gültigem Google-Token an | wird die Anmeldung freundlich abgewiesen und es entsteht KEINE Sitzung |
+| AU9 | die App eingerichtet ist | meldet sich eine hinterlegte Mail-Adresse an, die Google als nicht verifiziert markiert | wird die Anmeldung abgewiesen |
+| AU9 | die App eingerichtet ist | meldet sich jemand mit einem ungültigen/unauslesbaren Token an | wird die Anmeldung abgewiesen |
 
 Hinweise zu Werten (Vorschlags-Markierung):
 

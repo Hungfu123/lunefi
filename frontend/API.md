@@ -5,6 +5,7 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
 ## Login & Autorisierung (`specs/auth.md`, Regeln AU1–AU6)
 
 - **Anmeldung:** `POST /api/login` mit `Content-Type: application/x-www-form-urlencoded`, Body `username=<Name>&password=<Passwort>` → `200` + Session-Cookie (`JSESSIONID`). Falsche Zugangsdaten → `401`.
+- **Google-Anmeldung (AU9):** `POST /api/auth/google` mit JSON `{"credential": "<Google-ID-Token>"}` (CSRF-Token nötig). Der Server prüft Signatur (JWKS), Aussteller und Zuhörer (Client-ID) und lässt nur die in `LUNEFI_GOOGLE_ZUORDNUNG` hinterlegten Mail-Adressen rein (gmail-Schreibweisen normalisiert) → `200` + `{"name": "<App-Name>"}` + Session-Cookie. Fremde/nicht verifizierte Mail → `403`, ungültiges Token → `401`. Ohne konfigurierte Client-ID → `401`.
 - **Abmeldung:** `POST /api/logout` (CSRF-Token nötig) → `200`, Session ist danach ungültig.
 - **Ungemeldet:** jeder API-Aufruf (außer `POST /api/login` und die offene Ersteinrichtung, s. u.) → `401` (kein Redirect).
 - **CSRF:** `XSRF-TOKEN`-Cookie (nicht HttpOnly) wird mit jeder Antwort gesetzt/erneuert. Das Frontend liest den Cookie-Wert und schickt ihn bei allen mutating Requests (POST/PUT/DELETE) als Header `X-XSRF-TOKEN` mit — fehlt/ist ungültig → `403`. Wichtig: nach dem Login löscht der Server das alte Token-Cookie; das Frontend sollte nach Login/Logout das Token einmal per GET neu holen.
