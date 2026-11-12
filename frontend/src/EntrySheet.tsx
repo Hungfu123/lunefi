@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { createPortal } from 'react-dom'
 import { ApiError, read, remove, write, type Entry, type NewEntry, type CategoryInfo, type Account } from './types'
@@ -46,6 +46,8 @@ export function EntrySheet({
   const [focusedPart, setFocusedPart] = useState(0)
   const [restCategory, setRestCategory] = useState('')
   const [restShared, setRestShared] = useState(false)
+  const [openPicker, setOpenPicker] = useState<number | null>(null)
+  const [invalidPart, setInvalidPart] = useState<number | null>(null)
 
   function prefill(full: Entry | null) {
     if (full) {
@@ -172,6 +174,20 @@ export function EntrySheet({
       ? Math.floor(sharedPartsSum * debtorShare * 100) / 100
       : null
 
+  useEffect(() => {
+    setInvalidPart(null)
+  }, [parts, amount])
+
+  useEffect(() => {
+    if (!split) return
+    if (focusedPart === -1 && !(restValue !== null && restValue > 0)) {
+      setFocusedPart(0)
+    }
+    if (focusedPart >= parts.length && parts.length > 0) {
+      setFocusedPart(parts.length - 1)
+    }
+  }, [split, focusedPart, parts.length, restValue])
+
   const setPartCategory = (index: number, name: string) => {
     setParts((current) =>
       current.map((p, i) => (i === index ? { ...p, kategorie: name } : p)),
@@ -187,6 +203,20 @@ export function EntrySheet({
       }
     }
     setCategory(name)
+  }
+
+  const pickCategoryChip = (name: string) => {
+    pickCategory(name)
+    if (split) {
+      setOpenPicker(null)
+    }
+  }
+
+  const togglePicker = (index: number, currentCategory: string) => {
+    setFocusedPart(index)
+    setCategory(currentCategory)
+    setIconChoice(null)
+    setOpenPicker(openPicker === index ? null : index)
   }
 
   const submit = async (e: FormEvent) => {
@@ -213,38 +243,48 @@ export function EntrySheet({
         setError('Die Teile übersteigen den Betrag.')
         return
       }
-      const explicit = partValues.map((p) => ({
-        betrag: p.value ?? 0,
-        kategorie: p.kategorie.trim(),
-        gemeinsam: p.gemeinsam,
-      }))
       const rows = [
-        ...explicit,
+        ...partValues.map((p, i) => ({
+          betrag: p.value ?? 0,
+          kategorie: p.kategorie.trim(),
+          gemeinsam: p.gemeinsam,
+          index: i,
+        })),
         ...(restValue > 0
-          ? [{ betrag: restValue, kategorie: restCategory.trim(), gemeinsam: restShared }]
+          ? [{ betrag: restValue, kategorie: restCategory.trim(), gemeinsam: restShared, index: parts.length }]
           : []),
       ]
-      if (rows.some((r) => r.betrag <= 0 || r.kategorie === '')) {
-        setError('Jeder Teil braucht einen Betrag und eine Kategorie.')
+      const invalid = rows.find((r) => r.betrag <= 0 || r.kategorie === '')
+      if (invalid) {
+        setInvalidPart(invalid.index)
+        const name = invalid.index === parts.length ? 'Rest' : `Teil ${invalid.index + 1}`
+        const reason =
+          invalid.betrag <= 0 && invalid.kategorie === ''
+            ? 'Betrag und Kategorie fehlen'
+            : invalid.betrag <= 0
+              ? 'Betrag fehlt'
+              : 'Kategorie fehlt'
+        setError(`${name}: ${reason}.`)
         return
       }
-      if (rows.length === 1) {
-        body.kategorie = rows[0].kategorie
-        if (rows[0].gemeinsam) {
+      const payload = rows.map(({ index: _index, ...rest }) => rest)
+      if (payload.length === 1) {
+        body.kategorie = payload[0].kategorie
+        if (payload[0].gemeinsam) {
           body.gemeinsam = true
           body.zahler = payer ?? undefined
         } else {
           body.person = activePerson ?? undefined
         }
       } else {
-        body.teile = rows.map((r) => ({
+        body.teile = payload.map((r) => ({
           betrag: art === 'ausgabe' ? -r.betrag : r.betrag,
           kategorie: r.kategorie,
           person: r.gemeinsam ? null : (activePerson ?? null),
           gemeinsam: r.gemeinsam,
         }))
-        body.kategorie = rows[0].kategorie
-        if (rows.some((r) => r.gemeinsam)) {
+        body.kategorie = payload[0].kategorie
+        if (payload.some((r) => r.gemeinsam)) {
           body.zahler = payer ?? undefined
         }
       }
@@ -289,6 +329,122 @@ export function EntrySheet({
       setBusy(false)
     }
   }
+
+  const renderCategoryEditor = () => (
+    <>
+      {categories.length > 0 && (
+        <div className="mb-1.5 flex flex-wrap gap-2">
+          {categories.map((k) => (
+            <button
+              type="button"
+              key={k.name}
+              onClick={() => pickCategoryChip(k.name)}
+              className={`flex min-h-11 items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm transition-colors ${
+                category === k.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
+              }`}
+            >
+              <CategoryIconTile
+                name={k.name}
+                groesse={24}
+                iconGroesse={14}
+                iconKlasse={category === k.name ? 'text-akzenttext' : undefined}
+              />
+              {k.name}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="relative mb-1">
+        <input
+          value={category}
+          onChange={(e) => {
+            pickCategory(e.target.value)
+            setIconChoice(null)
+          }}
+          placeholder="Neue Kategorie"
+          className="w-full rounded-xl bg-karte2 px-4 py-2.5 pr-11 outline-none ring-strich focus:ring-2"
+        />
+        {ActiveIcon && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-text"
+          >
+            <ActiveIcon size={17} />
+          </span>
+        )}
+      </div>
+      {ActiveIcon && activeIconName !== null && (
+        <p className="mb-2 flex items-center gap-1.5 text-xs text-textschwach">
+          Gewähltes Icon:
+          <ActiveIcon size={13} className="shrink-0 text-akzent" aria-hidden="true" />
+          <span className="font-medium text-text">{activeIconName}</span>
+        </p>
+      )}
+      <AnimatePresence initial={false}>
+        {category.trim() !== '' ? (
+          <motion.div
+            key="picker"
+            className="mb-2.5"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={soft}
+          >
+            <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {PICKER_ICONS.map((Icon) => {
+                const name = iconNameFrom(Icon)
+                const selected = name === (iconChoice ?? categoryIconName(category))
+                return (
+                  <button
+                    type="button"
+                    key={name}
+                    aria-label={name}
+                    onClick={() => setIconChoice(iconChoice === name ? null : name)}
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+                      selected
+                        ? 'bg-akzentstark/20 text-akzent ring-2 ring-akzent'
+                        : 'bg-karte2 text-textschwach'
+                    }`}
+                  >
+                    <Icon size={17} weight={selected ? 'fill' : 'regular'} />
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
+        ) : suggestions.length > 0 ? (
+          <motion.div
+            key="vorschlaege"
+            className="mb-2.5"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={soft}
+          >
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+              Vorschläge
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {suggestions.map((v) => (
+                <button
+                  type="button"
+                  key={v.name}
+                  onClick={() => {
+                    pickCategoryChip(v.name)
+                    setIconChoice(iconNameFrom(v.icon))
+                  }}
+                  className="flex min-h-8 items-center gap-1.5 rounded-full bg-karte2 px-3 text-xs text-textschwach transition-colors"
+                >
+                  <v.icon size={14} className="shrink-0" />
+                  {v.name}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </>
+  )
 
   const soft = reduced ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const }
 
@@ -370,8 +526,9 @@ export function EntrySheet({
                     const next = !split
                     setSplit(next)
                     if (next && parts.length === 0) {
-                      setParts([{ betrag: '', kategorie: category, gemeinsam: shared }])
+                      setParts([{ betrag: amount, kategorie: category, gemeinsam: shared }])
                       setFocusedPart(0)
+                      setOpenPicker(null)
                     }
                   }}
                   className={`relative h-7 w-12 shrink-0 rounded-full transition-colors before:absolute before:-inset-3 before:content-[''] ${
@@ -390,12 +547,14 @@ export function EntrySheet({
             {split && (
               <div className="mb-2.5 space-y-1.5">
                 {partValues.map((p, i) => (
+                  <Fragment key={i}>
                   <div
-                    key={i}
                     className={`flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors ${
-                      focusedPart === i
-                        ? 'bg-akzentstark/15 ring-1 ring-akzent/40'
-                        : 'bg-karte2'
+                      invalidPart === i
+                        ? 'bg-schlecht/10 ring-1 ring-schlecht/60'
+                        : focusedPart === i && openPicker === null
+                          ? 'bg-akzentstark/15 ring-1 ring-akzent/40'
+                          : 'bg-karte2'
                     }`}
                   >
                     <input
@@ -414,11 +573,7 @@ export function EntrySheet({
                     <button
                       type="button"
                       aria-label={`Kategorie Teil ${i + 1}`}
-                      onClick={() => {
-                        setFocusedPart(i)
-                        setCategory(p.kategorie)
-                        setIconChoice(null)
-                      }}
+                      onClick={() => togglePicker(i, p.kategorie)}
                       className="flex min-h-8 flex-1 items-center gap-1.5 truncate text-left text-sm"
                     >
                       {p.kategorie ? (
@@ -451,6 +606,7 @@ export function EntrySheet({
                         onClick={() => {
                           setParts(parts.filter((_, j) => j !== i))
                           setFocusedPart(0)
+                          setOpenPicker(null)
                         }}
                         className="shrink-0 px-1 text-lg leading-none text-textschwach"
                       >
@@ -458,13 +614,21 @@ export function EntrySheet({
                       </button>
                     )}
                   </div>
+                  {openPicker === i && (
+                    <div className="mb-1.5">
+                      {renderCategoryEditor()}
+                    </div>
+                  )}
+                  </Fragment>
                 ))}
                 {restValue !== null && restValue > 0 && (
                   <div
                     className={`flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors ${
-                      focusedPart === -1
-                        ? 'bg-akzentstark/15 ring-1 ring-akzent/40'
-                        : 'bg-karte2'
+                      invalidPart === parts.length
+                        ? 'bg-schlecht/10 ring-1 ring-schlecht/60'
+                        : focusedPart === -1
+                          ? 'bg-akzentstark/15 ring-1 ring-akzent/40'
+                          : 'bg-karte2'
                     }`}
                   >
                     <span
@@ -479,11 +643,7 @@ export function EntrySheet({
                     <button
                       type="button"
                       aria-label="Kategorie Rest"
-                      onClick={() => {
-                        setFocusedPart(-1)
-                        setCategory(restCategory)
-                        setIconChoice(null)
-                      }}
+                      onClick={() => togglePicker(-1, restCategory)}
                       className="flex min-h-8 flex-1 items-center gap-1.5 truncate text-left text-sm"
                     >
                       {restCategory ? (
@@ -509,11 +669,17 @@ export function EntrySheet({
                     </button>
                   </div>
                 )}
+                {openPicker === -1 && (
+                  <div className="mb-1.5">
+                    {renderCategoryEditor()}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => {
                     setParts([...parts, { betrag: '', kategorie: '', gemeinsam: false }])
                     setFocusedPart(parts.length)
+                    setOpenPicker(null)
                   }}
                   className="w-full rounded-xl bg-karte2 py-2 text-sm font-medium text-textschwach transition-colors"
                 >
@@ -522,125 +688,12 @@ export function EntrySheet({
               </div>
             )}
 
-            <label className="mb-1 block text-xs text-textschwach">
-              {split
-                ? focusedPart === -1
-                  ? 'Kategorie (Rest)'
-                  : `Kategorie (Teil ${focusedPart + 1})`
-                : 'Kategorie'}
-            </label>
-            {categories.length > 0 && (
-              <div className="mb-1.5 flex flex-wrap gap-2">
-                {categories.map((k) => (
-                  <button
-                    type="button"
-                    key={k.name}
-                    onClick={() => pickCategory(k.name)}
-                    className={`flex min-h-11 items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm transition-colors ${
-                      category === k.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
-                    }`}
-                  >
-                    <CategoryIconTile
-                      name={k.name}
-                      groesse={24}
-                      iconGroesse={14}
-                      iconKlasse={category === k.name ? 'text-akzenttext' : undefined}
-                    />
-                    {k.name}
-                  </button>
-                ))}
-              </div>
+            {!split && (
+              <>
+                <label className="mb-1 block text-xs text-textschwach">Kategorie</label>
+                {renderCategoryEditor()}
+              </>
             )}
-            <div className="relative mb-1">
-              <input
-                value={category}
-                onChange={(e) => {
-                  pickCategory(e.target.value)
-                  setIconChoice(null)
-                }}
-                placeholder="Neue Kategorie"
-                className="w-full rounded-xl bg-karte2 px-4 py-2.5 pr-11 outline-none ring-strich focus:ring-2"
-              />
-              {ActiveIcon && (
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-text"
-                >
-                  <ActiveIcon size={17} />
-                </span>
-              )}
-            </div>
-            {ActiveIcon && activeIconName !== null && (
-              <p className="mb-2 flex items-center gap-1.5 text-xs text-textschwach">
-                Gewähltes Icon:
-                <ActiveIcon size={13} className="shrink-0 text-akzent" aria-hidden="true" />
-                <span className="font-medium text-text">{activeIconName}</span>
-              </p>
-            )}
-
-            <AnimatePresence initial={false}>
-              {category.trim() !== '' ? (
-                <motion.div
-                  key="picker"
-                  className="mb-2.5"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={soft}
-                >
-                  <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {PICKER_ICONS.map((Icon) => {
-                      const name = iconNameFrom(Icon)
-                      const selected = name === (iconChoice ?? categoryIconName(category))
-                      return (
-                        <button
-                          type="button"
-                          key={name}
-                          aria-label={name}
-                          onClick={() => setIconChoice(iconChoice === name ? null : name)}
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
-                            selected
-                              ? 'bg-akzentstark/20 text-akzent ring-2 ring-akzent'
-                              : 'bg-karte2 text-textschwach'
-                          }`}
-                        >
-                          <Icon size={17} weight={selected ? 'fill' : 'regular'} />
-                        </button>
-                      )
-                    })}
-                  </div>
-                </motion.div>
-              ) : suggestions.length > 0 ? (
-                <motion.div
-                  key="vorschlaege"
-                  className="mb-2.5"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={soft}
-                >
-                  <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
-                    Vorschläge
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {suggestions.map((v) => (
-                      <button
-                        type="button"
-                        key={v.name}
-                        onClick={() => {
-                          pickCategory(v.name)
-                          setIconChoice(iconNameFrom(v.icon))
-                        }}
-                        className="flex min-h-8 items-center gap-1.5 rounded-full bg-karte2 px-3 text-xs text-textschwach transition-colors"
-                      >
-                        <v.icon size={14} className="shrink-0" />
-                        {v.name}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
 
             <input
               type="date"
