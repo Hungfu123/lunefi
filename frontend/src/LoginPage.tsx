@@ -82,6 +82,9 @@ function GoogleSignIn({
 
   return (
     <div className="relative mx-auto h-11 w-[268px] max-w-full">
+      <div className="absolute inset-0 overflow-hidden rounded-full">
+        <div ref={host} className="h-full w-full" />
+      </div>
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 rounded-full border border-strich bg-karte2 text-sm font-medium">
         <svg viewBox="0 0 48 48" className="h-[18px] w-[18px]" aria-hidden="true">
           <path
@@ -103,10 +106,6 @@ function GoogleSignIn({
         </svg>
         Über Google anmelden
       </div>
-      <div
-        ref={host}
-        className="absolute inset-0 cursor-pointer overflow-hidden rounded-full opacity-0"
-      />
     </div>
   )
 }
