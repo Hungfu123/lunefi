@@ -25,15 +25,12 @@ export function LoginPage({ startName, onSuccess }: { startName?: string; onSucc
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [showForm, setShowForm] = useState(!GOOGLE_CLIENT_ID)
   const googleButton = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !googleButton.current) return
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    document.head.appendChild(script)
-    script.onload = () => {
+    const render = () => {
       if (!window.google || !googleButton.current) return
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
@@ -68,10 +65,19 @@ export function LoginPage({ startName, onSuccess }: { startName?: string; onSucc
         width: 248,
       })
     }
+    if (window.google) {
+      render()
+      return
+    }
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.onload = render
+    document.head.appendChild(script)
     return () => {
       script.remove()
     }
-  }, [onSuccess])
+  }, [showForm, onSuccess])
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -110,53 +116,67 @@ export function LoginPage({ startName, onSuccess }: { startName?: string; onSucc
         </span>
         <h1 className="text-2xl font-semibold">LuneFi</h1>
       </div>
-      <form onSubmit={submit} className="flex w-full max-w-xs flex-col gap-4">
-        <div>
-          <label htmlFor="login-name" className="mb-1 block text-xs text-textschwach">
-            Name
-          </label>
-          <input
-            id="login-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus={!startName}
-            autoComplete="username"
-            className="w-full rounded-xl bg-karte px-4 py-3 outline-none ring-strich focus:ring-2"
-          />
+      {GOOGLE_CLIENT_ID && !showForm ? (
+        <div className="flex w-full max-w-xs flex-col items-center gap-5">
+          <div ref={googleButton} className="flex justify-center" />
+          {error && <p className="text-sm text-schlecht">{error}</p>}
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="text-xs text-textschwach underline underline-offset-2"
+          >
+            Lieber mit Passwort anmelden
+          </button>
         </div>
-        <div>
-          <label htmlFor="login-passwort" className="mb-1 block text-xs text-textschwach">
-            Passwort
-          </label>
-          <input
-            id="login-passwort"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoFocus={!!startName}
-            autoComplete="current-password"
-            className="w-full rounded-xl bg-karte px-4 py-3 outline-none ring-strich focus:ring-2"
-          />
-        </div>
-        {error && <p className="text-sm text-schlecht">{error}</p>}
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
-        >
-          Anmelden
-        </button>
-        {GOOGLE_CLIENT_ID && (
-          <>
-            <div className="flex items-center gap-3 text-xs text-textschwach" aria-hidden="true">
-              <span className="h-px flex-1 bg-strich" />
-              oder
-              <span className="h-px flex-1 bg-strich" />
-            </div>
-            <div ref={googleButton} className="flex justify-center" />
-          </>
-        )}
-      </form>
+      ) : (
+        <form onSubmit={submit} className="flex w-full max-w-xs flex-col gap-4">
+          <div>
+            <label htmlFor="login-name" className="mb-1 block text-xs text-textschwach">
+              Name
+            </label>
+            <input
+              id="login-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus={!startName}
+              autoComplete="username"
+              className="w-full rounded-xl bg-karte px-4 py-3 outline-none ring-strich focus:ring-2"
+            />
+          </div>
+          <div>
+            <label htmlFor="login-passwort" className="mb-1 block text-xs text-textschwach">
+              Passwort
+            </label>
+            <input
+              id="login-passwort"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoFocus={!!startName}
+              autoComplete="current-password"
+              className="w-full rounded-xl bg-karte px-4 py-3 outline-none ring-strich focus:ring-2"
+            />
+          </div>
+          {error && <p className="text-sm text-schlecht">{error}</p>}
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext transition-transform active:scale-[0.98] disabled:opacity-50"
+          >
+            Anmelden
+          </button>
+          {GOOGLE_CLIENT_ID && (
+            <>
+              <div className="flex items-center gap-3 text-xs text-textschwach" aria-hidden="true">
+                <span className="h-px flex-1 bg-strich" />
+                oder
+                <span className="h-px flex-1 bg-strich" />
+              </div>
+              <div ref={googleButton} className="flex justify-center" />
+            </>
+          )}
+        </form>
+      )}
     </div>
   )
 }
