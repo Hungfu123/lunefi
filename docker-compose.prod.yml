@@ -22,6 +22,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lunefi
       SPRING_DATASOURCE_USERNAME: lunefi
       SPRING_DATASOURCE_PASSWORD: ${LUNEFI_DB_PASSWORD}
+      LUNEFI_GOOGLE_CLIENT_ID: ${LUNEFI_GOOGLE_CLIENT_ID:-}
+      LUNEFI_GOOGLE_ZUORDNUNG: ${LUNEFI_GOOGLE_ZUORDNUNG:-}
     depends_on:
       - postgres
     networks:
@@ -29,7 +31,10 @@ services:
       - proxy
 
   web:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${LUNEFI_GOOGLE_CLIENT_ID:-}
     container_name: lunefi-web
     restart: unless-stopped
     depends_on:

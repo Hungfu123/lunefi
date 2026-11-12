@@ -1,12 +1,77 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { freshXsrfToken } from './types'
 import { Mond } from './Layout'
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string
+            callback: (response: { credential: string }) => void
+          }) => void
+          renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void
+        }
+      }
+    }
+  }
+}
 
 export function LoginPage({ startName, onSuccess }: { startName?: string; onSuccess: () => void }) {
   const [name, setName] = useState(startName ?? '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const googleButton = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !googleButton.current) return
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    document.head.appendChild(script)
+    script.onload = () => {
+      if (!window.google || !googleButton.current) return
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          try {
+            const token = await freshXsrfToken()
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+            if (token) headers['X-XSRF-TOKEN'] = token
+            const result = await fetch('/api/auth/google', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers,
+              body: JSON.stringify({ credential: response.credential }),
+            })
+            if (result.status === 403) {
+              setError('Diese App ist privat. Mit diesem Google-Konto gibt es keinen Zugang.')
+              return
+            }
+            if (!result.ok) throw new Error()
+            onSuccess()
+          } catch {
+            setError('Anmeldung mit Google klappt gerade nicht.')
+          }
+        },
+      })
+      window.google.accounts.id.renderButton(googleButton.current, {
+        theme: 'filled_blue',
+        size: 'large',
+        shape: 'pill',
+        text: 'signin_with',
+        locale: 'de',
+        width: 248,
+      })
+    }
+    return () => {
+      script.remove()
+    }
+  }, [onSuccess])
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -81,6 +146,16 @@ export function LoginPage({ startName, onSuccess }: { startName?: string; onSucc
         >
           Anmelden
         </button>
+        {GOOGLE_CLIENT_ID && (
+          <>
+            <div className="flex items-center gap-3 text-xs text-textschwach" aria-hidden="true">
+              <span className="h-px flex-1 bg-strich" />
+              oder
+              <span className="h-px flex-1 bg-strich" />
+            </div>
+            <div ref={googleButton} className="flex justify-center" />
+          </>
+        )}
       </form>
     </div>
   )
