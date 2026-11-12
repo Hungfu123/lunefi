@@ -1,6 +1,9 @@
+name: lunefi
+
 services:
   postgres:
     image: postgres:17-alpine
+    container_name: lunefi-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: lunefi
@@ -13,6 +16,7 @@ services:
 
   app:
     build: .
+    container_name: lunefi-app
     restart: unless-stopped
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lunefi
@@ -26,6 +30,7 @@ services:
 
   web:
     build: ./frontend
+    container_name: lunefi-web
     restart: unless-stopped
     depends_on:
       - app
