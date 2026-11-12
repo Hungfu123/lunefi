@@ -3,6 +3,7 @@ package finance;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -26,6 +27,7 @@ public class SourceController {
     private final LearningRuleRepository learningRuleRepository;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.uuuu", Locale.GERMANY);
+    private static final long MATCH_WINDOW_DAYS = 3;
 
     public SourceController(SourceRepository sourceRepository, AccountRepository accountRepository,
             EntryRepository entryRepository, LearningRuleRepository learningRuleRepository) {
@@ -73,14 +75,27 @@ public class SourceController {
 
         int created = 0;
         int skipped = 0;
+        int assigned = 0;
         for (TransactionDto transaction : request.umsaetze()) {
             if (entryRepository.existsByQuelleIdAndExterneKennung(id, transaction.externeKennung())) {
                 skipped++;
                 continue;
             }
+            LocalDate transactionDate = LocalDate.parse(transaction.datum(), DATE_FORMAT);
+            BigDecimal transactionAmount = amountFrom(transaction.betrag());
+            EntryEntity counterpart = uniqueCounterpart(id, transactionDate, transactionAmount);
+            if (counterpart != null) {
+                if (counterpart.getQuelleId() == null) {
+                    counterpart.setQuelleId(id);
+                    counterpart.setExterneKennung(transaction.externeKennung());
+                    entryRepository.save(counterpart);
+                }
+                assigned++;
+                continue;
+            }
             EntryEntity entry = new EntryEntity(
-                    LocalDate.parse(transaction.datum(), DATE_FORMAT),
-                    amountFrom(transaction.betrag()),
+                    transactionDate,
+                    transactionAmount,
                     categoryFor(transaction.verwendungszweck()),
                     account.getPerson(),
                     false,
@@ -92,7 +107,31 @@ public class SourceController {
             entryRepository.save(entry);
             created++;
         }
-        return ResponseEntity.ok(new ImportResult(created, skipped));
+        return ResponseEntity.ok(new ImportResult(created, skipped, assigned));
+    }
+
+    /**
+     * Sucht einen bestehenden Eintrag, der denselben realen Vorgang darstellt
+     * (andere Quelle oder manuell erfasst): gleicher Betrag inklusive Richtung,
+     * Datum innerhalb des Zeitfensters. Nur bei genau einem Treffer wird
+     * zugeordnet — bei keinem oder mehreren Treffern wird konservativ ein neuer
+     * Eintrag angelegt (die Inbox stellt dann die Rückfrage).
+     */
+    private EntryEntity uniqueCounterpart(Long sourceId, LocalDate transactionDate, BigDecimal transactionAmount) {
+        List<EntryEntity> candidates = new ArrayList<>();
+        for (EntryEntity entry : entryRepository.findAll()) {
+            if (sourceId.equals(entry.getQuelleId())) {
+                continue;
+            }
+            if (entry.getBetrag().compareTo(transactionAmount) != 0) {
+                continue;
+            }
+            if (Math.abs(ChronoUnit.DAYS.between(entry.getDatum(), transactionDate)) > MATCH_WINDOW_DAYS) {
+                continue;
+            }
+            candidates.add(entry);
+        }
+        return candidates.size() == 1 ? candidates.get(0) : null;
     }
 
     private String categoryFor(String verwendungszweck) {
@@ -124,6 +163,6 @@ public class SourceController {
     public record ImportRequest(List<TransactionDto> umsaetze) {
     }
 
-    public record ImportResult(int neu, int uebersprungen) {
+    public record ImportResult(int neu, int uebersprungen, int zugeordnet) {
     }
 }

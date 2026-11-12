@@ -130,6 +130,11 @@ public class SourcesSteps {
         assertEntries(2, person);
     }
 
+    @Dann("existieren genau drei Einträge im November 2026 von {string}")
+    public void exactlyThreeEntries(String person) {
+        assertEntries(3, person);
+    }
+
     @Dann("existiert genau ein Eintrag im November 2026 von {string}")
     public void exactlyOneEntry(String person) {
         assertEntries(1, person);
