@@ -482,6 +482,11 @@ export function EntrySheet({
             <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-strich" />
 
             {entry && <h3 className="mb-2.5 text-lg font-semibold">Eintrag bearbeiten</h3>}
+            {!entry && (
+              <p className="mb-2.5 text-[12px] leading-snug text-textschwach">
+                Selbst erfassen — für Bargeld und alles, was noch nicht auf dem Konto ist.
+              </p>
+            )}
 
             <div className="mb-2.5 flex gap-2">
               <div className="flex flex-1 gap-2 rounded-xl bg-karte2 p-1">

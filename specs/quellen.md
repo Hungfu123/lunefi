@@ -36,6 +36,7 @@ Hinweis: Die Adapter (FinTS via hbci4java, PSD2 via GoCardless) füllen den Impo
 | QF2 | Import-Einträge ohne gelernte Kategorie: Kategorie „Import" als Ablage, ja? (Vorschlag) |
 | QF3 | Nachträgliche Bearbeitung: Einträge umbenennen/kategorisieren/löschen — eigener Slice |
 | QF5 | Import-Inbox: unbekannte Umsätze (z. B. „Amazon 42,99 €") fragen den Nutzer „wo gehört das hin?"; Antwort wird Lernregel (Nutzer-Idee 12.11.2026). Bau, sobald echter Import läuft |
+| QF6 | **Manuell vor der Bank erfasst** („Plus"-Formular): Wird ein Umsatz manuell angelegt und liefert die Bank denselben Vorgang später (Buchung braucht Tage / war pending `PDNG`), darf er NICHT doppelt zählen. Abgleich beim Import: manuelle Einträge im Fenster ±3 Tage mit gleichem Betrag und gleicher Richtung suchen — eindeutiger Treffer → bestehenden Eintrag mit der Quelle verknüpfen (als „belegt" markieren), KEINEN neuen anlegen; kein oder mehrdeutiger Treffer → in der Inbox fragen („Passt diese Bankbuchung zu deinem Eintrag von Dienstag?"). Bargeld taucht nie in der Bank auf → bleibt unangetastet. *(Nutzer-Anforderung 12.11.2026; heute würde es noch doppelt zählen — offen bis Import-Adapter)* |
 
 ## Daraus entstanden
 
