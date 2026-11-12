@@ -45,6 +45,18 @@ public class StatisticsController {
         return statisticsService.categoryHistory(filtered, kategorie, capped);
     }
 
+    @GetMapping("/api/statistik/jahr")
+    public YearStatistics year(@RequestParam int jahr,
+            @RequestParam(required = false) String person,
+            @RequestParam(required = false) Boolean gemeinsam) {
+        checkView(person, gemeinsam);
+        if (jahr < 1900 || jahr > 3000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        List<LineItem> filtered = filteredItems(person, gemeinsam);
+        return statisticsService.yearOverview(filtered, jahr);
+    }
+
     @GetMapping("/api/statistik/sparpotenzial")
     public SavingsPotential savingsPotential(@RequestParam String monat,
             @RequestParam(required = false) String person,

@@ -23,8 +23,33 @@ public class StatisticsService {
         this.clock = clock;
     }
 
-    public CategoryStatistics categoryHistory(List<LineItem> entries, String category, int monate) {
-        YearMonth currentMonth = YearMonth.now(clock);
+    public YearStatistics yearOverview(List<LineItem> entries, int jahr) {
+        List<HistoryMonth> months = new ArrayList<>();
+        Map<String, BigDecimal> expenses = new LinkedHashMap<>();
+        Map<String, BigDecimal> income = new LinkedHashMap<>();
+        for (int month = 1; month <= 12; month++) {
+            YearMonth period = YearMonth.of(jahr, month);
+            BigDecimal monthIncome = BigDecimal.ZERO;
+            BigDecimal monthExpense = BigDecimal.ZERO;
+            for (LineItem item : entries) {
+                if (!YearMonth.from(item.date()).equals(period)) {
+                    continue;
+                }
+                if (item.amount().signum() > 0) {
+                    monthIncome = monthIncome.add(item.amount());
+                    income.merge(item.category(), item.amount(), BigDecimal::add);
+                } else {
+                    monthExpense = monthExpense.add(item.amount().abs());
+                    expenses.merge(item.category(), item.amount().abs(), BigDecimal::add);
+                }
+            }
+            months.add(new HistoryMonth(period.toString(), monthIncome, monthExpense,
+                    monthIncome.subtract(monthExpense)));
+        }
+        return new YearStatistics(jahr, months, expenses, income);
+    }
+
+    public CategoryStatistics categoryHistory(List<LineItem> entries, String category, int monate) {        YearMonth currentMonth = YearMonth.now(clock);
 
         List<StatisticsMonth> trend = new ArrayList<>();
         List<BigDecimal> values = new ArrayList<>();

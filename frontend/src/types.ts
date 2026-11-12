@@ -37,6 +37,13 @@ export interface HistoryMonth {
   differenz: number
 }
 
+export interface YearStatistics {
+  jahr: number
+  monate: HistoryMonth[]
+  ausgabenJeKategorie: Record<string, number>
+  einnahmenJeKategorie: Record<string, number>
+}
+
 export interface BudgetInfo {
   limit: number
   ist: number

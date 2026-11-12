@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Lightbulb } from '@phosphor-icons/react'
-import { read, type MonthlyOverview } from './types'
-import { euro, monthAsString, monthLabel } from './format'
+import { read, type MonthlyOverview, type YearStatistics } from './types'
+import { amountCompact, euro, monthAsString, monthLabel, shortMonth } from './format'
 import { CategoryIconTile } from './categoryIcon'
 import { CategorySheet } from './CategorySheet'
 import { entriesForCategory } from './categoryEntries'
@@ -140,11 +140,147 @@ function Donut({
   )
 }
 
+function YearView({ year }: { year: YearStatistics | null }) {
+  const currentMonth = monthAsString(new Date())
+  if (year === null) {
+    return (
+      <div className="space-y-3">
+        <div className="h-20 animate-pulse rounded-2xl bg-karte" />
+        <div className="h-44 animate-pulse rounded-2xl bg-karte" />
+      </div>
+    )
+  }
+  const income = year.monate.reduce((sum, m) => sum + m.einnahmen, 0)
+  const expense = year.monate.reduce((sum, m) => sum + m.ausgaben, 0)
+  const rest = income - expense
+  const scale = Math.max(income, expense, 1)
+  const categories = Object.entries(year.ausgabenJeKategorie).sort((a, b) => b[1] - a[1])
+  const catMax = categories.reduce((max, [, value]) => Math.max(max, value), 1)
+  const incomeCategories = Object.entries(year.einnahmenJeKategorie).sort((a, b) => b[1] - a[1])
+  const activeMonths = year.monate.filter((m) => m.einnahmen > 0 || m.ausgaben > 0).length
+  const avgExpense = activeMonths > 0 ? expense / activeMonths : 0
+  const best = [...year.monate].sort((a, b) => b.differenz - a.differenz)[0]
+
+  return (
+    <>
+      <div className="mb-2 rounded-2xl bg-karte p-3">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">Einnahmen</p>
+            <p className="betragszahl text-[16px] font-semibold text-gut">{amountCompact(income)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">Ausgaben</p>
+            <p className="betragszahl text-[16px] font-semibold text-schlecht">{amountCompact(expense)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">Übrig</p>
+            <p
+              className={`betragszahl text-[16px] font-semibold ${
+                rest >= 0 ? 'text-gut' : 'text-schlecht'
+              }`}
+            >
+              {amountCompact(rest)}
+            </p>
+          </div>
+        </div>
+        {activeMonths > 0 && (
+          <p className="mt-2 text-center text-[11px] text-textschwach">
+            Ø {euro(avgExpense)} Ausgaben pro Monat · stärkster Monat: {monthLabel(best.monat)}
+          </p>
+        )}
+      </div>
+
+      <div className="mb-2 rounded-2xl bg-karte px-2.5 pb-1.5 pt-3">
+        <p className="mb-2 px-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+          Alle Monate
+        </p>
+        <div className="flex items-stretch justify-between gap-0.5">
+          {year.monate.map((m) => {
+            const current = m.monat === currentMonth
+            const incomeHeight = m.einnahmen > 0 ? Math.max(2, (m.einnahmen / scale) * 30) : 0
+            const expenseHeight = m.ausgaben > 0 ? Math.max(2, (m.ausgaben / scale) * 30) : 0
+            return (
+              <div key={m.monat} className="flex flex-1 flex-col items-center" title={`${monthLabel(m.monat)}: +${euro(m.einnahmen)} / -${euro(m.ausgaben)}`}>
+                <span className="flex h-8 w-full items-end justify-center">
+                  {incomeHeight > 0 && (
+                    <span
+                      className={`w-2 rounded-t-[2px] ${current ? 'bg-gut' : 'bg-gut/60'}`}
+                      style={{ height: incomeHeight }}
+                    />
+                  )}
+                </span>
+                <span className="my-px h-px w-full bg-strich" />
+                <span className="flex h-8 w-full items-start justify-center">
+                  {expenseHeight > 0 && (
+                    <span
+                      className={`w-2 rounded-b-[2px] ${current ? 'bg-schlecht' : 'bg-schlecht/60'}`}
+                      style={{ height: expenseHeight }}
+                    />
+                  )}
+                </span>
+                <span
+                  className={`mt-1 text-[9px] leading-none ${
+                    current ? 'font-semibold text-text' : 'text-textschwach'
+                  }`}
+                >
+                  {shortMonth(m.monat)}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {categories.length > 0 && (
+        <section>
+          <h3 className="mb-1 text-[13px] font-semibold">Ausgaben nach Kategorie</h3>
+          <ul>
+            {categories.map(([name, betrag]) => (
+              <li key={name} className="flex items-center gap-2.5 border-b border-strich py-1.5 last:border-b-0">
+                <CategoryIconTile name={name} />
+                <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{name}</span>
+                <span className="h-1.5 w-14 shrink-0 overflow-hidden rounded-full bg-karte2">
+                  <span
+                    className="block h-full rounded-full bg-akzent"
+                    style={{ width: `${(betrag / catMax) * 100}%` }}
+                  />
+                </span>
+                <span className="betragszahl w-20 shrink-0 text-right text-[13px] font-semibold">
+                  {euro(betrag)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {incomeCategories.length > 0 && (
+        <section className="mt-2">
+          <h3 className="mb-1 text-[13px] font-semibold">Einnahmen</h3>
+          <ul>
+            {incomeCategories.map(([name, betrag]) => (
+              <li key={name} className="flex items-center gap-2.5 border-b border-strich py-1.5 last:border-b-0">
+                <CategoryIconTile name={name} />
+                <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">{name}</span>
+                <span className="betragszahl shrink-0 text-[13px] font-semibold text-gut">{euro(betrag)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
+  )
+}
+
 export function StatisticsPage() {
   const { activePerson } = useApp()
   const monat = monthAsString(new Date())
+  const jahr = new Date().getFullYear()
   const [view, setView] = useState<View>(loadView)
+  const [yearView, setYearView] = useState(false)
   const [data, setData] = useState<MonthlyOverview | null>(null)
+  const [year, setYear] = useState<YearStatistics | null>(null)
   const [savings, setSavings] = useState<SavingsPotential | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [detail, setDetail] = useState<string | null>(null)
@@ -178,6 +314,23 @@ export function StatisticsPage() {
     }
   }, [monat, together, personParam])
 
+  useEffect(() => {
+    if (!yearView) return
+    let active = true
+    read<YearStatistics>(
+      `/api/statistik/jahr?jahr=${jahr}${together ? '&gemeinsam=true' : personParam ? `&${personParam}` : ''}`,
+    )
+      .then((result) => {
+        if (active) setYear(result)
+      })
+      .catch(() => {
+        if (active) setYear(null)
+      })
+    return () => {
+      active = false
+    }
+  }, [yearView, jahr, together, personParam])
+
   const expenses = Object.entries(data?.ausgabenJeKategorie ?? {}).sort((a, b) => b[1] - a[1])
   const total = expenses.reduce((sum, [, betrag]) => sum + betrag, 0)
   const segments: Segment[] = expenses.slice(0, SLICES).map(([name, betrag]) => ({ name, betrag }))
@@ -197,7 +350,26 @@ export function StatisticsPage() {
     <div>
       <div className="mb-1 flex items-center justify-between">
         <h2 className="text-[15px] font-semibold">Statistik</h2>
-        <p className="text-xs text-textschwach">{monthLabel(monat)}</p>
+        <div className="flex h-7 items-center gap-0.5 rounded-full bg-karte2 p-0.5">
+          <button
+            onClick={() => setYearView(false)}
+            aria-pressed={!yearView}
+            className={`flex h-6 items-center rounded-full px-2.5 text-[11px] font-medium transition-colors ${
+              !yearView ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
+            }`}
+          >
+            Monat
+          </button>
+          <button
+            onClick={() => setYearView(true)}
+            aria-pressed={yearView}
+            className={`flex h-6 items-center rounded-full px-2.5 text-[11px] font-medium transition-colors ${
+              yearView ? 'bg-akzentstark text-akzenttext' : 'text-textschwach'
+            }`}
+          >
+            Jahr
+          </button>
+        </div>
       </div>
 
       <div className="mb-2 flex h-8 w-fit items-center gap-0.5 rounded-full bg-karte2 p-0.5">
@@ -227,7 +399,11 @@ export function StatisticsPage() {
         </button>
       </div>
 
-      {data === null ? (
+      {yearView ? (
+        <YearView year={year} />
+      ) : (
+        <>
+          {data === null ? (
         <div className="space-y-3">
           <div className="h-36 animate-pulse rounded-2xl bg-karte" />
           <div className="h-16 animate-pulse rounded-2xl bg-karte" />
@@ -266,25 +442,27 @@ export function StatisticsPage() {
         </>
       )}
 
-      {showSavingsPotential && (
-        <section className="mt-2">
-          <h3 className="flex items-center gap-1.5 text-[13px] font-semibold">
-            <Lightbulb size={15} weight="fill" className="text-akzent" aria-hidden="true" />
-            Was auffällt
-          </h3>
-          {savings.basis === 'WENIG_DATEN' ? (
-            <p className="mt-1 text-sm text-textschwach">Noch zu wenig Verlauf für Tipps.</p>
-          ) : (
-            <ul className="mt-1">
-              {savings.hinweise.map((hint) => (
-                <li key={hint.kategorie} className="flex items-start gap-2.5 py-1.5">
-                  <CategoryIconTile name={hint.kategorie} groesse={28} />
-                  <p className="pt-1 text-sm leading-snug text-text">{hint.text}</p>
-                </li>
-              ))}
-            </ul>
+          {showSavingsPotential && (
+            <section className="mt-2">
+              <h3 className="flex items-center gap-1.5 text-[13px] font-semibold">
+                <Lightbulb size={15} weight="fill" className="text-akzent" aria-hidden="true" />
+                Was auffällt
+              </h3>
+              {savings.basis === 'WENIG_DATEN' ? (
+                <p className="mt-1 text-sm text-textschwach">Noch zu wenig Verlauf für Tipps.</p>
+              ) : (
+                <ul className="mt-1">
+                  {savings.hinweise.map((hint) => (
+                    <li key={hint.kategorie} className="flex items-start gap-2.5 py-1.5">
+                      <CategoryIconTile name={hint.kategorie} groesse={28} />
+                      <p className="pt-1 text-sm leading-snug text-text">{hint.text}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           )}
-        </section>
+        </>
       )}
 
       <CategorySheet

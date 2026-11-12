@@ -29,6 +29,7 @@ public class StatisticsSteps {
 
     private JsonNode categoryHistory;
     private JsonNode savingsPotential;
+    private JsonNode yearStatistics;
     private org.springframework.http.HttpStatusCode queryStatus;
 
     @Wenn("der Kategorie-Verlauf der letzten {int} Monate für {string} abgefragt wird")
@@ -121,6 +122,52 @@ public class StatisticsSteps {
     @Dann("wird die Sparpotenzial-Abfrage abgelehnt")
     public void savingsPotentialRejected() {
         assertThat(queryStatus).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Wenn("die Jahresübersicht {int} abgefragt wird")
+    public void queryYearStatistics(int jahr) {
+        ResponseEntity<String> response = rest.getForEntity(
+                "/api/statistik/jahr?jahr=" + jahr, String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        yearStatistics = mapper.readTree(response.getBody());
+    }
+
+    @Dann("zeigt die Jahresübersicht {int} Monate")
+    public void yearStatisticsHasMonths(int count) {
+        assertThat(yearStatistics.path("monate").size()).isEqualTo(count);
+    }
+
+    @Dann("zeigt die Jahresübersicht für Monat {string} Einnahmen {betrag} Euro und Ausgaben {betrag} Euro")
+    public void yearStatisticsMonth(String monat, BigDecimal einnahmen, BigDecimal ausgaben) {
+        for (JsonNode month : yearStatistics.path("monate")) {
+            if (monat.equals(month.path("monat").asText())) {
+                assertThat(month.path("einnahmen").decimalValue()).isEqualByComparingTo(einnahmen);
+                assertThat(month.path("ausgaben").decimalValue()).isEqualByComparingTo(ausgaben);
+                return;
+            }
+        }
+        org.assertj.core.api.Assertions.fail("Monat fehlt in der Jahresübersicht: " + monat);
+    }
+
+    @Dann("sind die Jahres-Ausgaben insgesamt {betrag} Euro")
+    public void yearExpensesTotal(BigDecimal ausgaben) {
+        BigDecimal sum = BigDecimal.ZERO;
+        for (JsonNode month : yearStatistics.path("monate")) {
+            sum = sum.add(month.path("ausgaben").decimalValue());
+        }
+        assertThat(sum).isEqualByComparingTo(ausgaben);
+    }
+
+    @Dann("zeigt die Jahresübersicht Ausgaben {betrag} Euro für Kategorie {string}")
+    public void yearExpensesForCategory(BigDecimal betrag, String kategorie) {
+        assertThat(yearStatistics.path("ausgabenJeKategorie").path(kategorie).decimalValue())
+                .isEqualByComparingTo(betrag);
+    }
+
+    @Dann("zeigt die Jahresübersicht Einnahmen {betrag} Euro für Kategorie {string}")
+    public void yearIncomeForCategory(BigDecimal betrag, String kategorie) {
+        assertThat(yearStatistics.path("einnahmenJeKategorie").path(kategorie).decimalValue())
+                .isEqualByComparingTo(betrag);
     }
 
     private BigDecimal parseAmount(String rawValue) {
