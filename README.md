@@ -6,19 +6,20 @@ Finanzen für zwei. LuneFi ist eine private App für ein Paar. Jeder sieht sein 
 
 Alles ist fürs Handy gebaut. Jede Seite passt ohne Scrollen auf einen Bildschirm.
 
-| Anmelden | Übersicht | Eintrag erfassen |
+| Übersicht | Eintrag erfassen | Ausgleich |
 |---|---|---|
-| ![Anmelden](docs/screenshots/01-anmelden.png) | ![Übersicht](docs/screenshots/02-uebersicht.png) | ![Erfassen](docs/screenshots/03-eintrag-erfassen.png) |
+| ![Übersicht](docs/screenshots/01-uebersicht.png) | ![Erfassen](docs/screenshots/02-eintrag-erfassen.png) | ![Ausgleich](docs/screenshots/03-ausgleich.png) |
 
-| Ausgleich | Statistik Monat | Statistik Jahr |
+| Statistik Monat | Statistik Jahr | |
 |---|---|---|
-| ![Ausgleich](docs/screenshots/04-ausgleich.png) | ![Statistik Monat](docs/screenshots/05-statistik-monat.png) | ![Statistik Jahr](docs/screenshots/06-statistik-jahr.png) |
+| ![Statistik Monat](docs/screenshots/04-statistik-monat.png) | ![Statistik Jahr](docs/screenshots/05-statistik-jahr.png) | |
 
-- **Anmelden** über Google, ein Tipp genügt. Nur ihr beide kommt rein.
 - **Übersicht**: Saldo, Budget, Verlauf und Buchungen auf einen Blick.
 - **Eintrag erfassen**: selbst erfasst bleibt eigenständig. Kommt der Umsatz später von der Bank, wird er nur bestätigt, nicht doppelt gezählt.
 - **Ausgleich**: wer wem wie viel schuldet, monatlich auf einen Tipp.
-- **Statistik**: einmal den Monat, einmal das ganze Jahr mit allen Kategorien.
+- **Statistik**: einmal der Monat im Kreis, einmal das ganze Jahr mit allen Kategorien.
+
+Anmelden tut man sich mit Google, ein Tipp genügt.
 
 ## Was die App kann
 
