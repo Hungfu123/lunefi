@@ -57,7 +57,7 @@ export function LoginPage({ startName, onSuccess }: { startName?: string; onSucc
         },
       })
       window.google.accounts.id.renderButton(googleButton.current, {
-        theme: 'filled_blue',
+        theme: document.documentElement.dataset.theme === 'sonne' ? 'outline' : 'filled_black',
         size: 'large',
         shape: 'pill',
         text: 'signin_with',
