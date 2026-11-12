@@ -4,49 +4,21 @@ Finanzen für zwei. LuneFi ist eine private App für ein Paar. Jeder sieht sein 
 
 ## So sieht die App aus
 
-**1. Anmelden.** Mit Google, ein Tipp genügt. Nur ihr beide kommt rein.
+Alles ist fürs Handy gebaut. Jede Seite passt ohne Scrollen auf einen Bildschirm.
 
-![Anmelden](docs/screenshots/01-anmelden.png)
+| Anmelden | Übersicht | Eintrag erfassen |
+|---|---|---|
+| ![Anmelden](docs/screenshots/01-anmelden.png) | ![Übersicht](docs/screenshots/02-uebersicht.png) | ![Erfassen](docs/screenshots/03-eintrag-erfassen.png) |
 
-**2. Übersicht.** Saldo, Budget, Verlauf und die letzten Buchungen. Alles auf einen Blick, ohne Scrollen.
+| Ausgleich | Statistik Monat | Statistik Jahr |
+|---|---|---|
+| ![Ausgleich](docs/screenshots/04-ausgleich.png) | ![Statistik Monat](docs/screenshots/05-statistik-monat.png) | ![Statistik Jahr](docs/screenshots/06-statistik-jahr.png) |
 
-![Übersicht](docs/screenshots/02-uebersicht.png)
-
-**3. Eintrag erfassen.** Selbst eingetragen bleibt eigenständig. Kommt der Umsatz später von der Bank, wird die Zeile nur bestätigt, nicht doppelt gezählt.
-
-![Eintrag erfassen](docs/screenshots/03-eintrag-erfassen.png)
-
-**4. Ausgleich.** Wer hat was vorgestreckt und wer bekommt wie viel. Ein Tippen genügt.
-
-![Ausgleich](docs/screenshots/04-ausgleich.png)
-
-**5. Sparziele.** Fortschritt für gemeinsame Ziele. Es wird kein Geld bewegt, nur der Stand notiert.
-
-![Sparziele](docs/screenshots/05-sparziele.png)
-
-**6. Statistik im Monat.** Wohin das Geld geht, als Kreis und Liste.
-
-![Statistik Monat](docs/screenshots/06-statistik-monat.png)
-
-**7. Statistik im Jahr.** Alle Monate, Jahressummen und Kategorien des ganzen Jahres.
-
-![Statistik Jahr](docs/screenshots/07-statistik-jahr.png)
-
-**8. Einstellungen.** Konten, Kategorien, Budgets und Hilfe.
-
-![Einstellungen](docs/screenshots/08-einstellungen.png)
-
-**9. Konto anlegen.** Erst die Bank wählen, dann Name und Startsaldo. Die Bankverbindung für den Import kommt später dazu.
-
-![Bank wählen](docs/screenshots/09-bank-auswahl.png)
-
-**10. Hilfe.** Jedes Konzept in einem Satz erklärt.
-
-![Hilfe](docs/screenshots/10-hilfe.png)
-
-**11. Kategorie im Detail.** Ausgaben, Budget und Verlauf für eine Kategorie.
-
-![Kategorie](docs/screenshots/11-kategorie-detail.png)
+- **Anmelden** über Google, ein Tipp genügt. Nur ihr beide kommt rein.
+- **Übersicht**: Saldo, Budget, Verlauf und Buchungen auf einen Blick.
+- **Eintrag erfassen**: selbst erfasst bleibt eigenständig. Kommt der Umsatz später von der Bank, wird er nur bestätigt, nicht doppelt gezählt.
+- **Ausgleich**: wer wem wie viel schuldet, monatlich auf einen Tipp.
+- **Statistik**: einmal den Monat, einmal das ganze Jahr mit allen Kategorien.
 
 ## Was die App kann
 
