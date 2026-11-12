@@ -124,7 +124,7 @@ function Content() {
             <Layout onNewEntry={() => setSheetOpen(true)} canLogOut={!legacy} onLoggedOut={logout} />
           }
         >
-          <Route index element={<Overview key={reloadCount} onEditEntry={setEditing} />} />
+          <Route index element={<Overview key={reloadCount} onEditEntry={setEditing} onNewEntry={() => setSheetOpen(true)} />} />
           <Route path="/ausgleich" element={<SettlementPage key={reloadCount} />} />
           <Route path="/sparziele" element={<SavingsGoalsPage />} />
           <Route path="/statistik" element={<StatisticsPage key={reloadCount} />} />

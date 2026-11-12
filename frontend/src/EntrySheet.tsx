@@ -157,6 +157,17 @@ export function EntrySheet({
     shared && amountValue !== null && amountValue !== 0 && payer && debtor
       ? Math.floor(amountValue * debtorShare * 100) / 100
       : null
+  const partnerName = persons.find((p) => p.name !== activePerson)?.name ?? null
+  const shareLine = (() => {
+    if (debtAmount !== null && payer && debtor) {
+      return payer === activePerson
+        ? `${debtor} schuldet dir ${euro(debtAmount)}`
+        : `Du schuldest ${payer} ${euro(debtAmount)}`
+    }
+    if (sharesText && partnerName) return `${sharesText} für dich und ${partnerName}`
+    if (partnerName) return `Je zur Hälfte für dich und ${partnerName}`
+    return sharesText ? `Aufteilung ${sharesText}` : 'Wird zu gleichen Teilen geteilt'
+  })()
 
   const partValues = parts.map((p) => ({ ...p, value: amountFromInput(p.betrag) }))
   const partsSum = partValues.reduce((sum, p) => sum + (p.value ?? 0), 0)
@@ -483,9 +494,50 @@ export function EntrySheet({
 
             {entry && <h3 className="mb-2.5 text-lg font-semibold">Eintrag bearbeiten</h3>}
             {!entry && (
-              <p className="mb-2.5 text-[12px] leading-snug text-textschwach">
-                Selbst erfassen — für Bargeld und alles, was noch nicht auf dem Konto ist.
-              </p>
+              <div className="mb-3">
+                <h3 className="mb-2 text-lg font-semibold">Manuell erfassen</h3>
+                <div className="mb-1.5" aria-hidden="true">
+                  <div className="flex items-start justify-between px-6">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-karte2 text-textschwach">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        </svg>
+                      </span>
+                      <span className="text-[10px] font-medium text-textschwach">du jetzt</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-karte2 text-textschwach">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="3" x2="21" y1="22" y2="22" />
+                          <line x1="6" x2="6" y1="18" y2="11" />
+                          <line x1="10" x2="10" y1="18" y2="11" />
+                          <line x1="14" x2="14" y1="18" y2="11" />
+                          <line x1="18" x2="18" y1="18" y2="11" />
+                          <polygon points="12 2 20 7 4 7" />
+                        </svg>
+                      </span>
+                      <span className="text-[10px] font-medium text-textschwach">Bank später</span>
+                    </div>
+                  </div>
+                  <svg viewBox="0 0 240 18" className="block h-4 w-full text-strich" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 3">
+                    <path d="M56 0 L120 16" />
+                    <path d="M184 0 L120 16" />
+                  </svg>
+                  <div className="-mt-1 flex justify-center">
+                    <span className="flex h-7 items-center gap-1 rounded-full bg-akzentstark/15 px-2.5 text-akzent">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span className="text-[10px] font-semibold">1 Eintrag</span>
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[11px] leading-snug text-textschwach">
+                  Erscheint der Umsatz später auf dem Konto, wird deine Zeile nur bestätigt — nicht doppelt
+                  gezählt.
+                </p>
+              </div>
             )}
 
             <div className="mb-2.5 flex gap-2">
@@ -729,9 +781,7 @@ export function EntrySheet({
                   />
                 </button>
               </div>
-              <p className="mt-0.5 text-[12px] text-textschwach">
-                {sharesText ? `Wird ${sharesText} geteilt` : 'Wird zu gleichen Teilen geteilt'}
-              </p>
+              <p className="mt-0.5 text-[12px] text-textschwach">{shareLine}</p>
             </div>
             )}
 
@@ -758,7 +808,7 @@ export function EntrySheet({
             ) : (
               <>
                 <label className="mb-1 block text-xs text-textschwach">
-                  {shared ? 'Bezahlt von' : 'Person'}
+                  {shared ? 'Bezahlt von' : 'Für wen?'}
                 </label>
                 <div className="mb-2.5 flex gap-2">
                   {persons.map((p) => {
@@ -781,9 +831,7 @@ export function EntrySheet({
             )}
 
             <AnimatePresence initial={false}>
-              {(split
-                ? splitDebtAmount !== null && anySharedPart && payer && debtor
-                : debtAmount !== null && debtor && payer) && (
+              {split && splitDebtAmount !== null && anySharedPart && payer && debtor && (
                 <motion.p
                   key={`${debtor}-${payer}-${split ? splitDebtAmount : debtAmount}`}
                   className="betragszahl mb-2.5 text-[13px] text-akzent"

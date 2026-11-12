@@ -7,6 +7,12 @@ export const ATTITUDE_LABEL: Record<Attitude, string> = {
   BEWUSST_MEHR: 'Mehr gönnen',
 }
 
+export const ATTITUDE_HINT: Record<Attitude, string> = {
+  SPAREN: 'Davon möglichst wenig ausgeben',
+  FLEXIBEL: 'Ohne besonderes Ziel',
+  BEWUSST_MEHR: 'Darf auch mehr sein — genießt es',
+}
+
 const OPTIONS: Attitude[] = ['SPAREN', 'FLEXIBEL', 'BEWUSST_MEHR']
 
 export function AttitudeSelector({
@@ -43,7 +49,7 @@ export function AttitudeSelector({
   }
 
   return (
-    <div role="radiogroup" aria-label="Haltung" className="flex h-8 w-full gap-0.5 rounded-lg bg-karte2 p-0.5">
+    <div role="radiogroup" aria-label="Einstellung" className="flex h-8 w-full gap-0.5 rounded-lg bg-karte2 p-0.5">
       {OPTIONS.map((value) => (
         <button
           key={value}

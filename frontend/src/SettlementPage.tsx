@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { CheckCircle } from '@phosphor-icons/react'
 import { read, send, type Settlement, type SettlementMonth, type SettlementPosition } from './types'
 import { euro, monthAsString, shortMonth, monthLabel, shiftMonth } from './format'
@@ -23,6 +23,8 @@ export function SettlementPage() {
   const [error, setError] = useState(false)
   const [marking, setMarking] = useState(false)
   const [justMarked, setJustMarked] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -165,40 +167,76 @@ export function SettlementPage() {
           )}
           {positionGroups.length > 0 && (
             <ul className="mb-6 space-y-3">
-              {positionGroups.map((group) => (
-                <li key={`${group.zahler}-${group.received}`}>
-                  <p className="mb-1 px-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
-                    {group.zahler} {group.received ? 'hat erhalten' : 'hat bezahlt'}
-                  </p>
-                  <ul className="overflow-hidden rounded-xl bg-karte">
-                    {group.positions.map((position) => (
-                      <li
-                        key={position.id}
-                        className="flex items-center justify-between gap-3 border-b border-strich px-3 py-2.5 last:border-b-0"
-                      >
-                        <span className="flex min-w-0 items-center gap-3">
-                          <CategoryIconTile name={position.kategorie} />
-                          <span className="truncate text-[15px] font-semibold">{position.kategorie}</span>
-                        </span>
-                        <span className="betragszahl shrink-0 text-[13px] font-semibold">
-                          {euro(Math.abs(position.betrag))}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
+              {positionGroups.map((group) => {
+                const byCategory = new Map<string, { summe: number; einzel: number[] }>()
+                for (const position of group.positions) {
+                  const entry = byCategory.get(position.kategorie) ?? { summe: 0, einzel: [] }
+                  entry.summe += Math.abs(position.betrag)
+                  entry.einzel.push(Math.abs(position.betrag))
+                  byCategory.set(position.kategorie, entry)
+                }
+                return (
+                  <li key={`${group.zahler}-${group.received}`}>
+                    <p className="mb-1 px-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                      {group.zahler} {group.received ? 'hat erhalten' : 'hat bezahlt'}
+                    </p>
+                    <ul className="overflow-hidden rounded-xl bg-karte">
+                      {[...byCategory.entries()].map(([kategorie, info]) => {
+                        const key = `${group.zahler}-${group.received}-${kategorie}`
+                        const expanded = openGroup === key
+                        return (
+                          <li key={kategorie} className="border-b border-strich last:border-b-0">
+                            <button
+                              type="button"
+                              onClick={() => setOpenGroup(expanded ? null : key)}
+                              aria-expanded={info.einzel.length > 1 ? expanded : undefined}
+                              disabled={info.einzel.length === 1}
+                              className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left"
+                            >
+                              <span className="flex min-w-0 items-center gap-3">
+                                <CategoryIconTile name={kategorie} />
+                                <span className="truncate text-[15px] font-semibold">{kategorie}</span>
+                                {info.einzel.length > 1 && (
+                                  <span className="shrink-0 text-[11px] text-textschwach">
+                                    · {info.einzel.length} Zahlungen
+                                  </span>
+                                )}
+                              </span>
+                              <span className="betragszahl shrink-0 text-[13px] font-semibold">
+                                {euro(info.summe)}
+                              </span>
+                            </button>
+                            {expanded && info.einzel.length > 1 && (
+                              <ul className="border-t border-strich bg-karte2/40 px-3 py-1.5">
+                                {info.einzel.map((betrag, i) => (
+                                  <li
+                                    key={i}
+                                    className="flex justify-between py-0.5 text-[12px] text-textschwach"
+                                  >
+                                    <span>Zahlung {i + 1}</span>
+                                    <span className="betragszahl">{euro(betrag)}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </li>
+                )
+              })}
             </ul>
           )}
 
           {!data.ausgeglichen && data.vorschlag && (
             <button
-              onClick={mark}
+              onClick={() => setConfirmOpen(true)}
               disabled={marking}
               className="mb-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-akzent/10 py-3 text-sm font-semibold text-akzent ring-1 ring-akzent/40 transition-transform active:scale-[0.98] disabled:opacity-50"
             >
               <CheckCircle size={18} weight="bold" aria-hidden="true" />
-              Ausgeglichen
+              Alles beglichen
             </button>
           )}
           {justMarked && (
@@ -208,9 +246,59 @@ export function SettlementPage() {
               transition={reduced ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="mb-5 text-center text-sm font-medium text-gut"
             >
-              Ausgeglichen.
+              Alles beglichen.
             </motion.p>
           )}
+
+          <AnimatePresence>
+            {confirmOpen && (
+              <div className="fixed inset-0 z-40 flex items-end justify-center">
+                <motion.button
+                  aria-label="Schließen"
+                  className="absolute inset-0 bg-black/60"
+                  onClick={() => setConfirmOpen(false)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                />
+                <motion.div
+                  className="relative mx-auto w-full max-w-[560px] rounded-t-3xl border-t border-strich bg-karte px-5 pb-6 pt-4"
+                  initial={{ transform: 'translateY(100%)' }}
+                  animate={{ transform: 'translateY(0%)' }}
+                  exit={{ transform: 'translateY(100%)' }}
+                  transition={reduced ? { duration: 0 } : { type: 'spring', duration: 0.4, bounce: 0.15 }}
+                >
+                  <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-strich" />
+                  <p className="mb-1 text-lg font-semibold">Alles beglichen?</p>
+                  <p className="mb-4 text-sm text-textschwach">
+                    {data.vorschlag} — danach ist {monthLabel(monat)} erledigt.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmOpen(false)}
+                      className="min-h-11 flex-1 rounded-xl bg-karte2 py-3 text-sm font-medium text-textschwach"
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      onClick={() => {
+                        setConfirmOpen(false)
+                        mark()
+                      }}
+                      disabled={marking}
+                      className="min-h-11 flex-1 rounded-xl bg-akzentstark py-3 text-sm font-semibold text-akzenttext disabled:opacity-50"
+                    >
+                      Ja, beglichen
+                    </button>
+                  </div>
+                  <p className="mt-2 text-center text-[11px] text-textschwach">
+                    Vermerkt nur — es wird kein Geld bewegt.
+                  </p>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           {history.length > 1 && (
             <>

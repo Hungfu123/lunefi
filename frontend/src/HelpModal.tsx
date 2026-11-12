@@ -64,7 +64,7 @@ export function HelpModal({ open, close }: { open: boolean; close: () => void })
               <Section
                 icon={Scales}
                 title="Ausgleich"
-                text="Wer mehr bezahlt hat, bekommt den Rest vom anderen. Ihr macht das einmal im Monat. Danach auf „Ausgeglichen“ tippen."
+                text="Wer mehr bezahlt hat, bekommt den Rest vom anderen. Ihr macht das einmal im Monat. Danach auf „Alles beglichen“ tippen."
               />
               <Section
                 icon={PiggyBank}

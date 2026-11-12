@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { read, type BudgetInfo, type CoachingRecommendation, type Entry, type Attitude, type CategoryInfo } from './types'
 import { shortDate, euro, isThisWeek, shortMonth, monthAsString } from './format'
 import { CategoryIconTile } from './categoryIcon'
-import { ATTITUDE_LABEL, AttitudeSelector } from './AttitudeSelector'
+import { ATTITUDE_LABEL, ATTITUDE_HINT, AttitudeSelector } from './AttitudeSelector'
 import { useApp } from './AppContext'
 
 interface TrendMonth {
@@ -81,6 +81,7 @@ export function CategorySheet({
   const [selectorOpen, setSelectorOpen] = useState(false)
   const [trend, setTrend] = useState<CategoryStatistics | null>(null)
   const hasBudget = budget !== null
+  const budgetOver = budget ? budget.ist - budget.limit : 0
 
   useEffect(() => {
     setSelectorOpen(false)
@@ -165,9 +166,15 @@ export function CategorySheet({
             {budget && attitude && (
               <div className="mt-3 flex min-h-8 flex-wrap items-center gap-2">
                 <p className="text-sm text-textschwach">
-                  Budget{' '}
-                  <span className="betragszahl font-medium text-text">{euro(budget.ist)}</span> von{' '}
-                  <span className="betragszahl font-medium text-text">{euro(budget.limit)}</span>
+                  <span className="betragszahl font-medium text-text">{euro(budget.ist)}</span> ausgegeben
+                  {budgetOver > 0 ? (
+                    <span className="font-medium text-schlecht"> · {euro(budgetOver)} drüber</span>
+                  ) : (
+                    <>
+                      {' '}von{' '}
+                      <span className="betragszahl font-medium text-text">{euro(budget.limit)}</span>
+                    </>
+                  )}
                 </p>
                 <button
                   type="button"
@@ -182,6 +189,7 @@ export function CategorySheet({
             {budget && attitude && selectorOpen && name !== null && (
               <div className="mt-1.5">
                 <AttitudeSelector kategorie={name} haltung={attitude} onAttitude={setAttitude} />
+                <p className="mt-1 text-[11px] text-textschwach">{ATTITUDE_HINT[attitude]}</p>
               </div>
             )}
             {tip && <p className="mt-2 text-sm text-gut">{tip}</p>}

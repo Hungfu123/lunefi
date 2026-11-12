@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react'
-import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Sparkle, Target, Wallet } from '@phosphor-icons/react'
+import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Sparkle, Target, Wallet, X } from '@phosphor-icons/react'
 import { read, type Settlement, type Coaching, type Entry, type Account, type MonthlyOverview, type SavingsGoal, type HistoryMonth } from './types'
 import {
   shortDate,
@@ -12,6 +12,7 @@ import {
   shortMonth,
   monthLabel,
   shiftMonth,
+  todayIso,
 } from './format'
 import { CategoryIcon, CategoryIconTile, categoryIcon, categoryIconName } from './categoryIcon'
 import { CategorySheet } from './CategorySheet'
@@ -184,8 +185,10 @@ function GoalRow({ goal }: { goal: SavingsGoal }) {
 
 export function Overview({
   onEditEntry,
+  onNewEntry,
 }: {
   onEditEntry: (entry: Entry) => void
+  onNewEntry: () => void
 }) {
   const { activePerson } = useApp()
   const reduced = useReducedMotion()
@@ -199,6 +202,7 @@ export function Overview({
   const [error, setError] = useState(false)
   const [categoriesExpanded, setCategoriesExpanded] = useState(false)
   const [entriesExpanded, setEntriesExpanded] = useState(false)
+  const [promptHidden, setPromptHidden] = useState(() => localStorage.getItem(`lunefi:einkauf:${todayIso()}`) === '1')
   const [categoryDetail, setCategoryDetail] = useState<string | null>(null)
   const [sharedLocal, setSharedLocal] = useState(false)
   const [coaching, setCoaching] = useState<Coaching | null>(null)
@@ -307,6 +311,16 @@ export function Overview({
     a.datum === b.datum ? b.id - a.id : a.datum < b.datum ? 1 : -1,
   )
   const isCurrentMonth = monat === monthAsString(new Date())
+  const today = todayIso()
+  const hidePrompt = () => {
+    setPromptHidden(true)
+    localStorage.setItem(`lunefi:einkauf:${today}`, '1')
+  }
+  const showCapturePrompt =
+    isCurrentMonth &&
+    new Date().getHours() >= 17 &&
+    !promptHidden &&
+    !entries.some((entry) => entry.datum === today)
   const week = isCurrentMonth
     ? entries.reduce((sum, entry) => sum + (entry.betrag < 0 && isThisWeek(entry.datum) ? entry.betrag : 0), 0)
     : null
@@ -339,6 +353,27 @@ export function Overview({
           ›
         </button>
       </div>
+
+      {showCapturePrompt && (
+        <div className="mb-2 flex items-center gap-2 rounded-2xl bg-karte px-3 py-2">
+          <p className="min-w-0 flex-1 text-[13px] leading-snug text-text">
+            Heute noch nichts erfasst — Einkauf erledigt?
+          </p>
+          <button
+            onClick={onNewEntry}
+            className="shrink-0 rounded-full bg-akzentstark px-3 py-1.5 text-[12px] font-semibold text-akzenttext"
+          >
+            Jetzt erfassen
+          </button>
+          <button
+            onClick={hidePrompt}
+            aria-label="Hinweis ausblenden"
+            className="-mr-1 flex shrink-0 items-center p-1 text-textschwach"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       {loading && (
         <div className="space-y-3">
@@ -485,11 +520,15 @@ export function Overview({
                   />
                 </div>
                 <p className="betragszahl mt-1.5 text-[13px] font-medium text-textschwach">
-                  {amountCompact(budgetActual)} von {amountCompact(budgetLimit)}
-                  {budgetOver && (
+                  {amountCompact(budgetActual)} ausgegeben
+                  {budgetOver ? (
                     <span className="font-semibold text-schlecht">
                       {' '}
                       · {euro(budgetActual - budgetLimit)} drüber
+                    </span>
+                  ) : (
+                    <span>
+                      {' '}von {amountCompact(budgetLimit)}
                     </span>
                   )}
                 </p>
