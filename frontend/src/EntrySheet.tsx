@@ -41,29 +41,42 @@ export function EntrySheet({
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [split, setSplit] = useState(false)
+  const [parts, setParts] = useState<{ betrag: string; kategorie: string; gemeinsam: boolean }[]>([])
+  const [focusedPart, setFocusedPart] = useState(0)
+  const [restCategory, setRestCategory] = useState('')
+  const [restShared, setRestShared] = useState(false)
 
-  useEffect(() => {
-    if (!open) return
-    read<CategoryInfo[]>('/api/kategorien')
-      .then(setCategories)
-      .catch(() => setCategories([]))
-    read<Account[]>('/api/konten')
-      .then(setAccounts)
-      .catch(() => setAccounts([]))
-    if (entry) {
-      setArt(entry.betrag < 0 ? 'ausgabe' : 'einnahme')
+  function prefill(full: Entry | null) {
+    if (full) {
+      setArt(full.betrag < 0 ? 'ausgabe' : 'einnahme')
       setAmount(
         new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-          Math.abs(entry.betrag),
+          Math.abs(full.betrag),
         ),
       )
-      setCategory(entry.kategorie)
+      setCategory(full.kategorie)
       setIconChoice(null)
-      setDatum(entry.datum)
-      setShared(entry.gemeinsam)
-      setPerson(entry.person ?? activePerson)
-      setPayer(entry.zahler ?? activePerson)
-      setAccount(entry.konto)
+      setDatum(full.datum)
+      setShared(full.gemeinsam)
+      setPerson(full.person ?? activePerson)
+      setPayer(full.zahler ?? activePerson)
+      setAccount(full.konto)
+      const existingParts = full.teile ?? []
+      setSplit(existingParts.length > 1)
+      setParts(
+        existingParts.map((t) => ({
+          betrag: new Intl.NumberFormat('de-DE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(Math.abs(t.betrag)),
+          kategorie: t.kategorie,
+          gemeinsam: t.gemeinsam,
+        })),
+      )
+      setFocusedPart(0)
+      setRestCategory('')
+      setRestShared(false)
     } else {
       setArt('ausgabe')
       setAmount('')
@@ -74,9 +87,48 @@ export function EntrySheet({
       setPerson(activePerson)
       setPayer(activePerson)
       setAccount(null)
+      setSplit(false)
+      setParts([])
+      setFocusedPart(0)
+      setRestCategory('')
+      setRestShared(false)
     }
     setConfirmDelete(false)
     setError(null)
+  }
+
+  useEffect(() => {
+    if (!open) return
+    read<CategoryInfo[]>('/api/kategorien')
+      .then(setCategories)
+      .catch(() => setCategories([]))
+    read<Account[]>('/api/konten')
+      .then(setAccounts)
+      .catch(() => setAccounts([]))
+    if (entry) {
+      // In gefilterten Sichten trägt die Zeile nur den sichtbaren Teilbetrag — für
+      // das Bearbeiten den vollständigen Eintrag per Nummer nachladen.
+      let active = true
+      read<Entry[]>('/api/eintraege')
+        .then((list) => list.find((e) => e.id === entry.id) ?? entry)
+        .then((full) => {
+          if (active) prefill(full)
+        })
+        .catch(() => {
+          if (!active) return
+          if (entry.teile && entry.teile.length > 0) {
+            setSplit(false)
+            setParts([])
+            setError('Bearbeiten klappt gerade nicht — bitte Verbindung prüfen und erneut öffnen.')
+          } else {
+            prefill(entry)
+          }
+        })
+      return () => {
+        active = false
+      }
+    }
+    prefill(null)
   }, [open, activePerson, entry])
 
   const responsiblePerson = shared ? payer : person
@@ -104,6 +156,39 @@ export function EntrySheet({
       ? Math.floor(amountValue * debtorShare * 100) / 100
       : null
 
+  const partValues = parts.map((p) => ({ ...p, value: amountFromInput(p.betrag) }))
+  const partsSum = partValues.reduce((sum, p) => sum + (p.value ?? 0), 0)
+  const restValue =
+    amountValue !== null
+      ? Math.round((amountValue - partsSum) * 100) / 100
+      : null
+  const anySharedPart = parts.some((p) => p.gemeinsam) || (restValue !== null && restValue > 0 && restShared)
+  const sharedPartsSum = partValues.reduce(
+    (sum, p) => sum + (p.gemeinsam ? (p.value ?? 0) : 0),
+    0,
+  )
+  const splitDebtAmount =
+    split && anySharedPart && payer && debtor && sharedPartsSum > 0
+      ? Math.floor(sharedPartsSum * debtorShare * 100) / 100
+      : null
+
+  const setPartCategory = (index: number, name: string) => {
+    setParts((current) =>
+      current.map((p, i) => (i === index ? { ...p, kategorie: name } : p)),
+    )
+  }
+
+  const pickCategory = (name: string) => {
+    if (split) {
+      if (focusedPart === -1) {
+        setRestCategory(name)
+      } else if (focusedPart >= 0 && focusedPart < parts.length) {
+        setPartCategory(focusedPart, name)
+      }
+    }
+    setCategory(name)
+  }
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const value = amountFromInput(amount)
@@ -112,10 +197,6 @@ export function EntrySheet({
       return
     }
     const directed = art === 'ausgabe' ? -value : value
-    if (!category.trim()) {
-      setError('Bitte eine Kategorie wählen oder eingeben.')
-      return
-    }
     if (iconChoice) {
       setCategoryIcon(category.trim(), iconChoice)
     }
@@ -124,14 +205,60 @@ export function EntrySheet({
       betrag: directed,
       kategorie: category.trim(),
     }
-    if (shared) {
-      body.gemeinsam = true
-      body.zahler = payer ?? undefined
-    } else {
-      body.person = person ?? undefined
-    }
     if (account) {
       body.konto = account
+    }
+    if (split) {
+      if (restValue === null || restValue < 0) {
+        setError('Die Teile übersteigen den Betrag.')
+        return
+      }
+      const explicit = partValues.map((p) => ({
+        betrag: p.value ?? 0,
+        kategorie: p.kategorie.trim(),
+        gemeinsam: p.gemeinsam,
+      }))
+      const rows = [
+        ...explicit,
+        ...(restValue > 0
+          ? [{ betrag: restValue, kategorie: restCategory.trim(), gemeinsam: restShared }]
+          : []),
+      ]
+      if (rows.some((r) => r.betrag <= 0 || r.kategorie === '')) {
+        setError('Jeder Teil braucht einen Betrag und eine Kategorie.')
+        return
+      }
+      if (rows.length === 1) {
+        body.kategorie = rows[0].kategorie
+        if (rows[0].gemeinsam) {
+          body.gemeinsam = true
+          body.zahler = payer ?? undefined
+        } else {
+          body.person = activePerson ?? undefined
+        }
+      } else {
+        body.teile = rows.map((r) => ({
+          betrag: art === 'ausgabe' ? -r.betrag : r.betrag,
+          kategorie: r.kategorie,
+          person: r.gemeinsam ? null : (activePerson ?? null),
+          gemeinsam: r.gemeinsam,
+        }))
+        body.kategorie = rows[0].kategorie
+        if (rows.some((r) => r.gemeinsam)) {
+          body.zahler = payer ?? undefined
+        }
+      }
+    } else {
+      if (!category.trim()) {
+        setError('Bitte eine Kategorie wählen oder eingeben.')
+        return
+      }
+      if (shared) {
+        body.gemeinsam = true
+        body.zahler = payer ?? undefined
+      } else {
+        body.person = person ?? undefined
+      }
     }
     setBusy(true)
     try {
@@ -231,14 +358,184 @@ export function EntrySheet({
               />
             </div>
 
-            <label className="mb-1 block text-xs text-textschwach">Kategorie</label>
+            {amountValue !== null && amountValue > 0 && (
+              <div className="mb-2.5 flex items-center justify-between rounded-xl bg-karte2 px-4 py-2">
+                <span className="text-sm font-medium">Aufteilen</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label="Aufteilen"
+                  aria-checked={split}
+                  onClick={() => {
+                    const next = !split
+                    setSplit(next)
+                    if (next && parts.length === 0) {
+                      setParts([{ betrag: '', kategorie: category, gemeinsam: shared }])
+                      setFocusedPart(0)
+                    }
+                  }}
+                  className={`relative h-7 w-12 shrink-0 rounded-full transition-colors before:absolute before:-inset-3 before:content-[''] ${
+                    split ? 'bg-akzentstark' : 'bg-strich'
+                  }`}
+                >
+                  <span
+                    className={`block h-7 w-7 rounded-full bg-white transition-transform duration-200 ${
+                      split ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
+            {split && (
+              <div className="mb-2.5 space-y-1.5">
+                {partValues.map((p, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors ${
+                      focusedPart === i
+                        ? 'bg-akzentstark/15 ring-1 ring-akzent/40'
+                        : 'bg-karte2'
+                    }`}
+                  >
+                    <input
+                      aria-label={`Betrag Teil ${i + 1}`}
+                      value={p.betrag}
+                      onChange={(e) =>
+                        setParts(
+                          parts.map((x, j) => (j === i ? { ...x, betrag: e.target.value } : x)),
+                        )
+                      }
+                      onFocus={() => setFocusedPart(i)}
+                      inputMode="decimal"
+                      placeholder="0,00"
+                      className="betragszahl w-20 shrink-0 rounded-lg bg-transparent text-right text-sm font-semibold outline-none"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Kategorie Teil ${i + 1}`}
+                      onClick={() => {
+                        setFocusedPart(i)
+                        setCategory(p.kategorie)
+                        setIconChoice(null)
+                      }}
+                      className="flex min-h-8 flex-1 items-center gap-1.5 truncate text-left text-sm"
+                    >
+                      {p.kategorie ? (
+                        <CategoryIconTile name={p.kategorie} groesse={24} iconGroesse={13} />
+                      ) : null}
+                      <span className={p.kategorie ? 'truncate' : 'truncate text-textschwach'}>
+                        {p.kategorie || 'Kategorie wählen'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={p.gemeinsam ? 'Gemeinsam' : 'Persönlich'}
+                      onClick={() =>
+                        setParts(
+                          parts.map((x, j) =>
+                            j === i ? { ...x, gemeinsam: !x.gemeinsam } : x,
+                          ),
+                        )
+                      }
+                      className={`flex min-h-8 shrink-0 items-center rounded-full px-3 text-xs font-medium transition-colors ${
+                        p.gemeinsam ? 'bg-akzentstark/20 text-akzent' : 'bg-karte2 text-textschwach'
+                      }`}
+                    >
+                      {p.gemeinsam ? 'Gemeinsam' : (activePerson ?? 'Meins')}
+                    </button>
+                    {parts.length > 1 && (
+                      <button
+                        type="button"
+                        aria-label="Teil entfernen"
+                        onClick={() => {
+                          setParts(parts.filter((_, j) => j !== i))
+                          setFocusedPart(0)
+                        }}
+                        className="shrink-0 px-1 text-lg leading-none text-textschwach"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {restValue !== null && restValue > 0 && (
+                  <div
+                    className={`flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors ${
+                      focusedPart === -1
+                        ? 'bg-akzentstark/15 ring-1 ring-akzent/40'
+                        : 'bg-karte2'
+                    }`}
+                  >
+                    <span
+                      aria-label="Rest"
+                      className="betragszahl w-20 shrink-0 rounded-lg text-right text-sm font-semibold text-textschwach"
+                    >
+                      {new Intl.NumberFormat('de-DE', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(restValue)}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Kategorie Rest"
+                      onClick={() => {
+                        setFocusedPart(-1)
+                        setCategory(restCategory)
+                        setIconChoice(null)
+                      }}
+                      className="flex min-h-8 flex-1 items-center gap-1.5 truncate text-left text-sm"
+                    >
+                      {restCategory ? (
+                        <CategoryIconTile name={restCategory} groesse={24} iconGroesse={13} />
+                      ) : null}
+                      <span
+                        className={restCategory ? 'truncate' : 'truncate text-textschwach'}
+                      >
+                        {restCategory || 'Rest-Kategorie'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={restShared ? 'Gemeinsam' : 'Persönlich'}
+                      onClick={() => setRestShared(!restShared)}
+                      className={`flex min-h-8 shrink-0 items-center rounded-full px-3 text-xs font-medium transition-colors ${
+                        restShared
+                          ? 'bg-akzentstark/20 text-akzent'
+                          : 'bg-karte2 text-textschwach'
+                      }`}
+                    >
+                      {restShared ? 'Gemeinsam' : (activePerson ?? 'Meins')}
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setParts([...parts, { betrag: '', kategorie: '', gemeinsam: false }])
+                    setFocusedPart(parts.length)
+                  }}
+                  className="w-full rounded-xl bg-karte2 py-2 text-sm font-medium text-textschwach transition-colors"
+                >
+                  + Teil
+                </button>
+              </div>
+            )}
+
+            <label className="mb-1 block text-xs text-textschwach">
+              {split
+                ? focusedPart === -1
+                  ? 'Kategorie (Rest)'
+                  : `Kategorie (Teil ${focusedPart + 1})`
+                : 'Kategorie'}
+            </label>
             {categories.length > 0 && (
               <div className="mb-1.5 flex flex-wrap gap-2">
                 {categories.map((k) => (
                   <button
                     type="button"
                     key={k.name}
-                    onClick={() => setCategory(k.name)}
+                    onClick={() => pickCategory(k.name)}
                     className={`flex min-h-11 items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm transition-colors ${
                       category === k.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
                     }`}
@@ -258,7 +555,7 @@ export function EntrySheet({
               <input
                 value={category}
                 onChange={(e) => {
-                  setCategory(e.target.value)
+                  pickCategory(e.target.value)
                   setIconChoice(null)
                 }}
                 placeholder="Neue Kategorie"
@@ -331,7 +628,7 @@ export function EntrySheet({
                         type="button"
                         key={v.name}
                         onClick={() => {
-                          setCategory(v.name)
+                          pickCategory(v.name)
                           setIconChoice(iconNameFrom(v.icon))
                         }}
                         className="flex min-h-8 items-center gap-1.5 rounded-full bg-karte2 px-3 text-xs text-textschwach transition-colors"
@@ -353,6 +650,7 @@ export function EntrySheet({
               className="mb-2.5 w-full rounded-xl bg-karte2 px-4 py-2.5 outline-none ring-strich focus:ring-2"
             />
 
+            {!split && (
             <div className="mb-2.5 rounded-xl bg-karte2 px-4 py-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Gemeinsame Ausgabe</span>
@@ -377,39 +675,67 @@ export function EntrySheet({
                 {sharesText ? `Wird ${sharesText} geteilt` : 'Wird zu gleichen Teilen geteilt'}
               </p>
             </div>
+            )}
 
-            <label className="mb-1 block text-xs text-textschwach">
-              {shared ? 'Bezahlt von' : 'Person'}
-            </label>
-            <div className="mb-2.5 flex gap-2">
-              {persons.map((p) => {
-                const selected = shared ? payer === p.name : person === p.name
-                return (
-                  <button
-                    type="button"
-                    key={p.id}
-                    onClick={() => (shared ? setPayer(p.name) : setPerson(p.name))}
-                    className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 transition-colors ${
-                      selected ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
-                    }`}
-                  >
-                    {p.name}
-                  </button>
-                )
-              })}
-            </div>
+            {split ? (
+              anySharedPart ? (
+                <>
+                  <label className="mb-1 block text-xs text-textschwach">Bezahlt von</label>
+                  <div className="mb-2.5 flex gap-2">
+                    {persons.map((p) => (
+                      <button
+                        type="button"
+                        key={p.id}
+                        onClick={() => setPayer(p.name)}
+                        className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 transition-colors ${
+                          payer === p.name ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
+                        }`}
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null
+            ) : (
+              <>
+                <label className="mb-1 block text-xs text-textschwach">
+                  {shared ? 'Bezahlt von' : 'Person'}
+                </label>
+                <div className="mb-2.5 flex gap-2">
+                  {persons.map((p) => {
+                    const selected = shared ? payer === p.name : person === p.name
+                    return (
+                      <button
+                        type="button"
+                        key={p.id}
+                        onClick={() => (shared ? setPayer(p.name) : setPerson(p.name))}
+                        className={`flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 transition-colors ${
+                          selected ? 'bg-akzentstark text-akzenttext' : 'bg-karte2 text-textschwach'
+                        }`}
+                      >
+                        {p.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
 
             <AnimatePresence initial={false}>
-              {debtAmount !== null && debtor && payer && (
+              {(split
+                ? splitDebtAmount !== null && anySharedPart && payer && debtor
+                : debtAmount !== null && debtor && payer) && (
                 <motion.p
-                  key={`${debtor}-${payer}-${debtAmount}`}
+                  key={`${debtor}-${payer}-${split ? splitDebtAmount : debtAmount}`}
                   className="betragszahl mb-2.5 text-[13px] text-akzent"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={soft}
                 >
-                  → {debtor} schuldet {payer} {euro(debtAmount)}
+                  → {debtor} schuldet {payer}{' '}
+                  {euro(split ? (splitDebtAmount ?? 0) : (debtAmount ?? 0))}
                 </motion.p>
               )}
             </AnimatePresence>

@@ -23,12 +23,14 @@ public class CoachingController {
 
     private final BudgetRepository budgetRepository;
     private final EntryRepository entryRepository;
+    private final EntryParts entryParts;
     private final CategoryRepository categoryRepository;
 
     public CoachingController(BudgetRepository budgetRepository, EntryRepository entryRepository,
-            CategoryRepository categoryRepository) {
+            EntryParts entryParts, CategoryRepository categoryRepository) {
         this.budgetRepository = budgetRepository;
         this.entryRepository = entryRepository;
+        this.entryParts = entryParts;
         this.categoryRepository = categoryRepository;
     }
 
@@ -42,13 +44,12 @@ public class CoachingController {
         }
 
         Map<String, BigDecimal> expenses = new HashMap<>();
-        for (EntryEntity entry : entryRepository.findAll()) {
-            if (!YearMonth.from(entry.getDatum()).equals(period)) {
+        for (LineItem item : entryParts.lineItems(entryRepository.findAll())) {
+            if (!YearMonth.from(item.date()).equals(period)) {
                 continue;
             }
-            BigDecimal amount = entry.getBetrag();
-            if (amount.signum() < 0) {
-                expenses.merge(entry.getKategorie(), amount.abs(), BigDecimal::add);
+            if (item.amount().signum() < 0) {
+                expenses.merge(item.category(), item.amount().abs(), BigDecimal::add);
             }
         }
 

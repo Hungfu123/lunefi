@@ -41,40 +41,40 @@ public class MonthlyOverviewSteps {
     }
 
     @Wenn("die Monatsübersicht {monat} aufgerufen wird")
-    public void callMonthlyOverview(YearMonth monat) {
-        ResponseEntity<String> response = rest.getForEntity("/api/monatsuebersicht/" + monat, String.class);
+    public void callMonthlyOverview(YearMonth month) {
+        ResponseEntity<String> response = rest.getForEntity("/api/monatsuebersicht/" + month, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         overview = mapper.readTree(response.getBody());
     }
 
     @Wenn("die Monatsübersicht {monat} für Person {string} aufgerufen wird")
-    public void callMonthlyOverviewForPerson(YearMonth monat, String person) {
+    public void callMonthlyOverviewForPerson(YearMonth month, String person) {
         ResponseEntity<String> response = sessions.forPerson(person).getForEntity(
-                "/api/monatsuebersicht/" + monat + "?person=" + person, String.class);
+                "/api/monatsuebersicht/" + month + "?person=" + person, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         overview = mapper.readTree(response.getBody());
     }
 
     @Wenn("die Monatsübersicht {monat} in der Paar-Sicht aufgerufen wird")
-    public void callMonthlyOverviewForCouple(YearMonth monat) {
+    public void callMonthlyOverviewForCouple(YearMonth month) {
         ResponseEntity<String> response = rest.getForEntity(
-                "/api/monatsuebersicht/" + monat + "?gemeinsam=true", String.class);
+                "/api/monatsuebersicht/" + month + "?gemeinsam=true", String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         overview = mapper.readTree(response.getBody());
     }
 
     @Wenn("{string} die Monatsübersicht {monat} in der Paar-Sicht aufruft")
-    public void callMonthlyOverviewForCoupleAs(String caller, YearMonth monat) {
+    public void callMonthlyOverviewForCoupleAs(String caller, YearMonth month) {
         ResponseEntity<String> response = sessions.forPerson(caller).getForEntity(
-                "/api/monatsuebersicht/" + monat + "?gemeinsam=true", String.class);
+                "/api/monatsuebersicht/" + month + "?gemeinsam=true", String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         overview = mapper.readTree(response.getBody());
     }
 
     @Wenn("die Monatsübersicht {monat} für Person {string} und in der Paar-Sicht aufgerufen wird")
-    public void callMonthlyOverviewForPersonAndCouple(YearMonth monat, String person) {
+    public void callMonthlyOverviewForPersonAndCouple(YearMonth month, String person) {
         ResponseEntity<String> response = rest.getForEntity(
-                "/api/monatsuebersicht/" + monat + "?person=" + person + "&gemeinsam=true", String.class);
+                "/api/monatsuebersicht/" + month + "?person=" + person + "&gemeinsam=true", String.class);
         responseStatus = response.getStatusCode();
     }
 
@@ -84,9 +84,9 @@ public class MonthlyOverviewSteps {
     }
 
     @Wenn("die Monatsübersicht Monat {int} im Jahr {int} aufgerufen wird")
-    public void callInvalidMonth(int monat, int jahr) {
+    public void callInvalidMonth(int month, int year) {
         ResponseEntity<String> response = rest.getForEntity(
-                "/api/monatsuebersicht/" + jahr + "-" + monat, String.class);
+                "/api/monatsuebersicht/" + year + "-" + month, String.class);
         responseStatus = response.getStatusCode();
     }
 
@@ -125,32 +125,32 @@ public class MonthlyOverviewSteps {
     }
 
     @Dann("zeigt die Monatsübersicht {monat} bei {string} Ausgaben von {betrag} Euro")
-    public void expensesOfCategoryInMonth(YearMonth monat, String kategorie, BigDecimal betrag) {
-        ResponseEntity<String> response = rest.getForEntity("/api/monatsuebersicht/" + monat, String.class);
+    public void expensesOfCategoryInMonth(YearMonth month, String category, BigDecimal amount) {
+        ResponseEntity<String> response = rest.getForEntity("/api/monatsuebersicht/" + month, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         JsonNode currentOverview = mapper.readTree(response.getBody());
-        assertThat(currentOverview.path("ausgabenJeKategorie").path(kategorie).decimalValue())
-                .isEqualByComparingTo(betrag);
+        assertThat(currentOverview.path("ausgabenJeKategorie").path(category).decimalValue())
+                .isEqualByComparingTo(amount);
     }
 
     @Angenommen("das Budget für Kategorie {string} im {monat} auf {betrag} Euro gesetzt wird")
-    public void setBudget(String kategorie, YearMonth monat, BigDecimal limit) {
+    public void setBudget(String category, YearMonth month, BigDecimal limit) {
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
         headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
         org.springframework.http.ResponseEntity<String> response = rest.exchange(
                 "/api/budgets",
                 org.springframework.http.HttpMethod.PUT,
                 new org.springframework.http.HttpEntity<>(java.util.Map.of(
-                        "monat", monat.toString(),
-                        "kategorie", kategorie,
+                        "monat", month.toString(),
+                        "kategorie", category,
                         "limit", limit), headers),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Dann("warnt die Monatsübersicht bei Kategorie {string}")
-    public void budgetWarning(String kategorie) {
-        JsonNode budget = overview.path("budgets").path(kategorie);
+    public void budgetWarning(String category) {
+        JsonNode budget = overview.path("budgets").path(category);
         assertThat(budget.path("limit").decimalValue()).isEqualByComparingTo(new BigDecimal("200.00"));
         assertThat(budget.path("ist").decimalValue()).isEqualByComparingTo(new BigDecimal("250.00"));
         assertThat(budget.path("warnung").asBoolean()).isTrue();
@@ -174,5 +174,18 @@ public class MonthlyOverviewSteps {
 
     private BigDecimal parseAmount(String rawValue) {
         return new BigDecimal(rawValue.replace(" Euro", "").replace(".", "").replace(',', '.'));
+    }
+
+    @Dann("zeigt die Monatsübersicht einen Eintrag mit dem Betrag {betrag} Euro")
+    public void singleEntryWithAmount(BigDecimal amount) {
+        JsonNode entries = overview.path("eintraege");
+        assertThat(entries.size()).isEqualTo(1);
+        assertThat(entries.get(0).path("betrag").decimalValue()).isEqualByComparingTo(amount);
+    }
+
+    @Dann("ist das Ist-Budget für {string} {betrag} Euro")
+    public void budgetActualForCategory(String category, BigDecimal actual) {
+        assertThat(overview.path("budgets").path(category).path("ist").decimalValue())
+                .isEqualByComparingTo(actual);
     }
 }

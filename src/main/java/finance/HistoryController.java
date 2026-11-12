@@ -19,11 +19,14 @@ public class HistoryController {
     private static final int MAX_MONTHS = 24;
 
     private final EntryRepository entryRepository;
+    private final EntryParts entryParts;
     private final Clock clock;
     private final AuthenticatedUser authenticatedUser;
 
-    public HistoryController(EntryRepository entryRepository, Clock clock, AuthenticatedUser authenticatedUser) {
+    public HistoryController(EntryRepository entryRepository, EntryParts entryParts, Clock clock,
+            AuthenticatedUser authenticatedUser) {
         this.entryRepository = entryRepository;
+        this.entryParts = entryParts;
         this.clock = clock;
         this.authenticatedUser = authenticatedUser;
     }
@@ -40,11 +43,10 @@ public class HistoryController {
         }
         int capped = Math.min(monate, MAX_MONTHS);
 
-        List<Entry> filtered = entryRepository.findAll().stream()
-                .map(EntryEntity::asEntry)
-                .filter(entry -> person == null || person.equals(entry.person()))
-                .filter(entry -> !Boolean.TRUE.equals(gemeinsam) || Boolean.TRUE.equals(entry.gemeinsam()))
-                .sorted(Comparator.comparing(Entry::datum))
+        List<LineItem> filtered = entryParts.lineItems(entryRepository.findAll()).stream()
+                .filter(item -> person == null || person.equals(item.person()))
+                .filter(item -> !Boolean.TRUE.equals(gemeinsam) || item.shared())
+                .sorted(Comparator.comparing(LineItem::date))
                 .toList();
 
         YearMonth currentMonth = YearMonth.now(clock);
@@ -53,14 +55,14 @@ public class HistoryController {
             YearMonth month = currentMonth.minusMonths(back);
             BigDecimal income = BigDecimal.ZERO.setScale(2);
             BigDecimal expenses = BigDecimal.ZERO.setScale(2);
-            for (Entry entry : filtered) {
-                if (!YearMonth.from(entry.datum()).equals(month)) {
+            for (LineItem item : filtered) {
+                if (!YearMonth.from(item.date()).equals(month)) {
                     continue;
                 }
-                if (entry.betrag().signum() < 0) {
-                    expenses = expenses.add(entry.betrag().abs());
+                if (item.amount().signum() < 0) {
+                    expenses = expenses.add(item.amount().abs());
                 } else {
-                    income = income.add(entry.betrag().abs());
+                    income = income.add(item.amount().abs());
                 }
             }
             history.add(new HistoryMonth(month.toString(), income, expenses,

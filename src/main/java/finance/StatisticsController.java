@@ -19,12 +19,14 @@ public class StatisticsController {
     private static final int MAX_MONTHS = 24;
 
     private final EntryRepository entryRepository;
+    private final EntryParts entryParts;
     private final StatisticsService statisticsService;
     private final AuthenticatedUser authenticatedUser;
 
-    public StatisticsController(EntryRepository entryRepository, StatisticsService statisticsService,
-            AuthenticatedUser authenticatedUser) {
+    public StatisticsController(EntryRepository entryRepository, EntryParts entryParts,
+            StatisticsService statisticsService, AuthenticatedUser authenticatedUser) {
         this.entryRepository = entryRepository;
+        this.entryParts = entryParts;
         this.statisticsService = statisticsService;
         this.authenticatedUser = authenticatedUser;
     }
@@ -39,7 +41,7 @@ public class StatisticsController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
         int capped = Math.min(monate, MAX_MONTHS);
-        List<Entry> filtered = filteredEntries(person, gemeinsam);
+        List<LineItem> filtered = filteredItems(person, gemeinsam);
         return statisticsService.categoryHistory(filtered, kategorie, capped);
     }
 
@@ -54,7 +56,7 @@ public class StatisticsController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
         checkView(person, gemeinsam);
-        List<Entry> filtered = filteredEntries(person, gemeinsam);
+        List<LineItem> filtered = filteredItems(person, gemeinsam);
         return statisticsService.savingsPotential(filtered, period);
     }
 
@@ -67,12 +69,11 @@ public class StatisticsController {
         }
     }
 
-    private List<Entry> filteredEntries(String person, Boolean gemeinsam) {
-        return entryRepository.findAll().stream()
-                .map(EntryEntity::asEntry)
-                .filter(entry -> person == null || person.equals(entry.person()))
-                .filter(entry -> !Boolean.TRUE.equals(gemeinsam) || Boolean.TRUE.equals(entry.gemeinsam()))
-                .sorted(Comparator.comparing(Entry::datum))
+    private List<LineItem> filteredItems(String person, Boolean gemeinsam) {
+        return entryParts.lineItems(entryRepository.findAll()).stream()
+                .filter(item -> person == null || person.equals(item.person()))
+                .filter(item -> !Boolean.TRUE.equals(gemeinsam) || item.shared())
+                .sorted(Comparator.comparing(LineItem::date))
                 .toList();
     }
 }

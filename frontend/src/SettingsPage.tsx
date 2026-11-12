@@ -103,14 +103,14 @@ export function SettingsPage() {
 
   return (
     <div>
-      <h2 className="mb-4 text-lg font-semibold">Einstellungen</h2>
+      <h2 className="mb-4 text-[15px] font-semibold">Einstellungen</h2>
 
       <section className="mb-6">
-        <h3 className="mb-2 text-sm font-medium text-textschwach">Erscheinungsbild</h3>
+        <h3 className="mb-2 text-[13px] font-semibold">Erscheinungsbild</h3>
         <div className="flex gap-2">
           <button
             onClick={() => applyTheme('mond')}
-            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 transition-colors ${
+            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors ${
               theme === 'mond' ? 'bg-akzentstark text-akzenttext' : 'bg-karte text-textschwach'
             }`}
           >
@@ -119,7 +119,7 @@ export function SettingsPage() {
           </button>
           <button
             onClick={() => applyTheme('sonne')}
-            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 transition-colors ${
+            className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 text-sm font-medium transition-colors ${
               theme === 'sonne' ? 'bg-akzentstark text-akzenttext' : 'bg-karte text-textschwach'
             }`}
           >
@@ -130,10 +130,10 @@ export function SettingsPage() {
       </section>
 
       <section className="mb-6">
-        <h3 className="mb-2 text-sm font-medium text-textschwach">Hilfe</h3>
+        <h3 className="mb-2 text-[13px] font-semibold">Hilfe</h3>
         <button
           onClick={() => setHelpOpen(true)}
-          className="flex min-h-11 w-full items-center gap-3 rounded-xl bg-karte px-4 text-sm text-text"
+          className="flex min-h-11 w-full items-center gap-3 rounded-xl bg-karte px-4 text-[15px] font-medium text-text"
         >
           <Question size={18} className="shrink-0" />
           So funktioniert LuneFi
@@ -141,15 +141,15 @@ export function SettingsPage() {
       </section>
 
       <section className="mb-6">
-        <h3 className="mb-2 text-sm font-medium text-textschwach">Konten</h3>
+        <h3 className="mb-2 text-[13px] font-semibold">Konten</h3>
         {accounts.length > 0 && (
           <ul className="mb-3 space-y-2">
             {accounts.map((k) => (
               <li key={k.id} className="flex items-center justify-between rounded-xl bg-karte px-4 py-3">
-                <span className="truncate text-sm">
+                <span className="truncate text-[13px] font-medium">
                   {k.name} <span className="text-textschwach">· {k.person}</span>
                 </span>
-                <span className="betragszahl text-sm font-semibold">{euro(k.saldo)}</span>
+                <span className="betragszahl text-[13px] font-semibold">{euro(k.saldo)}</span>
               </li>
             ))}
           </ul>
@@ -175,12 +175,10 @@ export function SettingsPage() {
       </section>
 
       <section className="mb-6">
-        <h3 className="mb-2 text-sm font-medium text-textschwach">Kategorien</h3>
-        <p className="mb-2 text-[12px] text-textschwach">
-          Haltung fürs Budget-Coaching — euer Partner sieht sie ebenfalls.
-        </p>
+        <h3 className="mb-2 text-[13px] font-semibold">Kategorien</h3>
+        <p className="mb-2 text-[12px] text-textschwach">Sichtbar für euch beide.</p>
         {categories.length === 0 && (
-          <p className="text-sm text-textschwach">Noch keine Kategorien — leg den ersten Eintrag an.</p>
+          <p className="text-sm text-textschwach">Noch keine Kategorien.</p>
         )}
         <ul className="space-y-1">
           {categories.map((k) => {
@@ -194,7 +192,7 @@ export function SettingsPage() {
                   className="flex h-8 w-full items-center gap-3 text-left"
                 >
                   <CategoryIconTile name={k.name} groesse={22} iconGroesse={13} />
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-text">
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-text">
                     {k.name}
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
@@ -224,7 +222,7 @@ export function SettingsPage() {
                     >
                       <div className="space-y-2.5 px-0.5 pb-3 pt-1">
                         <div>
-                          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                          <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
                             Aufteilung
                           </p>
                           <div className="flex gap-1.5">
@@ -253,7 +251,7 @@ export function SettingsPage() {
                           </div>
                         </div>
                         <div>
-                          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                          <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
                             Haltung
                           </p>
                           <AttitudeSelector
@@ -267,7 +265,7 @@ export function SettingsPage() {
                           />
                         </div>
                         <div>
-                          <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.08em] text-textschwach">
+                          <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
                             Budget-Limit
                           </p>
                           <form onSubmit={(e) => setBudget(k.name, e)} className="flex items-center gap-2">
@@ -276,11 +274,11 @@ export function SettingsPage() {
                               onChange={(e) => setBudgets((prev) => ({ ...prev, [k.name]: e.target.value }))}
                               inputMode="decimal"
                               placeholder="Limit in Euro"
-                              className="min-w-0 flex-1 rounded-xl bg-karte2 px-3 py-2 outline-none ring-strich focus:ring-2"
+                              className="min-w-0 flex-1 rounded-xl bg-karte2 px-3 py-2.5 outline-none ring-strich focus:ring-2"
                             />
                             <button
                               type="submit"
-                              className="flex min-h-9 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-xs font-semibold text-akzenttext"
+                              className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-akzenttext"
                             >
                               Speichern
                             </button>

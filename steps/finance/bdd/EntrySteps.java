@@ -92,40 +92,40 @@ public class EntrySteps {
     }
 
     @Wenn("ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} von {string} auf dem Konto {string} erfasst wird")
-    public void recordEntryOnAccount(LocalDate datum, BigDecimal betrag, String kategorie, String person, String konto) {
+    public void recordEntryOnAccount(LocalDate date, BigDecimal amount, String category, String person, String account) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of(
-                "datum", datum.toString(),
-                "betrag", betrag,
-                "kategorie", kategorie,
+                "datum", date.toString(),
+                "betrag", amount,
+                "kategorie", category,
                 "person", person,
                 "gemeinsam", false,
-                "konto", konto);
+                "konto", account);
         ResponseEntity<String> response = sessions.forPerson(person).postForEntity("/api/eintraege",
                 new HttpEntity<>(body, headers), String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Wenn("ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} von {string} erfasst wird")
-    public void recordEntry(LocalDate datum, BigDecimal betrag, String kategorie, String person) {
+    public void recordEntry(LocalDate date, BigDecimal amount, String category, String person) {
         ResponseEntity<String> response = post(sessions.forPerson(person), Map.of(
-                "datum", datum.toString(),
-                "betrag", betrag,
-                "kategorie", kategorie,
+                "datum", date.toString(),
+                "betrag", amount,
+                "kategorie", category,
                 "person", person,
                 "gemeinsam", false));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Wenn("{string} eine gemeinsame Ausgabe mit {betrag} Euro und Kategorie {string} erfasst")
-    public void recordSharedExpense(String zahler, BigDecimal betrag, String kategorie) {
+    public void recordSharedExpense(String payer, BigDecimal amount, String category) {
         ResponseEntity<String> response = post(Map.of(
                 "datum", LocalDate.of(2026, 11, 15).toString(),
-                "betrag", betrag,
-                "kategorie", kategorie,
+                "betrag", amount,
+                "kategorie", category,
                 "gemeinsam", true,
-                "zahler", zahler));
+                "zahler", payer));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
@@ -180,10 +180,10 @@ public class EntrySteps {
     }
 
     @Wenn("nur die Einträge von {string} im {monat} abgefragt werden")
-    public void queryEntriesOfPerson(String person, YearMonth monat) {
+    public void queryEntriesOfPerson(String person, YearMonth month) {
         result = query(Map.of(
                 "person", person,
-                "monat", monat.toString()), sessions.forPerson(person));
+                "monat", month.toString()), sessions.forPerson(person));
     }
 
     @Wenn("nur die gemeinsamen Einträge abgefragt werden")
@@ -192,15 +192,15 @@ public class EntrySteps {
     }
 
     @Wenn("ein gemeinsamer Eintrag von der Person {string} mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string} erfasst werden soll")
-    public void sharedEntryByPerson(String zahler, LocalDate datum, BigDecimal betrag, String kategorie) {
+    public void sharedEntryByPerson(String payer, LocalDate date, BigDecimal amount, String category) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of(
-                "datum", datum.toString(),
-                "betrag", betrag,
-                "kategorie", kategorie,
+                "datum", date.toString(),
+                "betrag", amount,
+                "kategorie", category,
                 "gemeinsam", true,
-                "zahler", zahler);
+                "zahler", payer);
         ResponseEntity<String> response = rest.postForEntity("/api/eintraege", new HttpEntity<>(body, headers), String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
@@ -211,14 +211,14 @@ public class EntrySteps {
     }
 
     @Dann("existiert genau ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Kategorie {string}")
-    public void exactlyOneEntryPresent(LocalDate datum, BigDecimal betrag, String kategorie) {
+    public void exactlyOneEntryPresent(LocalDate date, BigDecimal amount, String category) {
         JsonNode entries = query(Map.of());
         assertThat(entries.size()).isEqualTo(1);
 
         JsonNode entry = entries.get(0);
-        assertThat(entry.path("datum").asText()).isEqualTo(datum.toString());
-        assertThat(entry.path("betrag").decimalValue()).isEqualByComparingTo(betrag);
-        assertThat(entry.path("kategorie").asText()).isEqualTo(kategorie);
+        assertThat(entry.path("datum").asText()).isEqualTo(date.toString());
+        assertThat(entry.path("betrag").decimalValue()).isEqualByComparingTo(amount);
+        assertThat(entry.path("kategorie").asText()).isEqualTo(category);
     }
 
     @Dann("gehört der Eintrag {string} und ist nicht gemeinsam")
@@ -230,10 +230,10 @@ public class EntrySteps {
     }
 
     @Dann("existiert im Ergebnis genau ein Eintrag mit Betrag {betrag} Euro und Kategorie {string}")
-    public void exactlyOneEntryInResult(BigDecimal betrag, String kategorie) {
+    public void exactlyOneEntryInResult(BigDecimal amount, String category) {
         assertThat(result.size()).isEqualTo(1);
-        assertThat(result.get(0).path("betrag").decimalValue()).isEqualByComparingTo(betrag);
-        assertThat(result.get(0).path("kategorie").asText()).isEqualTo(kategorie);
+        assertThat(result.get(0).path("betrag").decimalValue()).isEqualByComparingTo(amount);
+        assertThat(result.get(0).path("kategorie").asText()).isEqualTo(category);
     }
 
     @Wenn("der Betrag dieses Eintrags zu {betrag} Euro geändert wird")
@@ -335,5 +335,78 @@ public class EntrySteps {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         return template.postForEntity("/api/eintraege", new HttpEntity<>(body, headers), String.class);
+    }
+
+    @Wenn("{string} einen Eintrag mit Datum {datum}, Betrag {betrag} Euro und Teilen erfasst:")
+    public void recordEntryWithParts(String payer, LocalDate date, BigDecimal amount,
+            io.cucumber.datatable.DataTable parts) {
+        ResponseEntity<String> response = post(sessions.forPerson(payer), partsBody(date, amount, parts, payer));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
+
+    @Wenn("ein Eintrag mit Datum {datum}, Betrag {betrag} Euro und Teilen ohne Zahler erfasst wird:")
+    public void recordEntryWithPartsWithoutPayer(LocalDate date, BigDecimal amount,
+            io.cucumber.datatable.DataTable parts) {
+        ResponseEntity<String> response = post(sessions.forPerson("Alex"), partsBody(date, amount, parts, null));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Wenn("{string} die Teile des Eintrags vom {datum} ändert zu:")
+    public void changePartsOfEntry(String person, LocalDate date, io.cucumber.datatable.DataTable parts) {
+        JsonNode existing = entryByDate(date);
+        Map<String, Object> body = new HashMap<>(fullBody(existing, existing.path("betrag").decimalValue()));
+        body.put("teile", parseParts(parts));
+        if (existing.path("zahler").asText(null) != null && !existing.path("zahler").asText().isBlank()) {
+            body.put("zahler", existing.path("zahler").asText());
+        }
+        ResponseEntity<String> response = put("/api/eintraege/" + existing.path("id").asLong(), body);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    private JsonNode entryByDate(LocalDate date) {
+        JsonNode entries = query(Map.of());
+        JsonNode found = null;
+        for (JsonNode candidate : entries) {
+            if (candidate.path("datum").asText().equals(date.toString())) {
+                found = candidate;
+            }
+        }
+        assertThat(found).isNotNull();
+        return found;
+    }
+
+    private Map<String, Object> partsBody(LocalDate date, BigDecimal amount,
+            io.cucumber.datatable.DataTable parts, String payer) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("datum", date.toString());
+        body.put("betrag", amount);
+        if (payer != null) {
+            body.put("zahler", payer);
+        }
+        body.put("teile", parseParts(parts));
+        return body;
+    }
+
+    private java.util.List<Map<String, Object>> parseParts(io.cucumber.datatable.DataTable parts) {
+        java.util.List<Map<String, Object>> parsedParts = new java.util.ArrayList<>();
+        for (Map<String, String> row : parts.asMaps()) {
+            Map<String, Object> part = new HashMap<>();
+            part.put("betrag", new BigDecimal(row.get("Betrag").replace(".", "").replace(',', '.')));
+            part.put("kategorie", row.get("Kategorie"));
+            String person = row.get("Person");
+            if (person != null && !person.isBlank()) {
+                part.put("person", person);
+            }
+            part.put("gemeinsam", "ja".equals(row.get("Gemeinsam")));
+            parsedParts.add(part);
+        }
+        return parsedParts;
+    }
+
+    @Wenn("{string} einen Eintrag mit Datum {datum}, Betrag {betrag} Euro und Teilen erfasst werden soll:")
+    public void recordEntryWithPartsRejected(String payer, LocalDate date, BigDecimal amount,
+            io.cucumber.datatable.DataTable parts) {
+        ResponseEntity<String> response = post(sessions.forPerson(payer), partsBody(date, amount, parts, payer));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 }

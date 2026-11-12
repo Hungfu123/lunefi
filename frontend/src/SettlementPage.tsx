@@ -100,7 +100,7 @@ export function SettlementPage() {
           ‹
         </button>
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">{monthLabel(monat)}</h2>
+          <h2 className="text-[15px] font-semibold">{monthLabel(monat)}</h2>
           {data?.ausgeglichen ? (
             <SettledPill />
           ) : (
@@ -121,7 +121,7 @@ export function SettlementPage() {
 
       {loading && <div className="h-32 animate-pulse rounded-2xl bg-karte" />}
 
-      {error && !loading && <p className="text-schlecht">Der Ausgleich konnte nicht geladen werden.</p>}
+      {error && !loading && <p className="text-sm text-schlecht">Ausgleich konnte nicht geladen werden.</p>}
 
       {data && !loading && (
         <>
@@ -129,7 +129,7 @@ export function SettlementPage() {
             {data.vorschlag ? (
               <p className="text-2xl font-semibold text-text">{data.vorschlag}</p>
             ) : (
-              <p className="text-lg text-textschwach">Alles ausgeglichen.</p>
+              <p className="text-[15px] text-textschwach">Alles ausgeglichen.</p>
             )}
           </div>
 
@@ -141,12 +141,12 @@ export function SettlementPage() {
                   persons.slice(0, i).map((p) => Math.abs(data.saldi[p] ?? 0)),
                 )
                 return (
-                  <span key={person} className="flex items-center gap-1 text-sm text-textschwach">
+                  <span key={person} className="flex items-center gap-1 text-[13px] text-textschwach">
                     {i > 0 && <span aria-hidden="true">·</span>}
                     <span className="truncate">{person} {saldo > 0 ? 'bekommt' : saldo < 0 ? 'schuldet' : 'ist ausgeglichen'}</span>
                     {saldo !== 0 && !shownAmounts.has(Math.abs(saldo)) && (
                       <span
-                        className={`betragszahl text-sm font-semibold ${
+                        className={`betragszahl text-[13px] font-semibold ${
                           saldo > 0 ? 'text-gut' : 'text-schlecht'
                         }`}
                       >
@@ -159,9 +159,9 @@ export function SettlementPage() {
             </div>
           )}
 
-          <h3 className="mb-2 text-sm font-medium text-textschwach">Gemeinsame Ausgaben</h3>
+          <h3 className="mb-2 text-[13px] font-semibold">Gemeinsame Ausgaben</h3>
           {data.positionen.length === 0 && (
-            <p className="text-sm text-textschwach">Keine gemeinsamen Ausgaben in diesem Monat.</p>
+            <p className="text-sm text-textschwach">Keine gemeinsamen Ausgaben.</p>
           )}
           {positionGroups.length > 0 && (
             <ul className="mb-6 space-y-3">
@@ -178,9 +178,9 @@ export function SettlementPage() {
                       >
                         <span className="flex min-w-0 items-center gap-3">
                           <CategoryIconTile name={position.kategorie} />
-                          <span className="truncate text-[15px] font-medium">{position.kategorie}</span>
+                          <span className="truncate text-[15px] font-semibold">{position.kategorie}</span>
                         </span>
-                        <span className="betragszahl shrink-0 text-sm font-semibold">
+                        <span className="betragszahl shrink-0 text-[13px] font-semibold">
                           {euro(Math.abs(position.betrag))}
                         </span>
                       </li>
@@ -208,36 +208,43 @@ export function SettlementPage() {
               transition={reduced ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="mb-5 text-center text-sm font-medium text-gut"
             >
-              Ausgeglichen — fair bleibt fair.
+              Ausgeglichen.
             </motion.p>
           )}
 
           {history.length > 1 && (
             <>
-              <h3 className="mb-2 text-sm font-medium text-textschwach">Verlauf</h3>
+              <h3 className="mb-2 text-[13px] font-semibold">Verlauf</h3>
               <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {history.map((m) => {
                   const amount = Math.max(0, ...Object.values(m.saldi).map(Math.abs))
+                  const status = m.ausgeglichen
+                    ? 'ausgeglichen'
+                    : m.laeuftNoch
+                      ? 'läuft noch'
+                      : m.vorschlag
+                        ? 'offen'
+                        : 'nichts offen'
                   return (
                     <button
                       key={m.monat}
                       onClick={() => selectMonth(m.monat)}
-                      aria-label={`${monthLabel(m.monat)} laden`}
-                      className={`flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-karte px-3.5 ${
+                      aria-label={`${monthLabel(m.monat)} — ${status}`}
+                      className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-karte px-3 transition-[background-color,box-shadow] duration-150 ease-out ${
                         m.monat === monat ? 'ring-2 ring-akzent' : ''
                       }`}
                     >
                       <span className="text-[13px] font-medium">{shortMonth(m.monat)}</span>
                       {m.ausgeglichen ? (
-                        <CheckCircle size={14} weight="fill" className="shrink-0 text-gut" aria-label="ausgeglichen" />
+                        <CheckCircle size={14} weight="fill" className="shrink-0 text-gut" />
                       ) : m.laeuftNoch ? (
-                        <span className="text-[11px] text-akzent">läuft noch</span>
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-akzent" />
                       ) : m.vorschlag ? (
-                        <span className="betragszahl text-[11px] font-semibold text-textschwach">
+                        <span className="betragszahl text-[11px] font-semibold text-schlecht">
                           {euro(amount)}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-textschwach">nichts offen</span>
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-textschwach/40" />
                       )}
                     </button>
                   )

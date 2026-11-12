@@ -103,7 +103,7 @@ export function Layout({
         </div>
       </header>
 
-      <main className="flex-1 px-4 pb-24 pt-0.5">
+      <main className="flex-1 px-4 pb-[70px] pt-0.5">
         <div key={location.pathname} className="seite">
           <Outlet />
         </div>

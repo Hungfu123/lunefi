@@ -17,12 +17,14 @@ public class ForecastController {
     private static final int MAX_MONTHS = 24;
 
     private final EntryRepository entryRepository;
+    private final EntryParts entryParts;
     private final ForecastService forecastService;
     private final AuthenticatedUser authenticatedUser;
 
-    public ForecastController(EntryRepository entryRepository, ForecastService forecastService,
-            AuthenticatedUser authenticatedUser) {
+    public ForecastController(EntryRepository entryRepository, EntryParts entryParts,
+            ForecastService forecastService, AuthenticatedUser authenticatedUser) {
         this.entryRepository = entryRepository;
+        this.entryParts = entryParts;
         this.forecastService = forecastService;
         this.authenticatedUser = authenticatedUser;
     }
@@ -42,11 +44,10 @@ public class ForecastController {
         }
         int capped = Math.min(monate, MAX_MONTHS);
 
-        List<Entry> filtered = entryRepository.findAll().stream()
-                .map(EntryEntity::asEntry)
-                .filter(entry -> person == null || person.equals(entry.person()))
-                .filter(entry -> !Boolean.TRUE.equals(gemeinsam) || Boolean.TRUE.equals(entry.gemeinsam()))
-                .sorted(Comparator.comparing(Entry::datum))
+        List<LineItem> filtered = entryParts.lineItems(entryRepository.findAll()).stream()
+                .filter(item -> person == null || person.equals(item.person()))
+                .filter(item -> !Boolean.TRUE.equals(gemeinsam) || item.shared())
+                .sorted(Comparator.comparing(LineItem::date))
                 .toList();
 
         return forecastService.forecast(filtered, capped);

@@ -59,8 +59,8 @@ public class ForecastSteps {
     }
 
     @Dann("gilt die Prognose für den Monat {monat}")
-    public void forecastIsForMonth(YearMonth monat) {
-        assertThat(forecast.path("monat").asText()).isEqualTo(monat.toString());
+    public void forecastIsForMonth(YearMonth month) {
+        assertThat(forecast.path("monat").asText()).isEqualTo(month.toString());
     }
 
     @Dann("sind die Basis-Monate {monat}, {monat}, {monat}")
@@ -74,25 +74,25 @@ public class ForecastSteps {
     }
 
     @Dann("prognostiziert sie für die Kategorie {string} Ausgaben von {betrag} Euro")
-    public void forecastsExpenseForCategory(String kategorie, BigDecimal betrag) {
-        assertThat(forecast.path("ausgabenJeKategorie").path(kategorie).decimalValue())
-                .isEqualByComparingTo(betrag);
+    public void forecastsExpenseForCategory(String category, BigDecimal amount) {
+        assertThat(forecast.path("ausgabenJeKategorie").path(category).decimalValue())
+                .isEqualByComparingTo(amount);
     }
 
     @Dann("prognostiziert sie für die Kategorie {string} Einnahmen von {betrag} Euro")
-    public void forecastsIncomeForCategory(String kategorie, BigDecimal betrag) {
-        assertThat(forecast.path("einnahmenJeKategorie").path(kategorie).decimalValue())
-                .isEqualByComparingTo(betrag);
+    public void forecastsIncomeForCategory(String category, BigDecimal amount) {
+        assertThat(forecast.path("einnahmenJeKategorie").path(category).decimalValue())
+                .isEqualByComparingTo(amount);
     }
 
     @Dann("enthält sie keine Ausgaben für die Kategorie {string}")
-    public void containsNoExpenseForCategory(String kategorie) {
-        assertThat(forecast.path("ausgabenJeKategorie").has(kategorie)).isFalse();
+    public void containsNoExpenseForCategory(String category) {
+        assertThat(forecast.path("ausgabenJeKategorie").has(category)).isFalse();
     }
 
     @Dann("enthält sie keine Einnahmen für die Kategorie {string}")
-    public void containsNoIncomeForCategory(String kategorie) {
-        assertThat(forecast.path("einnahmenJeKategorie").has(kategorie)).isFalse();
+    public void containsNoIncomeForCategory(String category) {
+        assertThat(forecast.path("einnahmenJeKategorie").has(category)).isFalse();
     }
 
     @Dann("beträgt die prognostizierte Differenz {betrag} Euro")

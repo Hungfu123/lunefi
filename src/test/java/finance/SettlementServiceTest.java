@@ -28,6 +28,7 @@ class SettlementServiceTest {
     private PersonRepository personRepository;
     private CategoryRepository categoryRepository;
     private SettledMonthRepository settledMonthRepository;
+    private EntryPartRepository entryPartRepository;
     private SettlementService service;
 
     @BeforeEach
@@ -36,8 +37,10 @@ class SettlementServiceTest {
         personRepository = mock(PersonRepository.class);
         categoryRepository = mock(CategoryRepository.class);
         settledMonthRepository = mock(SettledMonthRepository.class);
-        service = new SettlementService(entryRepository, personRepository, categoryRepository,
-                settledMonthRepository, CLOCK);
+        entryPartRepository = mock(EntryPartRepository.class);
+        when(entryPartRepository.findAllByOrderByEintragIdAscPositionAsc()).thenReturn(List.of());
+        service = new SettlementService(entryRepository, new EntryParts(entryPartRepository),
+                personRepository, categoryRepository, settledMonthRepository, CLOCK);
         when(personRepository.findAll()).thenReturn(List.of(
                 new PersonEntity("Alex"),
                 new PersonEntity("Kim")));

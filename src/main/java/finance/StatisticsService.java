@@ -23,7 +23,7 @@ public class StatisticsService {
         this.clock = clock;
     }
 
-    public CategoryStatistics categoryHistory(List<Entry> entries, String category, int monate) {
+    public CategoryStatistics categoryHistory(List<LineItem> entries, String category, int monate) {
         YearMonth currentMonth = YearMonth.now(clock);
 
         List<StatisticsMonth> trend = new ArrayList<>();
@@ -42,9 +42,9 @@ public class StatisticsService {
         return new CategoryStatistics(category, trend, median, average);
     }
 
-    public SavingsPotential savingsPotential(List<Entry> entries, YearMonth monat) {
+    public SavingsPotential savingsPotential(List<LineItem> entries, YearMonth monat) {
         long monthsWithEntries = entries.stream()
-                .map(entry -> YearMonth.from(entry.datum()))
+                .map(item -> YearMonth.from(item.date()))
                 .filter(earlier -> earlier.isBefore(monat))
                 .distinct()
                 .count();
@@ -75,30 +75,30 @@ public class StatisticsService {
         return new SavingsPotential(hints, "OK");
     }
 
-    private BigDecimal expensesInMonth(List<Entry> entries, String category, YearMonth month) {
+    private BigDecimal expensesInMonth(List<LineItem> entries, String category, YearMonth month) {
         BigDecimal sum = BigDecimal.ZERO;
-        for (Entry entry : entries) {
-            if (YearMonth.from(entry.datum()).equals(month)
-                    && entry.kategorie().equals(category)
-                    && entry.betrag().signum() < 0) {
-                sum = sum.add(entry.betrag().abs());
+        for (LineItem item : entries) {
+            if (YearMonth.from(item.date()).equals(month)
+                    && item.category().equals(category)
+                    && item.amount().signum() < 0) {
+                sum = sum.add(item.amount().abs());
             }
         }
         return sum.setScale(2);
     }
 
-    private Map<String, BigDecimal> expensesByCategory(List<Entry> entries, YearMonth monat) {
+    private Map<String, BigDecimal> expensesByCategory(List<LineItem> entries, YearMonth monat) {
         Map<String, BigDecimal> sums = new LinkedHashMap<>();
-        for (Entry entry : entries) {
-            if (!YearMonth.from(entry.datum()).equals(monat) || entry.betrag().signum() >= 0) {
+        for (LineItem item : entries) {
+            if (!YearMonth.from(item.date()).equals(monat) || item.amount().signum() >= 0) {
                 continue;
             }
-            sums.merge(entry.kategorie(), entry.betrag().abs(), BigDecimal::add);
+            sums.merge(item.category(), item.amount().abs(), BigDecimal::add);
         }
         return sums;
     }
 
-    private BigDecimal usualExpenses(List<Entry> entries, String category,
+    private BigDecimal usualExpenses(List<LineItem> entries, String category,
             List<YearMonth> baseMonths) {
         List<BigDecimal> values = new ArrayList<>();
         for (YearMonth baseMonth : baseMonths) {

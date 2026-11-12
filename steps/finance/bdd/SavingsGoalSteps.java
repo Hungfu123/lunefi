@@ -43,13 +43,13 @@ public class SavingsGoalSteps {
     }
 
     @Angenommen("{betrag} Euro eingezahlt wurden")
-    public void deposited(BigDecimal betrag) {
-        deposit(betrag, "Alex", LocalDate.of(2026, 11, 10));
+    public void deposited(BigDecimal amount) {
+        deposit(amount, "Alex", LocalDate.of(2026, 11, 10));
     }
 
     @Wenn("eine Einzahlung von {betrag} Euro durch {string} erfolgt")
-    public void depositBy(BigDecimal betrag, String person) {
-        deposit(betrag, person, LocalDate.of(2026, 11, 12));
+    public void depositBy(BigDecimal amount, String person) {
+        deposit(amount, person, LocalDate.of(2026, 11, 12));
     }
 
     @Wenn("das Sparziel {string} mit {betrag} Euro erstellt werden soll")
@@ -75,15 +75,15 @@ public class SavingsGoalSteps {
         assertThat(queryAll().size()).isZero();
     }
 
-    private void deposit(BigDecimal betrag, String person, LocalDate datum) {
+    private void deposit(BigDecimal amount, String person, LocalDate date) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         ResponseEntity<String> response = rest.postForEntity(
                 "/api/sparziele/" + savingsGoalId + "/einzahlungen",
                 new HttpEntity<>(Map.of(
-                        "betrag", betrag,
+                        "betrag", amount,
                         "person", person,
-                        "datum", datum.toString()), headers),
+                        "datum", date.toString()), headers),
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }

@@ -15,22 +15,24 @@ import org.springframework.stereotype.Service;
 public class SettlementService {
 
     private final EntryRepository entryRepository;
+    private final EntryParts entryParts;
     private final PersonRepository personRepository;
     private final CategoryRepository categoryRepository;
     private final SettledMonthRepository settledMonthRepository;
     private final java.time.Clock clock;
 
-    public SettlementService(EntryRepository entryRepository, PersonRepository personRepository,
-            CategoryRepository categoryRepository, SettledMonthRepository settledMonthRepository,
-            java.time.Clock clock) {
+    public SettlementService(EntryRepository entryRepository, EntryParts entryParts,
+            PersonRepository personRepository, CategoryRepository categoryRepository,
+            SettledMonthRepository settledMonthRepository, java.time.Clock clock) {
         this.entryRepository = entryRepository;
+        this.entryParts = entryParts;
         this.personRepository = personRepository;
         this.categoryRepository = categoryRepository;
         this.settledMonthRepository = settledMonthRepository;
         this.clock = clock;
     }
 
-    public SettlementWithPositions settlement(YearMonth monat) {
+    public SettlementWithPositions settlement(YearMonth month) {
         List<String> persons = personRepository.findAll().stream()
                 .map(PersonEntity::getName)
                 .sorted()
@@ -41,23 +43,33 @@ public class SettlementService {
             saldi.put(person, BigDecimal.ZERO.setScale(2));
         }
 
-        List<EntryEntity> sharedEntries = entryRepository.findAll().stream()
-                .filter(entry -> Boolean.TRUE.equals(entry.getGemeinsam()))
-                .filter(entry -> YearMonth.from(entry.getDatum()).equals(monat))
+        List<EntryEntity> entitiesInMonth = entryRepository.findAll().stream()
+                .filter(entry -> YearMonth.from(entry.getDatum()).equals(month))
                 .sorted(Comparator.comparing(EntryEntity::getDatum)
                         .thenComparing(EntryEntity::getId))
                 .toList();
+        Map<Long, String> payersByEntry = new LinkedHashMap<>();
+        for (EntryEntity entry : entitiesInMonth) {
+            payersByEntry.put(entry.getId(), entry.getZahler());
+        }
 
         List<SettlementPosition> positions = new ArrayList<>();
-        for (EntryEntity entry : sharedEntries) {
-            Map<String, BigDecimal> shares = sharesFor(entry, persons);
-            positions.add(new SettlementPosition(entry.getId(), entry.getKategorie(),
-                    entry.getBetrag(), entry.getZahler(), shares));
+        for (LineItem item : entryParts.lineItems(entitiesInMonth)) {
+            if (!item.shared()) {
+                continue;
+            }
+            Map<String, BigDecimal> shares = computeShares(
+                    item.amount().abs().setScale(2, RoundingMode.HALF_UP),
+                    percentagesFor(item.category(), persons));
+            Long positionId = item.partId() != null ? item.partId() : item.entryId();
+            positions.add(new SettlementPosition(positionId, item.category(),
+                    item.amount(), payersByEntry.get(item.entryId()), shares));
 
             BigDecimal total = shares.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-            int sign = entry.getBetrag().signum() < 0 ? 1 : -1;
+            int sign = item.amount().signum() < 0 ? 1 : -1;
+            String payer = payersByEntry.get(item.entryId());
             for (Map.Entry<String, BigDecimal> share : shares.entrySet()) {
-                BigDecimal advancedForOthers = share.getKey().equals(entry.getZahler())
+                BigDecimal advancedForOthers = share.getKey().equals(payer)
                         ? total.subtract(share.getValue())
                         : share.getValue().negate();
                 saldi.merge(share.getKey(), advancedForOthers.multiply(
@@ -65,22 +77,22 @@ public class SettlementService {
             }
         }
 
-        boolean stillRunning = monat.equals(YearMonth.now(clock));
-        return new SettlementWithPositions(monat.toString(), stillRunning,
-                settledMonthRepository.existsByMonat(monat.toString()), saldi,
+        boolean stillRunning = month.equals(YearMonth.now(clock));
+        return new SettlementWithPositions(month.toString(), stillRunning,
+                settledMonthRepository.existsByMonat(month.toString()), saldi,
                 suggestion(saldi), positions);
     }
 
-    public void markSettled(YearMonth monat) {
-        if (!settledMonthRepository.existsByMonat(monat.toString())) {
-            settledMonthRepository.save(new SettledMonthEntity(monat.toString(), true));
+    public void markSettled(YearMonth month) {
+        if (!settledMonthRepository.existsByMonat(month.toString())) {
+            settledMonthRepository.save(new SettledMonthEntity(month.toString(), true));
         }
     }
 
-    public List<SettlementMonth> history(int monate) {
+    public List<SettlementMonth> history(int months) {
         YearMonth currentMonth = YearMonth.now(clock);
         List<SettlementMonth> history = new ArrayList<>();
-        for (int back = monate - 1; back >= 0; back--) {
+        for (int back = months - 1; back >= 0; back--) {
             SettlementWithPositions settlement = settlement(currentMonth.minusMonths(back));
             history.add(new SettlementMonth(settlement.monat(), settlement.laeuftNoch(),
                     settlement.ausgeglichen(), settlement.saldi(), settlement.vorschlag()));
@@ -88,14 +100,8 @@ public class SettlementService {
         return history;
     }
 
-    private Map<String, BigDecimal> sharesFor(EntryEntity entry, List<String> persons) {
-        BigDecimal total = entry.getBetrag().abs().setScale(2, RoundingMode.HALF_UP);
-        Map<String, Integer> percentages = percentagesFor(entry.getKategorie(), persons);
-        return computeShares(total, percentages);
-    }
-
-    private Map<String, Integer> percentagesFor(String kategorie, List<String> persons) {
-        KategorieEntity configured = categoryRepository.findById(kategorie).orElse(null);
+    private Map<String, Integer> percentagesFor(String category, List<String> persons) {
+        KategorieEntity configured = categoryRepository.findById(category).orElse(null);
         if (configured != null && "ANTEILE".equals(configured.getArt())
                 && !configured.getAnteile().isEmpty()) {
             return configured.getAnteile();
@@ -146,9 +152,9 @@ public class SettlementService {
                 + asText(largest.getValue()) + " €";
     }
 
-    private String asText(BigDecimal betrag) {
+    private String asText(BigDecimal amount) {
         return new java.text.DecimalFormat("#,##0.00",
                 java.text.DecimalFormatSymbols.getInstance(java.util.Locale.GERMANY))
-                .format(betrag);
+                .format(amount);
     }
 }

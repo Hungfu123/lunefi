@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { createPortal } from 'react-dom'
 import { read, type BudgetInfo, type CoachingRecommendation, type Entry, type Attitude, type CategoryInfo } from './types'
-import { shortDate, euro, isThisWeek, shortMonth } from './format'
+import { shortDate, euro, isThisWeek, shortMonth, monthAsString } from './format'
 import { CategoryIconTile } from './categoryIcon'
 import { ATTITUDE_LABEL, AttitudeSelector } from './AttitudeSelector'
 import { useApp } from './AppContext'
@@ -22,6 +22,7 @@ interface CategoryStatistics {
 function TrendRow({ statistics }: { statistics: CategoryStatistics }) {
   const [activeBar, setActiveBar] = useState<number | null>(null)
   const max = statistics.monate.reduce((highest, m) => Math.max(highest, m.betrag), 0)
+  const currentMonth = monthAsString(new Date())
   return (
     <div className="mt-3">
       <div className="flex items-baseline justify-between gap-2">
@@ -42,7 +43,9 @@ function TrendRow({ statistics }: { statistics: CategoryStatistics }) {
             </span>
             <span className="relative block h-11 w-full rounded-[3px] bg-karte2">
               <span
-                className="absolute inset-x-0 bottom-0 rounded-t-[3px] bg-akzent"
+                className={`absolute inset-x-0 bottom-0 rounded-t-[3px] ${
+                  m.monat === currentMonth ? 'bg-akzent' : 'bg-akzent/35'
+                }`}
                 style={{ height: Math.max(3, (m.betrag / Math.max(max, 1)) * 44) }}
               />
             </span>

@@ -27,7 +27,7 @@ public class ForecastService {
         this.clock = clock;
     }
 
-    public Forecast forecast(List<Entry> entries, int monate) {
+    public Forecast forecast(List<LineItem> entries, int monate) {
         YearMonth currentMonth = YearMonth.now(clock);
         String targetMonth = currentMonth.plusMonths(1).toString();
 
@@ -52,14 +52,14 @@ public class ForecastService {
                 baseMonths.stream().map(YearMonth::toString).toList());
     }
 
-    private long countMonthsWithEntries(List<Entry> entries) {
+    private long countMonthsWithEntries(List<LineItem> entries) {
         return entries.stream()
-                .map(entry -> YearMonth.from(entry.datum()))
+                .map(item -> YearMonth.from(item.date()))
                 .distinct()
                 .count();
     }
 
-    private Map<String, BigDecimal> forecastExpenses(List<Entry> entries,
+    private Map<String, BigDecimal> forecastExpenses(List<LineItem> entries,
             List<YearMonth> baseMonths) {
         Map<String, Map<YearMonth, BigDecimal>> monthlySums = sumsByCategoryAndMonth(entries,
                 baseMonths, false);
@@ -90,7 +90,7 @@ public class ForecastService {
         return null;
     }
 
-    private Map<String, BigDecimal> forecastIncome(List<Entry> entries,
+    private Map<String, BigDecimal> forecastIncome(List<LineItem> entries,
             List<YearMonth> baseMonths) {
         Map<String, Map<YearMonth, BigDecimal>> monthlySums = sumsByCategoryAndMonth(entries,
                 baseMonths, true);
@@ -119,19 +119,19 @@ public class ForecastService {
         return range.compareTo(largest.multiply(new BigDecimal("0.5"))) <= 0;
     }
 
-    private Map<String, Map<YearMonth, BigDecimal>> sumsByCategoryAndMonth(List<Entry> entries,
+    private Map<String, Map<YearMonth, BigDecimal>> sumsByCategoryAndMonth(List<LineItem> entries,
             List<YearMonth> baseMonths, boolean income) {
         Map<String, Map<YearMonth, BigDecimal>> sums = new LinkedHashMap<>();
-        for (Entry entry : entries) {
-            YearMonth month = YearMonth.from(entry.datum());
+        for (LineItem item : entries) {
+            YearMonth month = YearMonth.from(item.date());
             if (!baseMonths.contains(month)) {
                 continue;
             }
-            if (income != entry.betrag().signum() >= 0) {
+            if (income != item.amount().signum() >= 0) {
                 continue;
             }
-            sums.computeIfAbsent(entry.kategorie(), category -> new LinkedHashMap<>())
-                    .merge(month, entry.betrag().abs(), BigDecimal::add);
+            sums.computeIfAbsent(item.category(), category -> new LinkedHashMap<>())
+                    .merge(month, item.amount().abs(), BigDecimal::add);
         }
         return sums;
     }

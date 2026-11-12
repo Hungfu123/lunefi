@@ -44,15 +44,15 @@ public class SourcesSteps {
     }
 
     @Angenommen("die Quelle {string} der Art {string} für das Konto {string} existiert")
-    public void sourceExists(String name, String art, String konto) {
-        createSource(name, art, konto);
+    public void sourceExists(String name, String art, String account) {
+        createSource(name, art, account);
     }
 
     @Wenn("die Quelle {string} der Art {string} für das Konto {string} angelegt wird")
-    public void createSource(String name, String art, String konto) {
+    public void createSource(String name, String art, String account) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        Map<String, Object> body = Map.of("name", name, "art", art, "konto", konto);
+        Map<String, Object> body = Map.of("name", name, "art", art, "konto", account);
         ResponseEntity<String> response = rest.postForEntity("/api/quellen", new HttpEntity<>(body, headers), String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
@@ -72,10 +72,10 @@ public class SourcesSteps {
     }
 
     @Angenommen("die Lernregel für {string} auf Kategorie {string} gespeichert ist")
-    public void saveLearningRule(String kennung, String kategorie) {
+    public void saveLearningRule(String identifier, String category) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        Map<String, Object> body = Map.of("kennung", kennung, "kategorie", kategorie);
+        Map<String, Object> body = Map.of("kennung", identifier, "kategorie", category);
         ResponseEntity<String> response = rest.postForEntity("/api/lernregeln", new HttpEntity<>(body, headers), String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
@@ -86,11 +86,11 @@ public class SourcesSteps {
     }
 
     @Angenommen("der Import der Quelle {string} mit dem Umsatz {string} vom {datum} über {betrag} Euro bereits gelaufen ist")
-    public void importAlreadyRan(String name, String kennung, java.time.LocalDate datum, BigDecimal betrag) {
+    public void importAlreadyRan(String name, String identifier, java.time.LocalDate date, BigDecimal amount) {
         Map<String, String> transaction = new HashMap<>();
-        transaction.put("externeKennung", kennung);
-        transaction.put("datum", datum.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.uuuu", java.util.Locale.GERMANY)));
-        transaction.put("betrag", betrag.toPlainString());
+        transaction.put("externeKennung", identifier);
+        transaction.put("datum", date.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.uuuu", java.util.Locale.GERMANY)));
+        transaction.put("betrag", amount.toPlainString());
         transaction.put("verwendungszweck", "Gehalt November");
         importEntries(name, java.util.List.of(transaction));
     }
@@ -142,19 +142,19 @@ public class SourcesSteps {
     }
 
     @Dann("hat der Eintrag vom {datum} über {betrag} Euro die Kategorie {string}")
-    public void entryHasCategory(java.time.LocalDate datum, BigDecimal betrag, String kategorie) {
+    public void entryHasCategory(java.time.LocalDate date, BigDecimal amount, String category) {
         ResponseEntity<String> response = rest.getForEntity("/api/eintraege?monat=2026-11", String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         JsonNode entries = mapper.readTree(response.getBody());
         boolean found = false;
         for (JsonNode entry : entries) {
-            if (datum.toString().equals(entry.path("datum").asText())
-                    && betrag.compareTo(new BigDecimal(entry.path("betrag").asText())) == 0) {
-                assertThat(entry.path("kategorie").asText()).isEqualTo(kategorie);
+            if (date.toString().equals(entry.path("datum").asText())
+                    && amount.compareTo(new BigDecimal(entry.path("betrag").asText())) == 0) {
+                assertThat(entry.path("kategorie").asText()).isEqualTo(category);
                 found = true;
             }
         }
-        assertThat(found).as("Eintrag vom %s über %s existiert", datum, betrag).isTrue();
+        assertThat(found).as("Eintrag vom %s über %s existiert", date, amount).isTrue();
     }
     @Dann("zeigt die Eintragsliste für November 2026 den Verwendungszweck {string}")
     public void entriesContainVerwendungszweck(String verwendungszweck) {

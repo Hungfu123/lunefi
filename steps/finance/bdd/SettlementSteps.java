@@ -54,32 +54,32 @@ public class SettlementSteps {
     }
 
     @Angenommen("der aktuelle Monat {monat} ist")
-    public void currentMonth(YearMonth monat) {
-        clock.setTo(monat);
+    public void currentMonth(YearMonth month) {
+        clock.setTo(month);
     }
 
     @Angenommen("der Monat {monat} als ausgeglichen markiert wurde")
-    public void monthAlreadyMarkedAsSettled(YearMonth monat) {
-        markAsSettled(monat);
+    public void monthAlreadyMarkedAsSettled(YearMonth month) {
+        markAsSettled(month);
     }
 
     @Wenn("der Monat {monat} als ausgeglichen markiert wird")
     @Wenn("der Monat {monat} erneut als ausgeglichen markiert wird")
-    public void markMonthAsSettled(YearMonth monat) {
-        markAsSettled(monat);
+    public void markMonthAsSettled(YearMonth month) {
+        markAsSettled(month);
     }
 
     @Dann("zeigt der Ausgleich {monat} den Monat als ausgeglichen")
-    public void monthShownAsSettled(YearMonth monat) {
-        ResponseEntity<String> response = rest.getForEntity("/api/ausgleich/" + monat, String.class);
+    public void monthShownAsSettled(YearMonth month) {
+        ResponseEntity<String> response = rest.getForEntity("/api/ausgleich/" + month, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         settlement = mapper.readTree(response.getBody());
         assertThat(settlement.path("ausgeglichen").asBoolean()).isTrue();
     }
 
     @Dann("zeigt der Ausgleichsverlauf der letzten {int} Monate die Monate")
-    public void historyShowsSettledState(int monate, DataTable expected) {
-        ResponseEntity<String> response = rest.getForEntity("/api/ausgleich/verlauf?monate=" + monate, String.class);
+    public void historyShowsSettledState(int months, DataTable expected) {
+        ResponseEntity<String> response = rest.getForEntity("/api/ausgleich/verlauf?monate=" + months, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         history = mapper.readTree(response.getBody());
         List<Map<String, String>> rows = expected.asMaps();
@@ -92,28 +92,28 @@ public class SettlementSteps {
     }
 
     @Wenn("{string} den Ausgleich {monat} als ausgeglichen markiert")
-    public void markMonthAsSettledAs(String caller, YearMonth monat) {
+    public void markMonthAsSettledAs(String caller, YearMonth month) {
         ResponseEntity<String> response = sessions.forPerson(caller).postForEntity(
-                "/api/ausgleich/" + monat + "/ausgeglichen", HttpEntity.EMPTY, String.class);
+                "/api/ausgleich/" + month + "/ausgeglichen", HttpEntity.EMPTY, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
-    private void markAsSettled(YearMonth monat) {
+    private void markAsSettled(YearMonth month) {
         ResponseEntity<String> response = rest.postForEntity(
-                "/api/ausgleich/" + monat + "/ausgeglichen", HttpEntity.EMPTY, String.class);
+                "/api/ausgleich/" + month + "/ausgeglichen", HttpEntity.EMPTY, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Wenn("der Ausgleich {monat} aufgerufen wird")
-    public void callSettlement(YearMonth monat) {
-        ResponseEntity<String> response = rest.getForEntity("/api/ausgleich/" + monat, String.class);
+    public void callSettlement(YearMonth month) {
+        ResponseEntity<String> response = rest.getForEntity("/api/ausgleich/" + month, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         settlement = mapper.readTree(response.getBody());
     }
 
     @Wenn("der Ausgleichsverlauf der letzten {int} Monate abgefragt wird")
-    public void queryHistory(int monate) {
-        ResponseEntity<String> response = rest.getForEntity("/api/ausgleich/verlauf?monate=" + monate, String.class);
+    public void queryHistory(int months) {
+        ResponseEntity<String> response = rest.getForEntity("/api/ausgleich/verlauf?monate=" + months, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         history = mapper.readTree(response.getBody());
     }
@@ -180,5 +180,18 @@ public class SettlementSteps {
         DecimalFormat format = new DecimalFormat("#,##0.00",
                 DecimalFormatSymbols.getInstance(Locale.GERMANY));
         return format.format(amount);
+    }
+
+    @Dann("führt der Ausgleich genau eine Position mit der Kategorie {string} und dem Betrag {betrag} Euro aus")
+    public void singlePositionWithCategoryAndAmount(String category, BigDecimal amount) {
+        JsonNode positions = settlement.path("positionen");
+        assertThat(positions.size()).isEqualTo(1);
+        assertThat(positions.get(0).path("kategorie").asText()).isEqualTo(category);
+        assertThat(positions.get(0).path("betrag").decimalValue()).isEqualByComparingTo(amount);
+    }
+
+    @Dann("führt der Ausgleich {int} Positionen aus")
+    public void positionCount(int count) {
+        assertThat(settlement.path("positionen").size()).isEqualTo(count);
     }
 }

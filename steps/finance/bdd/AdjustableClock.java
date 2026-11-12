@@ -10,8 +10,8 @@ public class AdjustableClock extends java.time.Clock {
     private volatile Instant now = Instant.now();
     private final ZoneId zone = ZoneId.systemDefault();
 
-    public void setTo(YearMonth monat) {
-        now = ZonedDateTime.of(monat.atDay(1).atTime(12, 0), zone).toInstant();
+    public void setTo(YearMonth month) {
+        now = ZonedDateTime.of(month.atDay(1).atTime(12, 0), zone).toInstant();
     }
 
     public void reset() {

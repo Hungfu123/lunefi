@@ -79,7 +79,7 @@ export function SavingsGoalsPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Sparziele</h2>
+        <h2 className="text-[15px] font-semibold">Sparziele</h2>
         <button
           onClick={() => setNewOpen(true)}
           className="flex min-h-11 items-center rounded-xl bg-akzentstark px-4 text-sm font-semibold text-akzenttext active:scale-[0.98]"
@@ -90,7 +90,7 @@ export function SavingsGoalsPage() {
 
       {loading && <div className="h-24 animate-pulse rounded-2xl bg-karte" />}
 
-      {error && !loading && <p className="text-schlecht">Die Sparziele konnten nicht geladen werden.</p>}
+      {error && !loading && <p className="text-sm text-schlecht">Sparziele konnten nicht geladen werden.</p>}
 
       {!loading && !error && goals.length === 0 && (
         <p className="text-sm text-textschwach">Noch kein Sparziel — legt gemeinsam eines an.</p>
@@ -103,15 +103,15 @@ export function SavingsGoalsPage() {
           return (
             <li key={goal.id} className="rounded-2xl bg-karte p-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate font-medium">{goal.name}</span>
+                <span className="min-w-0 truncate text-[15px] font-semibold">{goal.name}</span>
                 {goal.erreicht ? (
                   <motion.span
-                    className="shrink-0 rounded-full bg-gut/15 px-2 py-0.5 text-xs text-gut"
+                    className="shrink-0 rounded-full bg-gut/15 px-2 py-0.5 text-xs font-medium text-gut"
                     initial={celebrating.has(goal.id) ? { scale: 1.3 } : false}
                     animate={{ scale: 1 }}
                     transition={reduced ? { duration: 0 } : { type: 'spring', duration: 0.5, bounce: 0.45 }}
                   >
-                    {goal.name} ist finanziert!
+                    finanziert
                   </motion.span>
                 ) : (
                   <button
@@ -123,9 +123,16 @@ export function SavingsGoalsPage() {
                 )}
               </div>
               <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-karte2">
-                <div
+                <motion.div
                   className={`h-full rounded-full ${goal.erreicht ? 'bg-gut' : 'bg-akzent'}`}
-                  style={{ width: `${progress}%` }}
+                  style={{
+                    width: `${progress}%`,
+                    transformOrigin: 'left',
+                    transition: 'width 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                  initial={reduced ? false : { scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={reduced ? { duration: 0 } : { duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 />
               </div>
               <p className="betragszahl mt-1.5 text-xs text-textschwach">
@@ -139,7 +146,7 @@ export function SavingsGoalsPage() {
 
       {!loading && !error && goals.length > 0 && (
         <p className="mt-4 text-[12px] text-textschwach">
-          Zählt euren Fortschritt. Kein echtes Konto — das Geld bleibt, wo es ist.
+          Kein echtes Konto — das Geld bleibt, wo es ist.
         </p>
       )}
 
@@ -268,7 +275,7 @@ function DepositDialog({
       <form onSubmit={submit} className="flex flex-col gap-3">
         {goal.eingezahlt === 0 && (
           <p className="text-sm text-textschwach">
-            Trag hier ein, wie viel ihr beiseite gelegt habt.
+            Wie viel habt ihr beiseite gelegt?
           </p>
         )}
         <input
@@ -299,7 +306,7 @@ function DepositDialog({
           disabled={busy}
           className="rounded-xl bg-akzentstark py-3 font-semibold text-akzenttext disabled:opacity-50"
         >
-          Als gespart vermerken
+          Speichern
         </button>
       </form>
     </Dialog>

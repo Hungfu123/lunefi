@@ -217,3 +217,11 @@ Verbindlich für beide Seiten. Änderungen nur gemeinsam mit Specs (`specs/eintr
   - `text`: paarweise einfache Sätze mit ganzen Euro: `"{kategorie}: {ist} € — sonst meist {ueblich} €."`.
   - Weniger als 2 Monate mit Einträgen VOR dem angefragten Monat (in der gewählten Sicht) → `{"hinweise": [], "basis": "WENIG_DATEN"}` — ehrlich wie Prognose PR4; sonst `"basis": "OK"`.
   - `monat` Pflicht, ungültig (z. B. `2026-13`) → `400`; Sicht-Parameter wie oben (`person`+`gemeinsam` → `400`, fremd → `403`).
+
+## Einträge: Aufteilung in Teile (R10, ergänzt 12.11.2026)
+
+- `POST/PUT /api/eintraege` akzeptieren optional `teile`: `[{"betrag": -20.00, "kategorie": "Essen", "person": null, "gemeinsam": true}, {"betrag": -10.00, "kategorie": "Geschenk", "person": "Alex", "gemeinsam": false}]`
+- Regeln: Teile-Summe muss cent-genau dem `betrag` des Eintrags entsprechen; alle Teile in dieselbe Richtung; jeder Teil braucht Kategorie und genau eine Zuordnung (`person` ODER `gemeinsam=true`); sobald ein Teil gemeinsam ist, braucht der Eintrag `zahler`. Private Teile müssen dem angemeldeten Nutzer gehören (fremd → `403`). Verstoß → `400`.
+- Der Server leitet `kategorie`, `person` und `gemeinsam` des Eintrags aus dem betragsgrößten Teil ab; clientseitige Angabe dieser Felder wird bei vorhandenen Teilen ignoriert.
+- GET liefert `teile` als Array (oder null bei ungeteilten Einträgen). PUT ersetzt die Teile komplett (rückwirkendes Ändern); `teile` weglassen/leer = Teile entfernen.
+- Rechnungen (Monatsübersicht, Budgets `ist`, Statistik, Prognose, Sparpotenzial, Verlauf) zählen je Teil in seine Kategorie. In Person-Sicht/Paar-Sicht zeigt die Eintrag-Zeile den sichtbaren Teilbetrag (ungefiltert: Gesamtbetrag). Der Ausgleich führt jeden gemeinsamen Teil als eigene Position.

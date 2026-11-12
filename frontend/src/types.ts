@@ -11,6 +11,13 @@ export interface Account {
   saldo: number
 }
 
+export interface EntryPart {
+  betrag: number
+  kategorie: string
+  person: string | null
+  gemeinsam: boolean
+}
+
 export interface Entry {
   id: number
   datum: string
@@ -20,6 +27,7 @@ export interface Entry {
   gemeinsam: boolean
   zahler: string | null
   konto: string | null
+  teile?: EntryPart[] | null
 }
 
 export interface HistoryMonth {
@@ -116,11 +124,12 @@ export interface Coaching {
 export interface NewEntry {
   datum: string
   betrag: number
-  kategorie: string
+  kategorie?: string
   person?: string
   gemeinsam?: boolean
   zahler?: string
   konto?: string
+  teile?: EntryPart[]
 }
 
 export class ApiError extends Error {

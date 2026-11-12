@@ -30,24 +30,24 @@ public class HistorySteps {
     private JsonNode history;
 
     @Wenn("der Monatsverlauf der letzten {int} Monate abgefragt wird")
-    public void queryHistory(int monate) {
-        ResponseEntity<String> response = rest.getForEntity("/api/verlauf?monate=" + monate, String.class);
+    public void queryHistory(int months) {
+        ResponseEntity<String> response = rest.getForEntity("/api/verlauf?monate=" + months, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         history = mapper.readTree(response.getBody());
     }
 
     @Wenn("der Monatsverlauf der letzten {int} Monate für Person {string} abgefragt wird")
-    public void queryHistoryForPerson(int monate, String person) {
+    public void queryHistoryForPerson(int months, String person) {
         ResponseEntity<String> response = sessions.forPerson(person).getForEntity(
-                "/api/verlauf?monate=" + monate + "&person=" + person, String.class);
+                "/api/verlauf?monate=" + months + "&person=" + person, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         history = mapper.readTree(response.getBody());
     }
 
     @Wenn("der Monatsverlauf der letzten {int} Monate in der Paar-Sicht abgefragt wird")
-    public void queryHistoryForCouple(int monate) {
+    public void queryHistoryForCouple(int months) {
         ResponseEntity<String> response = rest.getForEntity(
-                "/api/verlauf?monate=" + monate + "&gemeinsam=true", String.class);
+                "/api/verlauf?monate=" + months + "&gemeinsam=true", String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         history = mapper.readTree(response.getBody());
     }

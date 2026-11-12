@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react'
 import { ArrowsLeftRight, CaretDown, CaretRight, LockSimple, Sparkle, Target, Wallet } from '@phosphor-icons/react'
 import { read, type Settlement, type Coaching, type Entry, type Account, type MonthlyOverview, type SavingsGoal, type HistoryMonth } from './types'
 import {
@@ -15,6 +15,7 @@ import {
 } from './format'
 import { CategoryIcon, CategoryIconTile, categoryIcon, categoryIconName } from './categoryIcon'
 import { CategorySheet } from './CategorySheet'
+import { entriesForCategory } from './categoryEntries'
 import { useApp } from './AppContext'
 
 const VISIBLE_CATEGORIES = 3
@@ -63,13 +64,13 @@ function MiniBar({
   name,
   sum,
   scale,
-  rang,
+  rank,
   onSelect,
 }: {
   name: string
   sum: number
   scale: number
-  rang: number
+  rank: number
   onSelect: () => void
 }) {
   const width = Math.min(100, (sum / Math.max(scale, 1)) * 100)
@@ -90,8 +91,11 @@ function MiniBar({
         </div>
         <div className="mt-1 h-1.5 rounded-full bg-karte2">
           <div
-            className={`h-full rounded-full ${BAR_WEIGHTS[rang] ?? 'bg-schlecht/30'}`}
-            style={{ width: `${width}%` }}
+            className={`h-full rounded-full ${BAR_WEIGHTS[rank] ?? 'bg-schlecht/30'}`}
+            style={{
+              width: `${width}%`,
+              transition: 'width 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
           />
         </div>
       </button>
@@ -99,17 +103,44 @@ function MiniBar({
   )
 }
 
-function TrendBar({ entry, scale }: { entry: HistoryMonth; scale: number }) {
-  const positive = entry.differenz >= 0
-  const height = Math.max(2, Math.round((Math.abs(entry.differenz) / Math.max(scale, 1)) * 12))
+function TrendBar({
+  entry,
+  scale,
+  rank,
+  reduced,
+}: {
+  entry: HistoryMonth
+  scale: number
+  rank: number
+  reduced: boolean | null
+}) {
+  const incomeHeight = entry.einnahmen > 0 ? Math.max(2, Math.round((entry.einnahmen / Math.max(scale, 1)) * 10)) : 0
+  const expenseHeight = entry.ausgaben > 0 ? Math.max(2, Math.round((entry.ausgaben / Math.max(scale, 1)) * 10)) : 0
+  const grow: Transition = reduced
+    ? { duration: 0 }
+    : { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const, delay: rank * 0.03 }
   return (
     <span className="flex shrink-0 items-center gap-1">
       <span className="relative block h-6 w-2">
         <span className="absolute inset-x-0 top-1/2 h-px bg-strich" />
-        <span
-          className={`absolute inset-x-0 rounded-[2px] ${positive ? 'bottom-1/2 bg-gut' : 'top-1/2 bg-schlecht'}`}
-          style={{ height }}
-        />
+        {incomeHeight > 0 && (
+          <motion.span
+            className="absolute inset-x-0 bottom-1/2 rounded-t-[2px] bg-gut/60"
+            style={{ height: incomeHeight, transformOrigin: 'bottom' }}
+            initial={reduced ? false : { scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={grow}
+          />
+        )}
+        {expenseHeight > 0 && (
+          <motion.span
+            className="absolute inset-x-0 top-1/2 rounded-b-[2px] bg-schlecht/60"
+            style={{ height: expenseHeight, transformOrigin: 'top' }}
+            initial={reduced ? false : { scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={grow}
+          />
+        )}
       </span>
       <span className="text-[10px] leading-none text-textschwach">{shortMonth(entry.monat)}</span>
     </span>
@@ -267,7 +298,7 @@ export function Overview({
   const budgetList = Object.values(data?.budgets ?? {})
   const budgetActual = budgetList.reduce((a, b) => a + b.ist, 0)
   const budgetLimit = budgetList.reduce((a, b) => a + b.limit, 0)
-  const budgetExceeded = budgetList.some((b) => b.warnung)
+  const budgetOver = budgetActual > budgetLimit
   const budgetScale = Math.max(budgetActual, budgetLimit, 1)
   const remainingList = Object.entries(data?.budgets ?? {})
     .map(([name, budget]) => ({ name, rest: budget.limit - budget.ist }))
@@ -279,9 +310,9 @@ export function Overview({
   const week = isCurrentMonth
     ? entries.reduce((sum, entry) => sum + (entry.betrag < 0 && isThisWeek(entry.datum) ? entry.betrag : 0), 0)
     : null
-  const categoryEntries = data?.eintraege.filter((entry) => entry.kategorie === categoryDetail) ?? []
+  const categoryEntries = data ? entriesForCategory(data.eintraege, categoryDetail ?? '') : []
   const historyScale = history
-    ? history.reduce((max, v) => Math.max(max, Math.abs(v.differenz)), 1)
+    ? history.reduce((max, v) => Math.max(max, v.einnahmen, v.ausgaben), 1)
     : 1
   const historyAverage =
     history && history.length > 0
@@ -440,10 +471,13 @@ export function Overview({
             {budgetList.length > 0 && (
               <div className="flex flex-col justify-center rounded-2xl bg-karte p-3">
                 <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">Budget</p>
-                <div className="relative mt-2 h-2 rounded-full bg-karte2">
+                <div className="relative mt-2 h-1.5 rounded-full bg-karte2">
                   <div
-                    className={`h-full rounded-full ${budgetExceeded ? 'bg-schlecht' : 'bg-akzent'}`}
-                    style={{ width: `${Math.min(100, (budgetActual / budgetScale) * 100)}%` }}
+                    className={`h-full rounded-full ${budgetOver ? 'bg-schlecht' : 'bg-akzent'}`}
+                    style={{
+                      width: `${Math.min(100, (budgetActual / budgetScale) * 100)}%`,
+                      transition: 'width 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    }}
                   />
                   <div
                     className="absolute top-0 h-full w-0.5 bg-text/60"
@@ -452,12 +486,13 @@ export function Overview({
                 </div>
                 <p className="betragszahl mt-1.5 text-[13px] font-medium text-textschwach">
                   {amountCompact(budgetActual)} von {amountCompact(budgetLimit)}
+                  {budgetOver && (
+                    <span className="font-semibold text-schlecht">
+                      {' '}
+                      · {euro(budgetActual - budgetLimit)} drüber
+                    </span>
+                  )}
                 </p>
-                {budgetExceeded && (
-                  <p className="betragszahl mt-1 text-xs font-medium text-warn">
-                    {euro(budgetActual - budgetLimit)} drüber
-                  </p>
-                )}
               </div>
             )}
           </div>
@@ -526,9 +561,9 @@ export function Overview({
               <p className="shrink-0 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
                 Verlauf
               </p>
-              <div className="flex items-center gap-2.5">
-                {history.map((v) => (
-                  <TrendBar key={v.monat} entry={v} scale={historyScale} />
+              <div key={monat} className="flex items-center gap-2.5">
+                {history.map((v, rank) => (
+                  <TrendBar key={v.monat} entry={v} scale={historyScale} rank={rank} reduced={reduced} />
                 ))}
               </div>
               <p className="betragszahl ml-auto shrink-0 text-[13px] font-medium text-textschwach">
@@ -553,13 +588,13 @@ export function Overview({
                 )}
               </div>
               <div className="space-y-1">
-                {categories.slice(0, VISIBLE_CATEGORIES).map(([name, sum], rang) => (
+                {categories.slice(0, VISIBLE_CATEGORIES).map(([name, sum], rank) => (
                   <MiniBar
                     key={name}
                     name={name}
                     sum={sum}
                     scale={categoryScale}
-                    rang={rang}
+                    rank={rank}
                     onSelect={() => setCategoryDetail(name)}
                   />
                 ))}
@@ -580,7 +615,7 @@ export function Overview({
                             name={name}
                             sum={sum}
                             scale={categoryScale}
-                            rang={i + VISIBLE_CATEGORIES}
+                            rank={i + VISIBLE_CATEGORIES}
                             onSelect={() => setCategoryDetail(name)}
                           />
                         ))}
@@ -640,6 +675,12 @@ export function Overview({
                             </>
                           ) : (
                             <span>{entry.person}</span>
+                          )}
+                          {entry.teile && entry.teile.length > 1 && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span>{entry.teile.length} Teile</span>
+                            </>
                           )}
                         </p>
                       </div>

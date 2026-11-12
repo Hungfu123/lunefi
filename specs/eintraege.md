@@ -21,6 +21,7 @@ damit ich mein Budget im Blick habe
 | R7 | Die Monatsübersicht kann nach Person gefiltert werden („Person-Sicht"): dann zählen nur persönliche Einträge dieser Person. Gemeinsame Einträge (person=null, gemeinsam=true) gehören NICHT in die Person-Sicht — sie leben in der Paar-Ansicht (ohne Filter, Verhalten unverändert) und im Ausgleich. Budget-Limits bleiben Paar-weit, `ist` wird aus den gefilterten Ausgaben berechnet. *(Vorschlag 11.11.2026: gemeinsame Einträge fließen über den Ausgleich, nicht in persönliche Statistiken)* |
 | R8 | Ein Monatsverlauf zeigt je Monat Einnahmen und Ausgaben als absolute Beträge sowie die Differenz (einnahmen − ausgaben; positiv = Plus-Monat). Monate = die letzten N vollen Monate rückwärts vom AKTUELLEN Monat (Uhr), ältester zuerst. `monate` default 3, Werte über 24 werden auf 24 gecappt *(Entscheidung 11.11.2026: cappen statt 400)*. Mit `person` analog R7 gefiltert, ohne = alle Einträge |
 | R9 | Die Paar-Sicht zeigt NUR gemeinsame Einträge (unabhängig vom Zahler), bei Monatsübersicht und Verlauf. Saldi und persönliche Einträge (inkl. Einnahmen) sind PRIVAT — sie bleiben in der Paar-Ansicht ohne Filter. Feldform identisch; `budgets.ist` wird aus den gemeinsamen Ausgaben berechnet. `person` und `gemeinsam` zusammen: schlicht 400 *(Entscheidung 11.11.2026: „Saldi und Einnahmen sind privat — geteilt werden nur gemeinsame Kategorien")* |
+| R10 | Ein Eintrag kann optional in Teile aufgeteilt werden (z. B. Einkauf 30 € = 20 € Essen + 10 € Geschenk). Jeder Teil hat Betrag, Kategorie und eine Zuordnung (Person ODER gemeinsam). Die Teile-Summe muss cent-genau dem Eintrags-Betrag entsprechen; alle Teile zeigen in dieselbe Richtung (Ausgabe/Einnahme). Der Server leitet `kategorie`, `person` und `gemeinsam` des Eintrags aus dem größten Teil ab — clientseitige Angabe dieser Felder wird bei vorhandenen Teilen ignoriert. Teile lassen sich rückwirkend ändern und entfernen (R5 entsprechend; Teile werden beim Speichern komplett ersetzt). Alle kategoriebasierten Rechnungen (Monatsübersicht, Budgets `ist`, Statistik, Prognose, Sparpotenzial, Verlauf) rechnen mit den Teilen; ohne Teile gilt der Eintrag selbst wie bisher. In der Übersicht bleibt ein geteilter Eintrag EINE Zeile; in Person-Sicht/Paar-Sicht zeigt die Zeile den sichtbaren Teilbetrag (ungefiltert: Gesamtbetrag). Der Ausgleich führt jeden gemeinsamen Teil als eigene Position. Der Zahler ist erforderlich, sobald ein Teil gemeinsam ist. *(Entscheidung 12.11.2026: Rest-Teil automatisch, eine Zeile — Teile im Detail; rückwirkend bearbeitbar)* |
 
 ## Beispiele
 
@@ -46,7 +47,19 @@ Konkrete Werte, keine Prosa. Jede Regel braucht mindestens eins.
 | R9 | aktueller Monat November 2026; September 2026: Gehalt +2.000,00 € (Alex), Freizeit -42,50 € (Kim); Oktober 2026: keine Einträge; November 2026: gemeinsames Essen -60,00 € (Zahler Alex) | der Monatsverlauf der letzten 3 Monate in der Paar-Sicht (gemeinsam=true) abgefragt wird | enthält ältester zuerst: 2026-09 (0,00 / 0,00 / 0,00 — Gehalt und Freizeit sind privat), 2026-10 (0,00 / 0,00 / 0,00), 2026-11 (0,00 / 60,00 / -60,00 — nur das gemeinsame Essen) |
 | R9 | — | die Monatsübersicht November 2026 für Person „Alex" UND in der Paar-Sicht aufgerufen wird | wird die Abfrage abgelehnt (400) |
 
-Hinweis: Der Zielbetrag -50,00 € im R5-Beispiel ist ein Vorschlag (Aufgabenstellung 11.11.2026); alle übrigen Werte stammen aus bestehenden Beispielen. Die R7/R8-Beispiele nutzen bestehende Werte (-42,50 €, +2.000,00 €, -60,00 €); die Kombination „-42,50 € Freizeit von Kim" ist ein Vorschlag (Aufgabenstellung 11.11.2026), da -42,50 € in den Specs bislang nur als REWE-Essen-Import vorkommt. Der R7-Regeltext (gemeinsame Einträge fließen über den Ausgleich, nicht in persönliche Statistiken) ist als Vorschlag markiert und braucht eure Freigabe.
+| R10 | noch kein Eintrag erfasst | "Alex" einen Eintrag mit Datum 12.11.2026, Betrag -30,00 Euro und den Teilen „Essen gemeinsam -20,00" und „Geschenk von Alex -10,00" erfasst | zeigt die Monatsübersicht November 2026 bei „Essen" 20,00 € Ausgaben und bei „Geschenk" 10,00 € Ausgaben, und listet genau EINEN Eintrag mit dem Betrag -30,00 € |
+| R10 | ein Eintrag -30,00 € soll mit Teilen der Summe -29,00 € erfasst werden | wird er abgelehnt (400) |
+| R10 | ein Teil mit Person UND „gemeinsam" erfasst werden soll | wird er abgelehnt (400) |
+| R10 | ein gemeinsamer Teil ohne Zahler erfasst werden soll | wird er abgelehnt (400) |
+| R10 | ein geteilter Eintrag wie oben erfasst; Budget „Essen" 25,00 € im November 2026 | die Monatsübersicht November 2026 aufgerufen wird | ist das Ist-Budget für „Essen" 20,00 € |
+| R10 | ein geteilter Eintrag wie oben erfasst | der Ausgleich November 2026 aufgerufen wird | führt er nur den gemeinsamen Teil: Kim schuldet Alex 10,00 €, eine Position „Essen" -20,00 € |
+| R10 | ein geteilter Eintrag wie oben erfasst | die Monatsübersicht November 2026 für Person „Alex" aufgerufen wird | zeigt sie den Eintrag mit dem sichtbaren Teilbetrag -10,00 €, Ausgaben nur „Geschenk" 10,00 € |
+| R10 | ein geteilter Eintrag wie oben erfasst | die Paar-Sicht November 2026 aufgerufen wird | zeigt sie den Eintrag mit dem sichtbaren Teilbetrag -20,00 €, Ausgaben nur „Essen" 20,00 € |
+| R10 | ein geteilter Eintrag wie oben erfasst | "Alex" die Teile rückwirkend ändert (Geschenk -5,00 €, neuer Teil „Freizeit von Alex -5,00 €") | zeigt die Übersicht „Geschenk" 5,00 € und „Freizeit" 5,00 €, „Essen" unverändert 20,00 € |
+| R10 | ein Eintrag -40,00 € mit den Teilen „Essen gemeinsam -20,00", „Freizeit gemeinsam -15,00", „Geschenk von Alex -5,00" erfasst | der Ausgleich November 2026 aufgerufen wird | führt er 2 Positionen aus und Kim schuldet Alex 17,50 € |
+| R10 | ein geteilter Eintrag wie oben erfasst; aktueller Monat November 2026 | der Kategorie-Verlauf der letzten 1 Monate für „Essen" abgefragt wird | enthält er 2026-11 mit 20,00 € |
+
+Hinweis: Die R10-Beispielwerte (12.11.2026, -30,00 €, 20/10-Aufteilung, Budget 25,00 €, -40,00 € mit drei Teilen) sind Vorschläge (12.11.2026) und warten auf Freigabe. Der Zielbetrag -50,00 € im R5-Beispiel ist ein Vorschlag (Aufgabenstellung 11.11.2026); alle übrigen Werte stammen aus bestehenden Beispielen. Die R7/R8-Beispiele nutzen bestehende Werte (-42,50 €, +2.000,00 €, -60,00 €); die Kombination „-42,50 € Freizeit von Kim" ist ein Vorschlag (Aufgabenstellung 11.11.2026), da -42,50 € in den Specs bislang nur als REWE-Essen-Import vorkommt. Der R7-Regeltext (gemeinsame Einträge fließen über den Ausgleich, nicht in persönliche Statistiken) ist als Vorschlag markiert und braucht eure Freigabe.
 
 ## Offene Fragen
 
@@ -60,6 +73,11 @@ Hinweis: Der Zielbetrag -50,00 € im R5-Beispiel ist ein Vorschlag (Aufgabenste
 | F6  | Monatsübersicht mit ungültigem Monat (z. B. Monat 13) — 400 statt Serverfehler? (Korrektheit-Review: aktuell 500) | 2026-11-10: ja — Abweisung mit 400 (neue Regel R4) |
 | F7  | Eintrag mit Betrag 0,00 — Ausgabe, Einnahme oder eigene Gruppe? (aktuell: zählt als Einnahme)                      | 2026-11-10: zählt als Einnahme                                                                                           |
 | F8  | G1 verlangt eine Zuordnung je Eintrag — brauchen die bestehenden Szenarien eine Person?                          | 2026-11-11 (Overnight-Freigabe): Wenn-Sätze der bestehenden Szenarien um `von "Alex"` erweitert, Step-Bindung entsprechend |
+| F9  | Einnahmen-Aufteilung: erlaubt und technisch möglich, aber noch ohne Szenario — explizit testen?                                            | 12.11.2026: offen (Implementation erlaubt es, UI testet nur Ausgaben)                                                                       |
+| F10 | Teile auf importierten Einträgen (quelleId): wie verhält sich die Import-Inbox damit?                                                        | 12.11.2026: offen (bis zur Inbox-Story, QF5)                                                                                               |
+| F11 | GET /api/eintraege?person filtert nach der abgeleiteten Eintrags-Person (größter Teil) — Teil-Zuordnung wird dort ignoriert. Semantik festlegen? | 12.11.2026: offen (Monatsübersicht ist der maßgebliche Endpunkt)                                                                          |
+| F12 | Partner darf beim PUT eines gemeinsamen Eintrags fremde private Teile nicht entfernen (403) — Regel so gewollt?                              | 12.11.2026: umgesetzt als Schutz, wartet auf Freigabe                                                                                      |
+
 
 ## Daraus entstanden
 
@@ -73,4 +91,5 @@ Hinweis: Der Zielbetrag -50,00 € im R5-Beispiel ist ein Vorschlag (Aufgabenste
 - `features/eintraege/eintrag-ohne-datum-oder-betrag-wird-nicht-uebernommen.feature`
 - `features/eintraege/eintrag-wird-geaendert.feature` (R5)
 - `features/eintraege/eintrag-wird-geloescht.feature` (R6)
+- `features/eintraege/eintrag-aufteilung.feature` (R10)
 - Szenarien tragen den Tag ihrer Regel, z. B. `@R1`

@@ -32,26 +32,26 @@ public class StatisticsSteps {
     private org.springframework.http.HttpStatusCode queryStatus;
 
     @Wenn("der Kategorie-Verlauf der letzten {int} Monate für {string} abgefragt wird")
-    public void queryCategoryHistory(int monate, String kategorie) {
+    public void queryCategoryHistory(int months, String category) {
         ResponseEntity<String> response = rest.getForEntity(
-                "/api/statistik/kategorie/" + kategorie + "?monate=" + monate, String.class);
+                "/api/statistik/kategorie/" + category + "?monate=" + months, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         categoryHistory = mapper.readTree(response.getBody());
     }
 
     @Wenn("der Kategorie-Verlauf der letzten {int} Monate für {string} für Person {string} abgefragt wird")
-    public void queryCategoryHistoryForPerson(int monate, String kategorie, String person) {
+    public void queryCategoryHistoryForPerson(int months, String category, String person) {
         ResponseEntity<String> response = sessions.forPerson(person).getForEntity(
-                "/api/statistik/kategorie/" + kategorie + "?monate=" + monate + "&person=" + person,
+                "/api/statistik/kategorie/" + category + "?monate=" + months + "&person=" + person,
                 String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         categoryHistory = mapper.readTree(response.getBody());
     }
 
     @Wenn("der Kategorie-Verlauf für {string} mit {int} Monaten abgefragt wird")
-    public void queryCategoryHistoryWithMonths(String kategorie, int monate) {
+    public void queryCategoryHistoryWithMonths(String category, int months) {
         queryStatus = rest.getForEntity(
-                "/api/statistik/kategorie/" + kategorie + "?monate=" + monate, String.class).getStatusCode();
+                "/api/statistik/kategorie/" + category + "?monate=" + months, String.class).getStatusCode();
     }
 
     @Dann("enthält der Kategorie-Verlauf die Monate")
@@ -83,27 +83,27 @@ public class StatisticsSteps {
     }
 
     @Wenn("das Sparpotenzial für den Monat {monat} abgefragt wird")
-    public void querySavingsPotential(java.time.YearMonth monat) {
+    public void querySavingsPotential(java.time.YearMonth month) {
         ResponseEntity<String> response = rest.getForEntity(
-                "/api/statistik/sparpotenzial?monat=" + monat, String.class);
+                "/api/statistik/sparpotenzial?monat=" + month, String.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         savingsPotential = mapper.readTree(response.getBody());
     }
 
     @Wenn("das Sparpotenzial für den ungültigen Monat {string} abgefragt wird")
-    public void querySavingsPotentialWithInvalidMonth(String monat) {
+    public void querySavingsPotentialWithInvalidMonth(String month) {
         queryStatus = rest.getForEntity(
-                "/api/statistik/sparpotenzial?monat=" + monat, String.class).getStatusCode();
+                "/api/statistik/sparpotenzial?monat=" + month, String.class).getStatusCode();
     }
 
     @Dann("enthält das Sparpotenzial genau einen Hinweis für {string} mit Ist {betrag} Euro, üblich {betrag} Euro und dem Text {string}")
-    public void savingsPotentialContainsOneHint(String kategorie, BigDecimal ist, BigDecimal ueblich,
+    public void savingsPotentialContainsOneHint(String category, BigDecimal actual, BigDecimal ueblich,
             String text) {
         JsonNode hints = savingsPotential.path("hinweise");
         assertThat(hints.size()).isEqualTo(1);
         JsonNode hint = hints.get(0);
-        assertThat(hint.path("kategorie").asText()).isEqualTo(kategorie);
-        assertThat(hint.path("ist").decimalValue()).isEqualByComparingTo(ist);
+        assertThat(hint.path("kategorie").asText()).isEqualTo(category);
+        assertThat(hint.path("ist").decimalValue()).isEqualByComparingTo(actual);
         assertThat(hint.path("ueblich").decimalValue()).isEqualByComparingTo(ueblich);
         assertThat(hint.path("text").asText()).isEqualTo(text);
     }

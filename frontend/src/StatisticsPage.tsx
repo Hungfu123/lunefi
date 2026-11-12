@@ -5,6 +5,7 @@ import { read, type MonthlyOverview } from './types'
 import { euro, monthAsString, monthLabel } from './format'
 import { CategoryIconTile } from './categoryIcon'
 import { CategorySheet } from './CategorySheet'
+import { entriesForCategory } from './categoryEntries'
 import { useApp } from './AppContext'
 
 type View = 'meine' | 'zusammen'
@@ -79,9 +80,13 @@ function Donut({
           const visible = withGaps ? Math.max(0, length - 2.5) : CIRCUMFERENCE
           const offset = -(startFractions[i - 1] ?? 0) * CIRCUMFERENCE
           const colorValue = color(segment.name, i)
+          const dimmed = selected !== null && segment.name !== selected
           const common = { cx: 75, cy: 75, r: RADIUS, fill: 'none' as const, transform: 'rotate(-90 75 75)' }
           return (
-            <g key={segment.name}>
+            <g
+              key={segment.name}
+              style={{ opacity: dimmed ? 0.35 : 1, transition: 'opacity 150ms ease-out' }}
+            >
               <circle
                 {...common}
                 stroke={colorValue}
@@ -109,10 +114,10 @@ function Donut({
           <motion.div
             key={active?.name ?? 'gesamt'}
             className="flex w-24 flex-col items-center text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={reduced ? { duration: 0 } : { duration: 0.15 }}
+            initial={{ opacity: 0, y: reduced ? 0 : 2 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, transition: reduced ? { duration: 0 } : { duration: 0.12 } }}
+            transition={reduced ? { duration: 0 } : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
           >
             {active ? (
               <>
@@ -284,7 +289,7 @@ export function StatisticsPage() {
 
       <CategorySheet
         name={detail}
-        entries={data?.eintraege.filter((entry) => entry.kategorie === detail) ?? []}
+        entries={data ? entriesForCategory(data.eintraege, detail ?? '') : []}
         budget={detail && data?.budgets ? (data.budgets[detail] ?? null) : null}
         recommendation={null}
         close={() => setDetail(null)}

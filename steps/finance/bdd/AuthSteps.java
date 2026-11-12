@@ -182,9 +182,9 @@ public class AuthSteps {
     }
 
     @Wenn("{string} die Monatsübersicht {monat} von {string} aufruft")
-    public void callerFetchesOverviewOfOther(String caller, YearMonth monat, String person) {
+    public void callerFetchesOverviewOfOther(String caller, YearMonth month, String person) {
         accessStatus = sessions.forPerson(caller).getForEntity(
-                "/api/monatsuebersicht/" + monat + "?person=" + person, String.class).getStatusCode();
+                "/api/monatsuebersicht/" + month + "?person=" + person, String.class).getStatusCode();
     }
 
     @Wenn("{string} den Monatsverlauf von {string} abruft")
@@ -200,10 +200,10 @@ public class AuthSteps {
     }
 
     @Wenn("{string} den Kategorie-Verlauf der letzten {int} Monate für {string} für Person {string} abfragt")
-    public void callerQueriesCategoryHistoryOfOther(String caller, int monate, String kategorie,
+    public void callerQueriesCategoryHistoryOfOther(String caller, int months, String category,
             String person) {
         accessStatus = sessions.forPerson(caller).getForEntity(
-                "/api/statistik/kategorie/" + kategorie + "?monate=" + monate + "&person=" + person,
+                "/api/statistik/kategorie/" + category + "?monate=" + months + "&person=" + person,
                 String.class).getStatusCode();
     }
 
@@ -237,13 +237,13 @@ public class AuthSteps {
     }
 
     @Wenn("{string} eine Ausgabe von {betrag} Euro mit Kategorie {string} für {string} erfasst")
-    public void callerRecordsExpenseForOther(String caller, BigDecimal betrag, String kategorie, String person) {
+    public void callerRecordsExpenseForOther(String caller, BigDecimal amount, String category, String person) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         Map<String, Object> body = Map.of(
                 "datum", LocalDate.of(2026, 11, 15).toString(),
-                "betrag", betrag,
-                "kategorie", kategorie,
+                "betrag", amount,
+                "kategorie", category,
                 "person", person,
                 "gemeinsam", false);
         accessStatus = sessions.forPerson(caller).postForEntity("/api/eintraege",
