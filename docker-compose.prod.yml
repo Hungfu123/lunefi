@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lunefi
+      POSTGRES_USER: lunefi
+      POSTGRES_PASSWORD: ${LUNEFI_DB_PASSWORD}
+    volumes:
+      - ${LUNEFI_DATA_DIR:-/opt/lunefi/data}/postgres:/var/lib/postgresql/data
+    networks:
+      - intern
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lunefi
+      SPRING_DATASOURCE_USERNAME: lunefi
+      SPRING_DATASOURCE_PASSWORD: ${LUNEFI_DB_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - intern
+      - proxy
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - app
+    networks:
+      - proxy
+
+networks:
+  intern:
+  proxy:
+    external: true
