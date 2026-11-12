@@ -10,3 +10,6 @@ frontend/tsconfig.tsbuildinfo
 
 # Umgebung mit Zugangsdaten, nie committen
 .env
+
+# Agenten-Arbeitsdokument, nie committen
+REVIEW.md
