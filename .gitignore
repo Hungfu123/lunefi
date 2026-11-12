@@ -6,3 +6,4 @@ frontend/dist/
 
 # TS build cache
 frontend/tsconfig.tsbuildinfo
+.obsidian/
