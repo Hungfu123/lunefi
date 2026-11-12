@@ -1,12 +1,30 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { CaretDown, Moon, Question, Sun } from '@phosphor-icons/react'
+import { createPortal } from 'react-dom'
+import { Bank, CaretDown, Moon, PencilSimple, Question, Sun } from '@phosphor-icons/react'
 import { ApiError, read, write, type CategoryInfo, type Account } from './types'
 import { CategoryIconTile } from './categoryIcon'
-import { ATTITUDE_LABEL, AttitudeSelector } from './AttitudeSelector'
+import { ATTITUDE_HINT, ATTITUDE_LABEL, AttitudeSelector } from './AttitudeSelector'
 import { HelpModal } from './HelpModal'
 import { amountFromInput, euro, monthAsString } from './format'
 import { useApp } from './AppContext'
+
+const BANKEN = [
+  'Commerzbank',
+  'Sparkasse',
+  'Volks- und Raiffeisenbank',
+  'Deutsche Bank',
+  'Postbank',
+  'HypoVereinsbank',
+  'ING',
+  'DKB',
+  'N26',
+  'Consorsbank',
+  'TARGOBANK',
+  'Santander',
+  'Sparda-Bank',
+  'PSD Bank',
+]
 
 export function SettingsPage() {
   const { persons, activePerson } = useApp()
@@ -26,8 +44,10 @@ export function SettingsPage() {
     localStorage.setItem('lunefi:theme', next)
   }
   const [budgets, setBudgets] = useState<Record<string, string>>({})
-  const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [kontoHinweis, setKontoHinweis] = useState<{ text: string; gut: boolean } | null>(null)
+  const [kategorieHinweis, setKategorieHinweis] = useState<{ text: string; gut: boolean } | null>(null)
+  const [kontoOpen, setKontoOpen] = useState(false)
+  const [pickedBank, setPickedBank] = useState<string | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
 
   const load = useCallback(() => {
@@ -60,10 +80,13 @@ export function SettingsPage() {
         if (names[0]) shares[names[0]] += rest
         await write(`/api/kategorien/${encodeURIComponent(kategorie)}/split`, { art, anteile: shares }, 'PUT')
       }
-      setMessage(`Split für „${kategorie}" gespeichert.`)
+      setKategorieHinweis({ text: `Aufteilung für „${kategorie}" gespeichert.`, gut: true })
       load()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Speichern fehlgeschlagen.')
+      setKategorieHinweis({
+        text: err instanceof ApiError ? err.message : 'Speichern fehlgeschlagen.',
+        gut: false,
+      })
     }
   }
 
@@ -71,33 +94,45 @@ export function SettingsPage() {
     e.preventDefault()
     const value = amountFromInput(budgets[kategorie] ?? '')
     if (value === null || value <= 0) {
-      setError('Bitte ein Limit über 0 eintragen.')
+      setKategorieHinweis({ text: 'Bitte ein Limit über 0 eintragen.', gut: false })
       return
     }
     try {
       await write('/api/budgets', { monat: monthAsString(new Date()), kategorie, limit: value }, 'PUT')
-      setMessage(`Budget für „${kategorie}" gespeichert.`)
+      setKategorieHinweis({ text: `Budget für „${kategorie}" gespeichert.`, gut: true })
       setBudgets((prev) => ({ ...prev, [kategorie]: '' }))
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Speichern fehlgeschlagen.')
+      setKategorieHinweis({
+        text: err instanceof ApiError ? err.message : 'Speichern fehlgeschlagen.',
+        gut: false,
+      })
     }
   }
 
   const createAccount = async (e: FormEvent) => {
     e.preventDefault()
+    const name = accountName.trim()
     const saldo = amountFromInput(accountBalance)
-    if (!accountName.trim() || saldo === null || !activePerson) {
-      setError('Name und Startsaldo eintragen.')
+    if (!name || saldo === null || !activePerson) {
+      setKontoHinweis({ text: 'Name und Startsaldo eintragen.', gut: false })
+      return
+    }
+    if (accounts.some((konto) => konto.name.toLowerCase() === name.toLowerCase())) {
+      setKontoHinweis({ text: `Ein Konto namens „${name}" gibt es schon.`, gut: false })
       return
     }
     try {
-      await write('/api/konten', { name: accountName.trim(), startSaldo: saldo, person: activePerson })
-      setMessage(`Konto „${accountName.trim()}" angelegt.`)
+      await write('/api/konten', { name, startSaldo: saldo, person: activePerson })
+      setKontoHinweis({ text: `Konto „${name}" angelegt.`, gut: true })
+      setKontoOpen(false)
       setAccountName('')
       setAccountBalance('')
       load()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Konto anlegen fehlgeschlagen.')
+      setKontoHinweis({
+        text: err instanceof ApiError ? err.message : 'Konto anlegen fehlgeschlagen.',
+        gut: false,
+      })
     }
   }
 
@@ -141,37 +176,44 @@ export function SettingsPage() {
       </section>
 
       <section className="mb-6">
-        <h3 className="mb-2 text-[13px] font-semibold">Konten</h3>
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-[13px] font-semibold">Konten</h3>
+          <button
+            onClick={() => {
+              setKontoOpen(true)
+              setPickedBank(null)
+              setKontoHinweis(null)
+            }}
+            className="flex min-h-11 items-center rounded-xl bg-akzentstark px-4 text-sm font-semibold text-akzenttext active:scale-[0.98]"
+          >
+            Konto anlegen
+          </button>
+        </div>
         {accounts.length > 0 && (
-          <ul className="mb-3 space-y-2">
+          <ul className="space-y-2">
             {accounts.map((k) => (
               <li key={k.id} className="flex items-center justify-between rounded-xl bg-karte px-4 py-3">
-                <span className="truncate text-[13px] font-medium">
-                  {k.name} <span className="text-textschwach">· {k.person}</span>
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-karte2 text-akzent">
+                    <Bank size={15} weight="fill" aria-hidden="true" />
+                  </span>
+                  <span className="truncate text-[13px] font-medium">
+                    {k.name} <span className="text-textschwach">· {k.person}</span>
+                  </span>
                 </span>
                 <span className="betragszahl text-[13px] font-semibold">{euro(k.saldo)}</span>
               </li>
             ))}
           </ul>
         )}
-        <form onSubmit={createAccount} className="flex items-center gap-2">
-          <input
-            value={accountName}
-            onChange={(e) => setAccountName(e.target.value)}
-            placeholder="z. B. Girokonto"
-            className="min-w-0 flex-1 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
-          />
-          <input
-            value={accountBalance}
-            onChange={(e) => setAccountBalance(e.target.value)}
-            inputMode="decimal"
-            placeholder="Startsaldo"
-            className="w-28 shrink-0 rounded-xl bg-karte px-3 py-2.5 outline-none ring-strich focus:ring-2"
-          />
-          <button type="submit" className="flex min-h-11 shrink-0 items-center rounded-xl bg-akzentstark px-3 text-sm font-semibold text-akzenttext">
-            Anlegen
-          </button>
-        </form>
+        {accounts.length === 0 && (
+          <p className="text-sm text-textschwach">Noch kein Konto.</p>
+        )}
+        {kontoHinweis && !kontoOpen && (
+          <p className={`mt-1.5 text-[13px] ${kontoHinweis.gut ? 'text-gut' : 'text-schlecht'}`}>
+            {kontoHinweis.text}
+          </p>
+        )}
       </section>
 
       <section className="mb-6">
@@ -196,9 +238,11 @@ export function SettingsPage() {
                     {k.name}
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
-                    <span className="rounded-full bg-karte2 px-2 py-0.5 text-[11px] text-textschwach">
-                      {k.split.art === 'ANTEILE' ? 'Anteile' : '50/50'}
-                    </span>
+                    {k.split.art === 'ANTEILE' && k.split.anteile && (
+                      <span className="rounded-full bg-karte2 px-2 py-0.5 text-[11px] text-textschwach">
+                        {Object.values(k.split.anteile).join('/')}
+                      </span>
+                    )}
                     {k.haltung !== 'FLEXIBEL' && (
                       <span className="rounded-full bg-akzent/15 px-2 py-0.5 text-[11px] text-akzent">
                         {ATTITUDE_LABEL[k.haltung]}
@@ -246,13 +290,13 @@ export function SettingsPage() {
                                   : 'bg-karte2 text-textschwach'
                               }`}
                             >
-                              Anteile
+                              Eigene Aufteilung
                             </button>
                           </div>
                         </div>
                         <div>
                           <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
-                            Haltung
+                            Einstellung
                           </p>
                           <AttitudeSelector
                             kategorie={k.name}
@@ -263,6 +307,7 @@ export function SettingsPage() {
                               )
                             }
                           />
+                          <p className="mt-1 text-[11px] text-textschwach">{ATTITUDE_HINT[k.haltung]}</p>
                         </div>
                         <div>
                           <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.08em] text-textschwach">
@@ -292,14 +337,142 @@ export function SettingsPage() {
             )
           })}
         </ul>
+        {kategorieHinweis && (
+          <p className={`mt-1.5 text-[13px] ${kategorieHinweis.gut ? 'text-gut' : 'text-schlecht'}`}>
+            {kategorieHinweis.text}
+          </p>
+        )}
       </section>
-
-      {message && <p className="mt-4 text-sm text-gut">{message}</p>}
-      {error && <p className="mt-4 text-sm text-schlecht">{error}</p>}
 
       <p className="mt-8 text-center text-xs text-textschwach">
         LuneFi · {persons.map((p) => p.name).join(' & ')}
       </p>
+
+      {createPortal(
+        <AnimatePresence>
+          {kontoOpen && (
+            <div className="fixed inset-0 z-30 flex flex-col justify-end">
+              <motion.button
+                aria-label="Schließen"
+                className="absolute inset-0 bg-black/60"
+                onClick={() => setKontoOpen(false)}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+              />
+              <motion.div
+                className="relative mx-auto max-h-[calc(100dvh-16px)] w-full max-w-[560px] overflow-y-auto overscroll-contain rounded-t-3xl border-t border-strich bg-karte px-5 pb-5 pt-4"
+                initial={{ transform: 'translateY(100%)' }}
+                animate={{ transform: 'translateY(0%)' }}
+                exit={{ transform: 'translateY(100%)' }}
+                transition={reduced ? { duration: 0 } : { type: 'spring', duration: 0.5, bounce: 0.2 }}
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={{ top: 0, bottom: 0.6 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.y > 120 || info.velocity.y > 500) {
+                    setKontoOpen(false)
+                  }
+                }}
+              >
+                <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-strich" />
+                {pickedBank === null ? (
+                  <>
+                    <h3 className="mb-2.5 text-lg font-semibold">Bei welcher Bank?</h3>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {BANKEN.map((bank) => (
+                        <button
+                          type="button"
+                          key={bank}
+                          onClick={() => {
+                            setPickedBank(bank)
+                            setAccountName(bank)
+                            setAccountBalance('')
+                            setKontoHinweis(null)
+                          }}
+                          className={`flex min-h-11 items-center gap-2 rounded-xl bg-karte2 px-3 text-left transition-colors active:bg-karte2/60 ${
+                            bank.length > 16 ? 'col-span-2' : ''
+                          }`}
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-karte text-akzent">
+                            <Bank size={13} weight="fill" aria-hidden="true" />
+                          </span>
+                          <span className="truncate text-[13px] font-medium">{bank}</span>
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPickedBank('Andere')
+                          setAccountName('')
+                          setAccountBalance('')
+                          setKontoHinweis(null)
+                        }}
+                        className="flex min-h-11 items-center gap-2 rounded-xl bg-karte2 px-3 text-left transition-colors active:bg-karte2/60"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-karte text-akzent">
+                          <PencilSimple size={13} aria-hidden="true" />
+                        </span>
+                        <span className="truncate text-[13px] font-medium">Andere Bank</span>
+                      </button>
+                    </div>
+                    <p className="mt-2.5 text-[11px] leading-snug text-textschwach">
+                      Die Bankverbindung kommt später dazu — mit dem Bank-Import.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setPickedBank(null)}
+                      className="mb-2 flex items-center gap-1 text-[12px] font-medium text-textschwach"
+                    >
+                      ‹ {pickedBank === 'Andere' ? 'Andere Bank' : pickedBank}
+                    </button>
+                    <h3 className="mb-2.5 text-lg font-semibold">Konto anlegen</h3>
+                    <form onSubmit={createAccount} className="space-y-2">
+                      <input
+                        value={accountName}
+                        onChange={(e) => {
+                          setAccountName(e.target.value)
+                          setKontoHinweis(null)
+                        }}
+                        placeholder="z. B. Girokonto"
+                        aria-label="Kontoname"
+                        className="w-full rounded-xl bg-karte2 px-4 py-2.5 outline-none ring-strich focus:ring-2"
+                      />
+                      <input
+                        value={accountBalance}
+                        onChange={(e) => {
+                          setAccountBalance(e.target.value)
+                          setKontoHinweis(null)
+                        }}
+                        inputMode="decimal"
+                        placeholder="Startsaldo"
+                        aria-label="Startsaldo"
+                        className="w-full rounded-xl bg-karte2 px-4 py-2.5 outline-none ring-strich focus:ring-2"
+                      />
+                      <button
+                        type="submit"
+                        className="flex min-h-11 w-full items-center justify-center rounded-xl bg-akzentstark text-sm font-semibold text-akzenttext active:scale-[0.98]"
+                      >
+                        Anlegen
+                      </button>
+                    </form>
+                    {kontoHinweis && (
+                      <p className={`mt-1.5 text-[13px] ${kontoHinweis.gut ? 'text-gut' : 'text-schlecht'}`}>
+                        {kontoHinweis.text}
+                      </p>
+                    )}
+                  </>
+                )}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
 
       <HelpModal open={helpOpen} close={() => setHelpOpen(false)} />
     </div>
