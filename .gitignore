@@ -7,3 +7,6 @@ frontend/dist/
 # TS build cache
 frontend/tsconfig.tsbuildinfo
 .obsidian/
+
+# Umgebung mit Zugangsdaten, nie committen
+.env
