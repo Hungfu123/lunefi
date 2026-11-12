@@ -1,7 +1,20 @@
 import { useState, type FormEvent } from 'react'
-import { write, type Person } from './types'
+import { freshXsrfToken, write, type Person } from './types'
 import { useApp } from './AppContext'
 import { Mond } from './Layout'
+
+async function login(name: string, passwort: string) {
+  const token = await freshXsrfToken()
+  const headers: Record<string, string> = { 'Content-Type': 'application/x-www-form-urlencoded' }
+  if (token) headers['X-XSRF-TOKEN'] = token
+  const response = await fetch('/api/login', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers,
+    body: new URLSearchParams({ username: name, password: passwort }).toString(),
+  })
+  if (!response.ok) throw new Error('login failed')
+}
 
 export function Onboarding({ onDone }: { onDone: (name?: string) => void }) {
   const { reloadPersons } = useApp()
@@ -27,6 +40,7 @@ export function Onboarding({ onDone }: { onDone: (name?: string) => void }) {
     setError(null)
     try {
       await write<Person>('/api/personen', { name: a, passwort: password1 })
+      await login(a, password1)
       await write<Person>('/api/personen', { name: b, passwort: password2 })
       onDone(a)
     } catch {

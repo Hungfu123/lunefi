@@ -55,6 +55,9 @@ public class PersonController {
 
     @GetMapping
     public List<Person> list() {
+        if (appUserRepository.count() > 0 && !authenticatedUser.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
         return repository.findAll().stream().map(PersonEntity::asPerson).toList();
     }
 }

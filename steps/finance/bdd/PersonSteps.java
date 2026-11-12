@@ -26,6 +26,39 @@ public class PersonSteps {
     @Autowired
     private TestRestTemplate rest;
 
+    @Autowired
+    private Sessions sessions;
+
+    private org.springframework.http.HttpStatusCode anonStatus;
+    private String anonBody;
+
+    @Wenn("jemand ohne Anmeldung die Personenliste abruft")
+    public void anonymousPersonList() {
+        TestRestTemplate anon = sessions.template();
+        ResponseEntity<String> response = anon.getForEntity("/api/personen", String.class);
+        anonStatus = response.getStatusCode();
+        anonBody = response.getBody();
+    }
+
+    @Dann("zeigt die Personenliste die Person {string}")
+    public void anonymousListShows(String name) {
+        assertThat(anonStatus).isEqualTo(HttpStatus.OK);
+        assertThat(anonBody).contains("\"name\":\"" + name + "\"");
+    }
+
+    @Dann("wird die Personenliste ohne Anmeldung abgewiesen")
+    public void anonymousListRejected() {
+        assertThat(anonStatus).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Autowired
+    private finance.PersonRepository personRepository;
+
+    @Angenommen("die Person {string} ohne App-Nutzer existiert")
+    public void personWithoutUser(String name) {
+        personRepository.save(new finance.PersonEntity(name));
+    }
+
     @Angenommen("noch keine Person angelegt wurde")
     public void noPersonCreatedYet() {
     }
